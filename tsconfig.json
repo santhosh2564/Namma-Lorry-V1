@@ -1,0 +1,36 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    }
+  },
+  "include": [
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "plugins/**/*.ts",
+    "app.config.ts",
+    "babel.config.js",
+    "eslint.config.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "docs",
+    "supabase",
+    "design",
+    "test"
+  ]
+}

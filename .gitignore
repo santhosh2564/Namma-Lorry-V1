@@ -4,3 +4,29 @@
 
 supabase/.branches/
 supabase/.temp/
+
+# --- node ---
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# --- expo ---
+.expo/
+dist/
+web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# --- jest ---
+coverage/
+
+# --- mac / editor ---
+.DS_Store
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json

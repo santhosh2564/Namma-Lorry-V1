@@ -1,59 +1,72 @@
 # 00 — Repository Audit (read-only discovery)
 
-**Date:** 26 Sep 2026 · **Folder:** `C:\Users\santh\Desktop\Namma Lorry` · **Scope:** discovery only. Apart from this file, nothing was created, changed, installed or deleted.
+**Rev 2 — 26 Sep 2026** (supersedes rev 1 of the same date; re-verified after the folder changed)
+**Folder:** `C:\Users\santh\Desktop\Namma Lorry` · **Scope:** discovery only. Apart from this file, nothing was created, changed, installed or deleted.
+
+**What changed since rev 1** (the reason for this revision):
+1. The folder is **now a git repository**, with a GitHub remote (`github.com/santhosh2564/Namma-Lorry-V1`), branch `main` (in sync with `origin/main`), 2 commits: `b4e0bee Initial commit`, `72c6e2a M1-M3: schema, docs, screens, smoke tests, task list`.
+2. A **local Supabase project is now initialised AND running**: `supabase/config.toml` (project `namma-lorry-phase1`, Postgres 17), 12 Docker containers up 4 h, API on 54321 and Studio on 54323 answering. Migrations **0001 and 0002 are applied** (`supabase_migrations.schema_migrations`), and the seed is loaded: 4 profiles, 3 vehicles, 4 loads, 1 trip.
+3. New files at `supabase/` root: `migrations/0002_consent.sql` (DPDP consent RPC — matches doc 09/11 exactly), `seed.sql` (admin + 3 drivers + 3 vehicles + 4 loads + 1 assigned trip, with `[auth.sms.test_otp]` numbers 9190000000{01,11,12,13} → OTP `123456`), `tests/_helpers.psql` (pgTAP helper functions, complete and well designed).
+4. The two doc packs are reconciled and understood: `namma-lorry-phase1-docs/` (older pack + root `docs/12`) and `namma-lorry-phase1-docs/namma-lorry-phase1-docs/` (newest pack, a superset: adds `docs/13`, `stitch/DESIGN.md`, updated `docs/04`). `docs/13` supersedes `docs/11`.
+
+Everything else from rev 1 still holds: **no application code exists** — no Expo app, no `package.json`, no Kotlin, no vanilla-JS prototype; the Stitch mocks in `SCREENS/` are visual-only.
 
 ---
 
 ## Summary
 
-- **There is no application code in this folder.** It has no Expo/React Native app, no Kotlin/Android project, no vanilla-JS GPS prototype, no `package.json` and no git repository.
-- What it does have:
-  1. The **Phase 1 documentation pack** (`namma-lorry-phase1-docs/`): CLAUDE.md/AGENTS.md, 10 numbered docs, `.env.example`, Supabase migration `0001` and a psql smoke test.
-  2. **Loose duplicates** of 5 pack files at the root. All are byte-identical to the pack copies.
-  3. A **`SCREENS/` folder** of Google Stitch exports: 10 mobile driver screens plus a logo, each as a PNG and a static Tailwind HTML mock, along with two DESIGN.md variants and a copy of doc 12.
-- **No web-console screens have been designed yet** (0 of 9). Splash and Access Notice (mobile) are also missing.
-- **Migration 0001 is well built and close to runnable.** It has three real defects to fix in a *new* migration before relying on it:
-  - a clock-skew / poison-batch problem in the `trip_points` RLS
-  - a stationary-truck gap problem, which is a design conflict between the 25 m distance filter and the 15-minute gap rule
-  - driver registration with no path from "admin adds driver" to an `auth.users` row
-- **Tooling:**
-  - Ready: Node 26, npm 11, JDK 17, Android SDK (API 30–36.1, NDK 28) with adb, Docker installed.
-  - Not ready: the Docker daemon is **not running**, `ANDROID_HOME` is not set, and the Expo, EAS and Supabase CLIs are not installed.
-  - **This is a Windows machine with no macOS**, so iOS work can only go through EAS cloud builds plus a paid Apple account.
-- **Biggest technical unknown:** `mappls-map-react-native@2.0.3` compatibility with current Expo (SDK 57 / RN 0.87). The SDK was built against RN 0.79, and its shipped Expo config plugin is **broken**: `app.plugin.js` requires a file that is not in the package.
-- **Recommendation:** start a **fresh Expo app at the repo root**, promote the doc pack to the root, move the Stitch exports into `design/`, and preferably relocate the repo to a path without spaces.
+- **No app code.** No Expo/React Native app, no Kotlin/Android, no JS GPS prototype, no `package.json`.
+- **Backend work has already progressed further than rev 1 assumed:** local Supabase is running (Docker), migrations 0001 + 0002 are applied, seed data is loaded, and the pgTAP helper layer exists. M4 (Supabase backend) is roughly **half done**: missing pieces are the actual `*.test.sql` pgTAP files, `docs/DEV_SETUP.md`, and generated types + typed client in `src/lib/` (impossible until the app exists).
+- **Migration 0001 is applied unchanged** (byte-identical to all three pack copies) and is **not ready to be relied on**: poison-batch/clock-skew RLS, stationary-truck gap conflict, auto-driver-registration, admin `update` bypass on trips (all detailed below). The planned `0003_phase1_fixes.sql` does **not** exist yet.
+- **Tooling improved:** Docker daemon **is running** (was off in rev 1). Still missing: Supabase/Expo/EAS CLIs (use `npx supabase`), `ANDROID_HOME` unset, no macOS for iOS.
+- **Recommendation unchanged:** fresh Expo app at the repo root; but the "promote the newest pack to the root" step is now **more urgent** because config/seed/tests already sit at `supabase/` root while docs still live in the nested packs.
 
 ---
 
 ## Repository map
 
 ```
-Namma Lorry/                                  (48 files total, ~2.5 MB)
-├─ 0001_phase1_schema.sql          27 KB   ← identical copy of pack migration
-├─ 02-PRD.md                        8 KB   ← identical copy
-├─ 03-TRD.md                        9 KB   ← identical copy
-├─ 04-screen-navigation.md          6 KB   ← identical copy
-├─ README.md                        3 KB   ← identical copy of pack README
-├─ namma-lorry-phase1-docs/       156 KB   (17 files) — the source-of-truth doc pack
-│  ├─ .env.example                         variable names only (see Environment)
-│  ├─ AGENTS.md                            identical to CLAUDE.md
-│  ├─ CLAUDE.md
-│  ├─ DESIGN.md                            plain design brief (identical to SCREENS/design.md)
-│  ├─ README.md
-│  ├─ 12-screens-and-stitch-prompts.md     (note: at pack root, NOT in docs/)
-│  ├─ docs/01-project-plan.md … 11-build-prompts.md   (01,02,03,04,06,07,08,09,10,11 — no 05; 05 is the SQL)
-│  └─ supabase/
-│     ├─ migrations/0001_phase1_schema.sql
-│     └─ tests/smoke_phase1.sql            psql script, not pgTAP
-└─ SCREENS/                       2.3 MB   (24 files) — Google Stitch exports
-   ├─ 12_screens_and_stitch_prompts.md     identical copy of doc 12
-   ├─ design.md                            identical to pack DESIGN.md
-   ├─ namma_lorry/DESIGN.md                Stitch-generated tokens (YAML front-matter) + brief — DIFFERENT palette
-   ├─ namma_lorry_brand_logo/{code.html (SVG), screen.png}
-   ├─ 1._sign_in/ … 10._my_profile_tab/    each: code.html (11–21 KB) + screen.png (65–355 KB)
+Namma Lorry/                            git repo → github.com/santhosh2564/Namma-Lorry-V1 (main)
+├─ .gitignore                           .env*, supabase/.branches/, supabase/.temp/
+├─ README.md                            index for the older pack (identical to pack README)
+├─ 0001_phase1_schema.sql  27 KB        duplicate (byte-identical, md5 1b118728…)
+├─ 02-PRD.md / 03-TRD.md / 04-screen-navigation.md / 13-claude-code-prompts.md   duplicates
+├─ docs/                     76 KB      00-repo-audit.md (this file, rev 1 inside), PHASE1_TASKS.md
+├─ supabase/                 74 KB      ★ LIVE local project (details below)
+├─ SCREENS/                  2.3 MB     25 files — Stitch exports (10 screens + logo, PNG + HTML each)
+│                                         + 12_screens_and_stitch_prompts.md + design.md + namma_lorry/DESIGN.md
+└─ namma-lorry-phase1-docs/  400 KB     doc pack (older) + nested newest pack + .zip
+   ├─ CLAUDE.md / AGENTS.md / README.md / DESIGN.md / .env.example / 12-screens-and-stitch-prompts.md
+   ├─ docs/01–11 (no 05; 05 is the SQL)
+   ├─ supabase/{migrations/0001, tests/smoke_phase1.sql}
+   └─ namma-lorry-phase1-docs/          ★ NEWEST pack: adds docs/13, stitch/DESIGN.md, updated docs/04
 ```
 
-No `node_modules`, `.git`, build outputs, `app.json`, `package.json`, `supabase/config.toml`, `design/` or `stitch/` folders exist.
+File counts by top level: pack 38, SCREENS 25, supabase 8, root 7, docs 2. No `node_modules`, no build outputs, no `design/` folder (doc 13's prerequisite), no `package.json`.
+
+### supabase/ (root) — live project
+
+| Item | State |
+|---|---|
+| `config.toml` | `supabase init`-generated (CLI default template), project_id `namma-lorry-phase1`, Postgres major 17, seed enabled (`./seed.sql`). **Customised:** `[auth.sms]` enabled with dummy Twilio creds (local-only), `[auth.sms.test_otp]` mapping the 4 seed phones → `123456`, auth hook comments referencing ND-12, `sms_sent` rate limit 30/h |
+| Docker | 12 containers up ~4 h (db, kong/API 54321, studio 54323, auth, rest, realtime, storage, edge runtime, analytics, pg_meta, inbucket). `supabase_vector` is in a restart loop — cosmetic, analytics-only |
+| Migrations applied | **0001, 0002** (verified in DB) |
+| Seed loaded | profiles 4 (1 admin + 3 drivers), vehicles 3, loads 4, trips 1 (assigned) — verified in DB |
+| `tests/` | `_helpers.psql` only (as_user/as_anon/as_postgres, create_user/vehicle/load/trip, insert_track, completed_trip — all well formed). **No actual `*.test.sql` files yet**, so `supabase test db` currently has nothing to run. pgTAP extension **not yet created** in the DB |
+| Edge functions | none (`mappls-proxy`, `admin-create-driver` still to write) |
+| `smoke_phase1.sql` | exists only in the two packs, not at root; doc 11/13 P5 plans its pgTAP conversion |
+
+### Migration 0001 — still the same three real defects (grep-verified in the applied file)
+
+1. **Poison batch / clock skew (high).** `points_driver_insert` (line 244) rejects rows with `recorded_at` > 2 min ahead of server or > 1 min before `started_at`. A WITH CHECK failure aborts the whole multi-row upsert; one bad row (phone clock fast) blocks all uploads for that trip and the uploader retries forever.
+2. **Stationary trucks flagged (high, design conflict).** 25 m `distanceInterval` emits no points while parked → `TRACKING_GAP` (>15 min) and `LOW_COVERAGE` (<60/h) fire on genuine trips, undermining the ≥80 % auto-verify goal. Needs a heartbeat strategy or moving-time-only gap logic — a **doc change first** (ND-6).
+3. **Driver registration path (high).** `handle_new_user` (line 54) makes **any** OTP sign-in a driver. PRD P0-1 requires refusing unknown numbers → `signInWithOtp({ shouldCreateUser: false })` + admin-only `admin-create-driver` Edge Function (planned in PHASE1_TASKS as ND-12).
+
+Plus the medium/minor items from rev 1, all still present: `trips_admin` is `for all` (line 230) so admin clients can bypass RPCs and no `cancel_trip` RPC exists; `GPS_JUMPS` hard-coded (line 322) instead of `app_settings`; `admin_review_trip` returns null on missing trip; `trips` not in the realtime publication (only `trip_live`, line 507); `setting()` search_path; `trip_points` re-count O(n²). None has a fix migration yet → `0003_phase1_fixes.sql` per ND-21.
+
+**0002_consent.sql (new, applied):** adds `profiles.consent_version/consent_at` + SECURITY DEFINER `record_consent(p_version)`, own-row only, `is_active` required, `FORBIDDEN`/`VERSION_REQUIRED`/`PROFILE_NOT_FOUND` error codes, grants to `authenticated` only. Matches doc 09 §1 and doc 11 P5 exactly. No issues found.
+
+**seed.sql (new, applied):** inserts `auth.users` + `auth.identities` directly (tokens set to `''` — a known GoTrue quirk, correctly handled), promotes profiles via `handle_new_user` trigger, bumps `load_code_seq` to 141 so codes match the design sample (NL-2026-000142/143), real TN/KA coordinates. Depends on `public.profiles` rows existing from the trigger — works because seed runs after migrations. `setval` on `load_code_seq` matches 0001's sequence. No issues found.
 
 ---
 
@@ -61,11 +74,11 @@ No `node_modules`, `.git`, build outputs, `app.json`, `package.json`, `supabase/
 
 | Project | Language / framework | Entry points | Build / run | Dependency files |
 |---|---|---|---|---|
-| Doc pack (`namma-lorry-phase1-docs/`) | Markdown + SQL (Postgres 15 / PostGIS / pg_cron) | `CLAUDE.md`, `README.md` | `psql -f` for the smoke test; `supabase db reset` once a Supabase project exists | none |
-| Stitch mocks (`SCREENS/`) | Static HTML with Tailwind via CDN (`cdn.tailwindcss.com`), Google Fonts (Noto Sans, Material Symbols **Outlined**), inline click-handler JS | each `code.html` | open in a browser | none |
-| Expo / React Native app | **does not exist** | — | — | — |
-| Kotlin / Android app | **does not exist** | — | — | — |
-| Vanilla-JS GPS prototype | **does not exist** | — | — | — |
+| Doc packs (two, nested) | Markdown + SQL | `CLAUDE.md`, newest pack `docs/13` | — | none |
+| Local Supabase project (root `supabase/`) | Postgres 17 / PostGIS / pg_cron; Docker | `config.toml` | `npx supabase start/stop/db reset/test db` | none |
+| Stitch mocks (`SCREENS/`) | Static HTML, Tailwind CDN, click-handler JS only | each `code.html` | open in browser | none |
+| Expo / RN app | **does not exist** | — | — | — |
+| Kotlin / vanilla-JS prototype | **does not exist** | — | — | — |
 
 ---
 
@@ -73,97 +86,39 @@ No `node_modules`, `.git`, build outputs, `app.json`, `package.json`, `supabase/
 
 | File | Summary |
 |---|---|
-| **README.md** | Index of the pack, with instructions to copy it into the repo root so CLAUDE.md, docs/ and supabase/ sit at the top level. Lists the client inputs still needed before release: privacy policy, sign-off on thresholds, brand assets, Play background-location declaration, pilot list. |
-| **CLAUDE.md / AGENTS.md** (identical) | Stack is locked: Expo + TypeScript strict + Expo Router, EAS dev builds, **Mappls only**, expo-location/task-manager/sqlite, Supabase, TanStack Query, Zustand, react-hook-form + zod. It sets 10 hard rules (the server computes all verification; status changes only via RPC; idempotent `(trip_id, seq)`; SQLite-first queue; top-level task; secrets kept in Edge Functions; split `.native`/`.web` map; web is console only; RLS in every migration; i18n). It also gives the folder layout, commands and definition of done. |
-| **DESIGN.md** (pack) | Short design brief. Colours: Ink Navy #0F2A44 and Highway Amber #F5A300, plus status colours. Noto Sans, 8 px grid, 48 px minimum touch target, Material Symbols **Rounded**, status chips and map style. Also fixes the sample data (Murugan S, TN 23 BK 4521, NL-2026-000142/143). |
-| **01-project-plan** | 7-week plan starting **Mon 28 Sep 2026**: W0 setup plus a Mappls spike on Android, iOS and web; W6 field test and release. Includes an accounts/costs checklist and a risk register (Mappls native config, OEM battery killers, store reviews, spoofing, and an earlier client spec of Kotlin + OSM). |
-| **02-PRD** | Problem, goals (≥95 % complete tracks, ≥80 % auto-verify, zero driver-editable data, ≤60 s live delay, ≤2 taps), non-goals, personas and user stories. P0-1…P0-13 have acceptance criteria. Also lists P1/P2 items, success metrics and **6 open client questions**, 3 of which are blocking before W1. |
-| **03-TRD** | Architecture diagram and stack table. Repo structure (differs slightly from CLAUDE.md). Tracking engine: state machine, `TRACKING_OPTIONS` of 10 s / 25 m BestForNavigation with a foreground service, SQLite `point_queue` schema, and an uploader that batches 200 rows every 30 s with backoff. Also covers the map abstraction `AppMapProps`, backend tables/RPCs/trigger/cron, the `mappls-proxy` function, realtime, NFRs and environments. |
-| **04-screen-navigation** | Expo Router route tree (auth / onboarding / driver / console groups), root routing flowchart, driver trip flow and per-screen specs for A1–A2, O1–O2, D1–D6 and C1–C10. |
-| **06-api-contracts** | Exact `supabase.rpc` signatures and error codes for `start_trip`, `end_trip` and `admin_review_trip`, including the order of client calls. Also: table access patterns via RLS, the point row shape, the realtime subscription, `mappls-proxy` actions and normalised responses, and the status-label mapping. |
-| **07-apis-and-services** | Services to use, mostly free (Mappls SDKs/APIs, expo-*, Supabase, Sentry, Vercel/Netlify, GitHub Actions). Unavoidable paid items: Apple $99/yr, Play $25, SMS with DLT. Services to avoid: OSM/Google/Mapbox tiles, `react-native-maps`, Transistor BG-geo, Mappls InTouch. Key-handling table. |
-| **08-verification-rules** | Official km = PostGIS geodesic sum, dropping points with accuracy > 50 m and segments > 150 km/h. Defines **10 reason codes** with thresholds held in `app_settings`, when verification runs (end_trip, trigger, 6 h sweeper) and admin review guidance. Needs client sign-off. |
-| **09-security-privacy-compliance** | DPDP Act measures (consent recorded through migration `0002` + `record_consent` RPC), Play background-location declaration and video, iOS purpose strings, application security controls, anti-fraud threat model and the privacy-policy outline. |
-| **10-test-plan** | Automated layers (pgTAP, Jest/RNTL, Playwright, optional Maestro), emulator GPX routes, field-test device matrix (Xiaomi/Vivo/Samsung/Realme/iPhone) and **12 acceptance scenarios**. |
-| **11-build-prompts** | Copy-paste prompts per milestone: 0.1 scaffold, 0.2 Mappls spike (a custom `plugins/withMappls.ts` if needed), 1.1 Supabase + pgTAP + types, 1.2 auth/routing, then W2–W6. |
-| **12-screens-and-stitch-prompts** | **Supersedes doc 04's screen list.** Final count is 21 screens + 6 overlays; Review Decision is merged into C6 Trip Detail & Review. Renumbers everything (S1–S4, D1–D8, C1–C9). Contains Stitch prompts per screen and says Stitch exports are a *visual reference, not code*. Says to save the chosen designs in `design/` and put tokens in `src/theme/tokens.ts`. |
-| **SCREENS/namma_lorry/DESIGN.md** | Stitch's generated Material-3 token set (surface/primary/secondary containers, type scale, radii, spacing) prepended to the same brief. Its palette **does not match** the brief exactly (see Doc contradictions). |
-| **supabase/tests/smoke_phase1.sql** | psql script that seeds an admin, a driver, a vehicle and loads, then plays scenario A (clean Chennai→Vellore → verified) and scenario B (mocked point + late upload → needs_review → admin approves). It also checks the RLS denials. |
+| **CLAUDE.md / AGENTS.md** (both packs, identical) | Locked stack: Expo + TS strict + Expo Router, EAS dev builds, **Mappls only**, expo-location/task-manager/sqlite, Supabase, TanStack Query + Zustand + RHF/zod. 10 hard rules (server computes verification; status via RPCs only; idempotent `(trip_id,seq)`; SQLite-first queue; top-level task; secrets in Edge Functions; `.native`/`.web` map split; web = console; RLS in every migration; i18n). Folder layout + commands + definition of done |
+| **docs/13** (newest pack; **supersedes docs/11**) | 15 full prompts: P0 audit, P1 plan, P2–P12 = M1–M11, P13–P15 = M12a/b/c. How-to: pack at root, Stitch PNGs in `design/` named by screen ID, plan mode per prompt, `/clear` between, commit per prompt, 🧍 human checkpoints |
+| **docs/01-project-plan** | 7 weeks from Mon 28 Sep 2026; W0 = setup + Mappls spike on Android/iOS/web; accounts/costs checklist; risk register (Mappls native config, OEM battery killers, store reviews, spoofing, earlier client spec of Kotlin + OSM) |
+| **docs/02-PRD** | Goals: ≥95 % complete tracks, ≥80 % auto-verify, zero driver-editable data, ≤60 s live delay, ≤2 taps. P0-1…P0-13 with acceptance criteria; 6 open client questions, 3 blocking before W1 |
+| **docs/03-TRD** | Architecture, stack, repo structure (differs from CLAUDE.md). Tracking: state machine, `TRACKING_OPTIONS` 10 s / 25 m BestForNavigation + foreground service, SQLite `point_queue`, uploader 200 rows/30 s with backoff. Map abstraction `AppMapProps`; backend tables/RPCs/trigger/cron; `mappls-proxy`; realtime; NFRs |
+| **docs/04** (updated in newest pack) | Expo Router route tree (auth/onboarding/driver/console), routing flowchart, per-screen specs. Screen IDs superseded by doc 12 |
+| **docs/06-api-contracts** | Exact RPC signatures + error codes for `start_trip`, `end_trip`, `admin_review_trip`; call order; RLS access patterns; point row shape; realtime subscription; `mappls-proxy` actions; status labels |
+| **docs/07-apis-and-services** | Mappls SDKs/APIs, expo-*, Supabase, Sentry; paid: Apple $99, Play $25, DLT SMS; avoid OSM/Google/Mapbox tiles, `react-native-maps`, Transistor, Mappls InTouch; key-handling table |
+| **docs/08-verification-rules** | Official km = PostGIS geodesic; drop accuracy > 50 m and segments > 150 km/h; **10 reason codes** with thresholds in `app_settings`; verification at end_trip + trigger + 6 h sweeper; needs client sign-off |
+| **docs/09-security-privacy-compliance** | DPDP (consent via 0002 + `record_consent`), Play background-location declaration + video, iOS purpose strings, app-sec controls, anti-fraud threat model, privacy-policy outline |
+| **docs/10-test-plan** | pgTAP / Jest+RNTL / Playwright / optional Maestro; emulator GPX; field-test device matrix; **12 acceptance scenarios** |
+| **docs/11-build-prompts** (superseded by 13) | Short per-milestone prompts |
+| **docs/12-screens-and-stitch-prompts** (newest pack root) | **Supersedes doc 04 screen list**: 21 screens + 6 overlays (S1–S4, D1–D8, C1–C9); C8 Review Decision merged into C6; Stitch prompts per screen; exports are visual reference only; tokens → `src/theme/tokens.ts`; designs → `design/` |
+| **DESIGN.md / stitch/DESIGN.md** | Brief: Ink Navy #0F2A44, Highway Amber #F5A300, status colours, Noto Sans, 8 px grid, 48 px targets, Material Symbols **Rounded**, sample data (Murugan S, TN 23 BK 4521, NL-2026-000142/143). Stitch's own `SCREENS/namma_lorry/DESIGN.md` adds an M3 token set with a **different palette** (see contradictions) |
+| **PHASE1_TASKS.md** (docs/) | Master plan from Prompt 1: decisions, ND-1…ND-24 needs-decision table (audit questions + doc contradictions), M1–M12 with acceptance criteria, traceability, screen checklist, risks, progress log |
 
-**Design images (`SCREENS/*/screen.png`):**
-1. Sign in
-2. Verify OTP
-3. Location Permission
-4. Battery Setup
-5. My Trips home
-6. Trip Detail & Start
-7. Active Trip
-8. Trip Summary (verified variant)
-9. Trip History
-10. My Profile
-
-There is also a brand logo (SVG wordmark). **Not yet designed:** S1 Splash, S4 Access Notice, all state variants and overlays, and all 9 console screens (C1–C9).
+**Design images (`SCREENS/*/screen.png`):** Sign in, Verify OTP, Location Permission, Battery Setup, My Trips, Trip Detail & Start, Active Trip, Trip Summary, Trip History, My Profile + logo. **Not designed:** S1 Splash, S4 Access Notice, state variants/overlays, all 9 console screens.
 
 ---
 
 ## Prototype feature inventory
 
-**No prototype exists.** Nothing implements GPS capture, sampling, distance formulas, jitter filtering, storage or backend calls. The only JavaScript in the folder is UI click handlers inside the Stitch HTML mocks: keypad, language drawer, buttons toggling classes. It has no `navigator.geolocation`, `localStorage` or `fetch`.
+**No prototype exists.** No GPS capture, sampling, distance formula, filtering, storage or backend calls anywhere. The only JS is UI click handlers in the Stitch mocks (keypad, language drawer, class toggles); no `navigator.geolocation`, no `localStorage`, no `fetch`.
 
-What the Stitch mocks are worth:
-- **Reusable as visual spec:** layout, hierarchy, copy for the core flows, the logo SVG, and the Tailwind config colour values.
-- **Not reusable as code.** Doc 12 §3 says so explicitly: the real app is React Native.
-- **Scope creep and wrong copy baked into the mocks.** None of the following may be carried into the build:
-  - **Features that are not in the PRD:** FASTag balance and "Fleet SOS" tiles, "Active corridor" map card, shipper star ratings (4.92), e-Way Bill & Gate Pass match, "Driver Tier 1 Certified", POD Signed / Settlement Done / diesel litres / toll-receipt re-upload in History.
-  - **Unverifiable claims:** "AIS-140 GPS", "Government of India Logistics Registry Compliant", "Compliant with Highway Transport Board standards", "Protected by Namma Fleet Safety Network", a made-up support phone number.
-  - **Wrong titles:** "Live Trip Navigation" (turn-by-turn is a **non-goal**).
-  - **Wrong disclosure copy:** the permission screen says location "unlocks priority loads and verified payouts". This contradicts the DPDP purpose notice in doc 09, whose wording must be used instead.
-  - **Maps and branding:** map placeholders show **Google Maps** imagery (watermark visible). Fine as a placeholder, but the real map must be Mappls. The logo wordmark is clipped to "Namma Lorr" in several headers.
-  - **Data mismatches:** the Profile mock shows an unmasked phone number, "Since Oct 2024" and a second vehicle plate "KA 01 AK 9841".
+- **Reusable as visual spec:** layout, hierarchy, copy for core flows, logo SVG, colour values.
+- **Not reusable as code** (doc 12 §3): the real app is React Native.
+- **Scope creep baked into mocks — must not be carried over:** FASTag balance, Fleet SOS, shipper ratings (4.92), e-Way Bill & Gate Pass, "Driver Tier 1 Certified", POD/Settlement/diesel/toll re-upload, "Live Trip Navigation" (turn-by-turn is a non-goal), unverifiable claims (AIS-140, Govt registry), made-up support number, wrong permission-screen disclosure (doc 09's wording must be used), Google Maps imagery in placeholders, unmasked phone / second plate in Profile, clipped logo wordmark.
 
 ---
 
 ## Supabase state
 
-| Item | State |
-|---|---|
-| Local project initialised (`supabase/config.toml`) | **No.** Only `migrations/` and `tests/` exist inside the doc pack. |
-| Supabase CLI | Not installed (`supabase` not on PATH; latest on npm is 2.118.0, runnable via `npx supabase`). |
-| Docker (required by `supabase start`) | Docker 29.7.2 installed, but the **daemon is not running**. |
-| Edge functions | None (`mappls-proxy` is specified in docs 03/06 but not written). |
-| Tests | `smoke_phase1.sql` is a psql script (uses `\set`, `\echo`, `\g /dev/null`), **not pgTAP**, so `supabase test db` won't run it. Doc 11 prompt 1.1 already plans the conversion. |
-| Remote projects (staging/prod) | Unknown; none referenced. |
-
-### Is migration 0001 applicable as-is?
-
-**It will very likely apply cleanly on local Supabase.** This was reviewed by reading, not by running it. What looks right:
-- extensions in `extensions` schema, qualified PostGIS calls in generated columns
-- `search_path` set on SECURITY DEFINER functions
-- RLS enabled on every table
-- grants revoked on internal functions
-- `trip_live` added to the realtime publication
-- pg_cron scheduling
-
-It is **not ready to rely on for the pilot**. These issues should become migration `0002+`:
-
-1. **Poison batch and clock skew (high).** The `points_driver_insert` policy rejects rows with `recorded_at` more than 2 minutes ahead of the server or more than 1 minute before `started_at` (a server timestamp). RLS WITH CHECK failure aborts the **whole** insert statement, so one bad row fails the entire 200-row upsert. With the uploader design in doc 03, the queue then retries the same batch forever. A phone clock that is a few minutes fast would therefore block **all** uploads for that trip. **Fix:** tolerate or measure skew per batch, move point uploads into an RPC that filters invalid rows instead of erroring, or have the uploader quarantine rejected rows.
-2. **Stationary trucks flagged (high, design conflict).** Tracking uses `distanceInterval: 25` m. A truck parked for loading, a tea break or a traffic jam emits no points. The 15-minute `TRACKING_GAP` and the `LOW_COVERAGE` (60/h) rules then fire on perfectly genuine trips, which undermines the ≥80 % auto-verify goal. Fix one of two ways:
-   - keep a periodic heartbeat point while stationary (e.g. `distanceInterval: 0` with a time interval, filtered client-side), or
-   - count only moving-time gaps and exclude stationary spans (same position before and after the gap).
-3. **Driver registration path (high).** `profiles.id` references `auth.users`, and `handle_new_user` makes **any** OTP sign-in a driver. Consequences:
-   - The PRD's "unknown numbers see 'Contact Namma Lorry to register'" is not enforced.
-   - C8/C9 "Add driver" cannot insert a profile without first creating an auth user, which needs the service role.
-   - **Needed:** `signInWithOtp({ shouldCreateUser: false })`, and an admin-only Edge Function to create the auth user and profile. That function is missing from docs 06/07.
-4. **Admin can bypass RPCs (medium).** `trips_admin` is `for all`, so an admin client can directly `update trips set status='verified', tracked_distance_m=…` without `apply_verified_stats` or an audit event. This contradicts CLAUDE.md hard rule 2. Restrict admin to `select, insert` (assign) plus a `cancel_trip` RPC.
-5. **Minor:**
-   - `GPS_JUMPS` threshold is hard-coded `> 5`, not in `app_settings`.
-   - `admin_review_trip` on a missing trip returns null instead of raising `TRIP_NOT_FOUND`.
-   - The trigger does a `count(*)` per inserted row after the trip ends, which is O(n²) for large late uploads. Acceptable at pilot scale.
-   - `trips` is not in the realtime publication, so D6 Trip Summary "Verifying → Verified" must poll or needs `trips` published.
-   - No `cancel_trip` RPC exists, and the `cancelled` status is unreachable except by direct admin update.
-   - `setting()` has no fixed `search_path`, which the Supabase linter will warn about.
-   - The smoke test's `\g /dev/null` fails in psql on Windows.
-6. **Planned additions already documented:** `0002_consent.sql` (doc 09/11).
+See the dedicated table under Repository map. Headline: **initialised, running, migrated (0001+0002), seeded** — but **untested** (no pgTAP test files, pgTAP extension not created), **no Edge Functions**, and **0001 carries unfixed design defects** needing `0003_phase1_fixes.sql`. `supabase db reset && supabase test db` (doc 13 P5's done-criterion) **cannot pass yet**.
 
 ---
 
@@ -171,168 +126,98 @@ It is **not ready to rely on for the pilot**. These issues should become migrati
 
 | Tool | Found | Notes |
 |---|---|---|
-| OS | Windows 11 Home 10.0.26200 | **No macOS → no Xcode / iOS simulator / local iOS builds** |
-| Node | v26.8.1 | Newer than current LTS (24). Expo officially targets LTS; verify SDK 57 support or pin 24 LTS via nvm-windows/Volta. |
-| npm / pnpm | 11.14.1 / 9.15.9 | yarn, bun: not installed |
-| Java | OpenJDK 17.0.20 (Microsoft), `JAVA_HOME` set | Correct for RN Android builds |
-| Android SDK | `%LOCALAPPDATA%\Android\Sdk`: platforms 30–36.1, build-tools 34–36.1, NDK 28.2, emulator, cmdline-tools | **`ANDROID_HOME` not set**; adb 1.0.41 available |
-| Gradle | not on PATH | Fine; the RN wrapper provides it |
-| Docker | 29.7.2 | **Daemon not running** |
-| git | 2.55 | **Folder is not a git repo** |
-| expo / eas / supabase CLIs | not installed | Latest on npm: expo 57.0.25 (RN 0.87.1), eas-cli 24.8.0, supabase 2.118.0 |
-| Python | 3.14.7 | not needed |
-| Windows long paths | `LongPathsEnabled = 1` | Good |
-| Path | `C:\Users\santh\Desktop\Namma Lorry`, **contains a space** and sits under Desktop (often OneDrive-synced) | Space-containing paths are a known source of Gradle/CMake/NDK failures on Windows (New Architecture compiles C++). Relocating is recommended. |
+| OS | Windows 11 Home | **No macOS → no Xcode / iOS simulator / local iOS builds** |
+| Git | 2.55, repo with remote `github.com/santhosh2564/Namma-Lorry-V1`, branch `main` = origin/main, 2 commits | Working tree clean; `.gitignore` covers `.env*` + `supabase/.branches|.temp` |
+| Node / npm | v26.8.1 / 11.14.1 | Node 26 non-LTS; Expo targets LTS — pin 24 if tooling misbehaves (R9) |
+| Docker | 29.7.2, **daemon running** | Supabase stack currently up |
+| Java | JDK 17.0.20, `JAVA_HOME` set | Correct for RN Android |
+| Android SDK | `$LOCALAPPDATA\Android\Sdk` complete (platforms/build-tools/NDK/adb) | **`ANDROID_HOME` still unset** |
+| expo / eas / supabase CLIs | **not installed** (npx would fetch supabase@2.118.0, expo 57.x, eas-cli 24.8.0) | Use `npx supabase` |
+| psql | not on PATH | Use `docker exec supabase_db_namma-lorry-phase1 psql` (worked during this audit) |
+| Path | `C:\Users\santh\Desktop\Namma Lorry` — **space + Desktop/OneDrive risk** | Known Gradle/CMake/NDK failure source (ND-1) |
 
-**.env files:** none present. The only file is `namma-lorry-phase1-docs/.env.example`, with these names:
-- Public (app bundle): `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY`, `EXPO_PUBLIC_APP_ENV`
-- Server-only (Edge Function secrets): `MAPPLS_CLIENT_ID`, `MAPPLS_CLIENT_SECRET`, `MAPPLS_REST_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SENTRY_DSN`
+**.env files:** none present (only `namma-lorry-phase1-docs/.env.example` + nested copy). Variable **names only**:
+`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY`, `EXPO_PUBLIC_APP_ENV` · server-only: `MAPPLS_CLIENT_ID`, `MAPPLS_CLIENT_SECRET`, `MAPPLS_REST_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SENTRY_DSN` (ND-11: should be `EXPO_PUBLIC_SENTRY_DSN` + `SENTRY_AUTH_TOKEN` as an EAS secret).
 
-**Git:** no repository, no branches, no commits.
-
-**Mappls RN SDK** (`mappls-map-react-native@2.0.3`, published Jul 2026; inspected from the npm tarball in a temp dir, since deleted):
-- has a `codegenConfig` and a `newArchEnabled` gradle path (New Architecture awareness)
-- dev-dependency is RN **0.79.4**; current Expo SDK 57 ships RN **0.87**
-- ships `app.plugin.js` → `require('./plugin/build/withMappls')`, but **`plugin/build/` is not in the package**, so adding it to `app.json` plugins will crash prebuild. A local config plugin (doc 11 prompt 0.2 already anticipates `plugins/withMappls.ts`) is required.
+**Mappls RN SDK** (from rev 1 npm inspection): `mappls-map-react-native@2.0.3` built against RN 0.79 vs Expo SDK 57's RN 0.87; shipped `app.plugin.js` is broken (missing `plugin/build/`), so a local `plugins/withMappls.ts` is required.
 
 ---
 
 ## Gap analysis (reuse / conflict / missing)
 
 ### Reuse
-- The entire doc pack: CLAUDE.md, docs 01–12 and `.env.example`. It is the agreed source of truth.
-- `0001_phase1_schema.sql` as the base migration, with the fixes above in `0002+`.
-- `smoke_phase1.sql` scenarios as the seed for pgTAP tests.
-- The design brief (DESIGN.md) → `src/theme/tokens.ts`.
-- Stitch PNGs for the 10 driver screens as a visual reference, once the scope-creep elements listed above are stripped.
-- The logo SVG, pending a proper 1024×1024 icon and splash.
+- Newest doc pack (CLAUDE.md, docs 01–13, `.env.example`) — source of truth; doc 13 now in the pack (previously only at root).
+- `supabase/migrations/0001` applied as base + **`0002_consent.sql` done** + **`seed.sql` done** + **`_helpers.psql` done**.
+- PHASE1_TASKS.md as the progress backbone; audit rev 1's analysis (correctness re-verified).
+- Stitch PNGs as visual spec (after stripping scope creep); logo SVG; DESIGN.md → `src/theme/tokens.ts`.
 
 ### Conflicts
-- **No Kotlin, OSM, other map SDK or localStorage code exists.** The risk of the client's earlier Kotlin + OSM spec is contractual only (PRD open question). The build itself has no conflict.
-- The Stitch mocks conflict with PRD scope and doc 09 disclosure copy (see Prototype feature inventory), and use Google map imagery as placeholders.
-- The Stitch token file (`SCREENS/namma_lorry/DESIGN.md`) conflicts with the brief's palette and icon style.
-- The screen-numbering and route tree in docs 04/03/11 are out of date against doc 12.
+- No Kotlin/OSM/other-SDK/localStorage code exists — no code conflicts; the earlier Kotlin+OSM client spec remains contractual only (PRD open question).
+- Stitch mocks vs PRD scope + doc 09 disclosure copy; Stitch token palette vs brief; doc 04/11 screen IDs vs doc 12 (superseded — use doc 12).
 
 ### Missing entirely
-- The Expo app: `package.json`, `app.json`/`app.config.ts`, `eas.json`, `tsconfig`, lint and prettier config, `app/` routes, all of `src/`.
-- `plugins/withMappls.ts` (the Expo config plugin for Mappls: Android maven repo, iOS `.olf`/`.conf` files).
-- `supabase/config.toml`, `supabase/functions/mappls-proxy`, a driver-registration Edge Function, `0002_consent.sql`, pgTAP tests, `seed.sql`.
-- `src/lib/database.types.ts` (generated).
-- CI (`.github/workflows`), Sentry setup, i18n files.
-- Designs for the 9 console screens, Splash and Access Notice.
-- Client inputs:
-  - written sign-off on RN + Mappls
-  - answers to PRD §8 questions
-  - sign-off on the doc 08 thresholds
-  - privacy policy URL
-  - app icon and splash
-  - pilot driver list
-- **Accounts and keys: nothing exists yet.** No Mappls key, Supabase project, Expo account, Apple or Play account, or Sentry DSN.
+- The Expo app (everything from `package.json` to routes); `plugins/withMappls.ts`; `src/lib/database.types.ts` + typed `src/lib/supabase.ts`.
+- pgTAP `*.test.sql` files (helpers exist); pgTAP extension; `docs/DEV_SETUP.md`.
+- `0003_phase1_fixes.sql` (ND-8/12/13/14 + minor fixes) and the ND-6 verification doc change.
+- Edge Functions `mappls-proxy`, `admin-create-driver`; CI workflow; Sentry; i18n files.
+- `design/` folder with doc-12-named PNGs (doc 13 prerequisite); pack promotion to root; duplicate cleanup.
+- Keys/accounts: Mappls, hosted Supabase, Expo/Apple/Play, Sentry — nothing exists yet.
 
 ---
 
 ## Doc contradictions
 
-1. **Three screen-numbering schemes.**
-   - Doc 04: A1–A2, O1–O2, D1–D6, C1–C10.
-   - Doc 12 (supersedes 04): S1–S4, D1–D8, C1–C9. For example, *D1* means "My Trips" in 04 but "Location Permission" in 12, and *C8/C9/C10* shift.
-   - `SCREENS/` folders: 1–10.
-   - Doc 11's build prompts still use doc 04 IDs ("C2–C4, C9, C10", "D1–D3", "C7/C8").
-2. **Route tree is stale against doc 12.** Doc 04 and the TRD still have `review/[id].tsx` (merged into C6 per doc 12) and have no routes for S1 Splash or S4 Access Notice.
-3. **Folder layout differs.**
-   - CLAUDE.md puts `tracking` under `src/features/` *and* has `src/tracking/`, and puts `config.ts` in `src/lib/`.
-   - The TRD has `src/tracking/config.ts` and adds `src/lib/geo.ts` and `sentry.ts`.
-   - Doc 12 adds `src/theme/tokens.ts`, and doc 11 adds `plugins/withMappls.ts`. Neither appears in either layout.
-4. **Two design-token sets.**
-   - Primary: brief #0F2A44 vs Stitch `primary` #00152a (#0F2A44 is only `primary-container`).
-   - Accent: #F5A300 vs Stitch `secondary` #825500 / `secondary-container` #feaa11.
-   - Background: #F6F7F9 vs #f8f9ff.
-   - Error: #D93025 vs #ba1a1a.
-   - Icons: brief says Material Symbols **Rounded**, exports use **Outlined**.
-5. **File locations don't match.** Doc 12 references `stitch/DESIGN.md` and a `design/` folder; neither exists. The pack README places doc 12 in the file table implicitly under `docs/`, but it sits at the pack root.
-6. **Web audience.** CLAUDE.md says "Web is a console (admin / owner / shipper)". PRD/doc 04 say the console is **admin-only** in Phase 1, and owners/shippers see "Coming soon".
-7. **`SENTRY_DSN` placement.** `.env.example` lists it as server-only, but `@sentry/react-native` needs the DSN in the app bundle (`EXPO_PUBLIC_SENTRY_DSN`). A build-time `SENTRY_AUTH_TOKEN` for source maps is also not listed.
-8. **Sampling vs verification.** 25 m distance sampling (doc 03) cannot satisfy "gap ≤ 15 min" and "≥ 60 points/h" (doc 08) while the truck is stationary (see Supabase issue 2).
-9. **Unregistered numbers.** The PRD says unknown numbers are refused. The schema auto-creates a driver profile for any OTP sign-in.
-10. **Admin trip updates.** Hard rule 2 says status changes go only through RPCs, but RLS gives admins full `update` on `trips`.
-11. **Label naming (minor).** Doc 06 driver label for `needs_review` is "Under review"; DESIGN.md's chip is "Needs review"; doc 12 uses both.
-12. **W0 exit criterion needs iOS.** It requires the Mappls map "on Android, iOS and web", which is impossible on this Windows machine without an Apple Developer account and a physical iPhone (EAS cloud build + ad-hoc install).
+Unchanged from rev 1 (all tracked as ND-8…ND-24 in PHASE1_TASKS.md §2.2). Top items: three screen-numbering schemes (doc 12 wins); stale route tree (no S1/S4 routes); folder-layout differences between CLAUDE.md/TRD/doc 13; two token palettes (brief wins); `SENTRY_DSN` placement; 25 m sampling vs stationary-gap rules (ND-6); auto-driver-registration vs PRD (ND-12); admin update bypass vs hard rule 2 (ND-13); `trips` missing from realtime publication (ND-14); live-delay 30 s vs 60 s (ND-15); W0 exit needs iOS on a Windows machine (ND-3).
+
+New minor note: `supabase/config.toml` says `major_version = 17` while doc 03 mentions Postgres 15 — local pins 17, which is what current Supabase ships; fine, but hosted staging must also be PG 17 or migrations need review.
 
 ---
 
 ## Risks & blockers
 
-| # | Risk / blocker | Severity | Notes |
+| # | Risk / blocker | Severity | Status vs rev 1 |
 |---|---|---|---|
-| 1 | **Mappls SDK vs Expo SDK 57 / RN 0.87** compatibility unproven; shipped config plugin broken | High, blocks W0 | Spike first. Fallback: pin an older Expo SDK whose RN version Mappls supports. |
-| 2 | **No Mappls developer account / keys** (map SDK key + REST client id/secret) | High, blocks W0 | Also confirm the auth model (static key vs OAuth) and web-SDK domain restriction. |
-| 3 | **iOS from Windows**: no Xcode; needs an Apple Developer account ($99), EAS cloud builds and a registered physical iPhone | High for the iOS part of W0 | Android and web can proceed without it. |
-| 4 | **No Supabase project; Docker daemon off; CLI not installed** | Medium, blocks W1 | Start Docker Desktop; use `npx supabase`. |
-| 5 | Poison-batch / clock-skew RLS behaviour | High (data loss for a trip) | Fix in 0002 before the tracking engine (W3). |
-| 6 | Stationary-truck false `TRACKING_GAP` / `LOW_COVERAGE` | High (auto-verify target) | Decide the heartbeat strategy before W3. |
-| 7 | Driver onboarding path undefined (auth user creation, `shouldCreateUser`) | Medium, blocks W1 auth | Needs an admin Edge Function and a client answer on self-signup. |
-| 8 | Path with a space + under Desktop (possible OneDrive sync) | Medium | Gradle/CMake failures, file locks on `node_modules`. |
-| 9 | Node 26 (non-LTS for Expo) | Low–Medium | Pin Node 24 LTS if tooling misbehaves. |
-| 10 | `ANDROID_HOME` unset | Low | Needed for `expo run:android`. |
-| 11 | EAS free-tier build quota | Low | Local Android builds are unlimited once env is fixed. |
-| 12 | SMS OTP in India needs DLT registration + a paid provider | Medium for pilot | Use Supabase test numbers until then. |
-| 13 | Client sign-offs outstanding (RN + Mappls in writing, "transporter" meaning, radius, retention) | High (contractual), blocks W1 per PRD | |
-| 14 | Console not designed at all | Medium, blocks W2 UI polish | Can build from doc 04/12 specs without mocks. |
-| 15 | Stitch mocks contain scope creep and non-compliant disclosure copy | Medium | Agents copying mocks literally would add non-PRD features. |
+| 1 | Mappls SDK vs Expo 57/RN 0.87; broken shipped plugin | High | unchanged — spike first |
+| 2 | No Mappls account/keys (SDK key + REST id/secret) | High | unchanged |
+| 3 | iOS from Windows: Apple account + device + EAS | High (iOS only) | unchanged |
+| 4 | ~~Docker off~~ → **running**; CLI not installed | ~~Medium~~ Low | improved; use `npx supabase` |
+| 5 | Poison-batch/clock-skew RLS | High | **now live in the DB** — must fix in 0003 before M8 |
+| 6 | Stationary-truck false flags (ND-6) | High | unchanged; doc change first |
+| 7 | Driver registration path (ND-12) | Medium | unchanged; blocks M5/M6 |
+| 8 | Path with space + OneDrive risk | Medium | unchanged (ND-1) |
+| 9 | Node 26 non-LTS | Low–Med | unchanged |
+| 10 | `ANDROID_HOME` unset | Low | unchanged |
+| 11 | `supabase test db` has no test files; pgTAP not created | Low | **new** — M4 remainder |
+| 12 | DLT SMS for real OTPs | Medium | unchanged; test_OTP covers local |
+| 13 | Client sign-offs outstanding | High (contractual) | unchanged |
+| 14 | Console screens undesigned | Medium | unchanged |
+| 15 | Stitch mock scope creep | Medium | unchanged |
 
 ---
 
 ## Recommendation
 
-**Start a fresh Expo app in this repo** rather than adapting anything, because nothing adaptable exists. Specifically:
+**Unchanged: start a fresh Expo app in this repo** (nothing adaptable exists), with the sequencing updated for what has since landed:
 
-1. **Relocate first** (recommended): move to a path without spaces, outside Desktop/OneDrive, e.g. `C:\dev\namma-lorry`.
-2. **Promote the doc pack to the root**, as its README instructs: `CLAUDE.md`, `AGENTS.md`, `.env.example`, `docs/`, `supabase/`. Move `12-screens-and-stitch-prompts.md` into `docs/`.
-3. **Delete the root-level duplicates.** `02/03/04*.md`, `0001_phase1_schema.sql` and `README.md` are verified byte-identical to the pack. Also delete `SCREENS/12_screens_and_stitch_prompts.md` and `SCREENS/design.md`.
-4. **Move `SCREENS/` → `design/stitch/`.** Rename the folders to doc 12 IDs (e.g. `D5-active-trip/`) and add a `design/README.md` listing the out-of-scope elements to ignore.
-5. `git init`, then scaffold Expo with `create-expo-app` at the root (doc 11 prompt 0.1). Then do the **Mappls spike on Android + web first**; iOS follows once an Apple account exists.
-6. **Update docs before code:** reconcile the numbering (doc 04/11 → doc 12 IDs), the folder layout, the Sentry env var, and the web audience line in CLAUDE.md.
+1. **Settle ND-1 (relocation)** before scaffolding — Gradle/CMake on a space-containing OneDrive path is the top avoidable risk. Recommended: `C:\dev\namma-lorry`.
+2. **Promote the newest pack to the root** (CLAUDE.md, AGENTS.md, `.env.example`, `docs/01–13`, `stitch/DESIGN.md`), delete the verified byte-identical duplicates at root and `SCREENS/`'s two doc copies, and **keep the live `supabase/` at root** (it is already there and ahead of the pack's copy — merge only `tests/smoke_phase1.sql` into `supabase/tests/` for reference).
+3. **Move `SCREENS/` → `design/stitch/`** renamed by doc-12 IDs, with a `design/README.md` listing ignored scope-creep elements (ND-18).
+4. **Finish M4** (it is half done): write the pgTAP `*.test.sql` files against `_helpers.psql`, create the pgTAP extension, add `docs/DEV_SETUP.md`, and get `supabase db reset && supabase test db` green.
+5. **Add `0003_phase1_fixes.sql`** (ND-8/12/13/14 + minors) *before* M8, and the ND-6 doc change before M8 too.
+6. Then M1 scaffold (pin Expo SDK; ND-7 fallback), M2 tokens/UI, M3 Mappls spike (🧍 Android + web first; iOS deferred per ND-3 if needed).
 
-Proposed final layout:
-
-```
-namma-lorry/
-├─ CLAUDE.md  AGENTS.md  README.md  .env.example  .gitignore
-├─ app.config.ts  eas.json  package.json  tsconfig.json  babel.config.js  eslint.config.js
-├─ plugins/withMappls.ts                     Expo config plugin (maven repo, iOS .olf/.conf)
-├─ app/                                      Expo Router (routes per doc 12 screen list)
-│  ├─ _layout.tsx  index.tsx (S1 splash/gate)  access-notice.tsx (S4)
-│  ├─ (auth)/sign-in.tsx  verify.tsx
-│  ├─ (onboarding)/permissions.tsx  battery.tsx
-│  ├─ (driver)/_layout.tsx  index.tsx  history.tsx  profile.tsx  trips/[id].tsx  trips/[id]/live.tsx  trips/[id]/summary.tsx
-│  └─ (console)/_layout.tsx  index.tsx  loads/{index,new,[id]}.tsx  trips/{index,[id]}.tsx  review/index.tsx  drivers/index.tsx  vehicles/index.tsx
-├─ src/
-│  ├─ components/{map/{types.ts,MapView.native.tsx,MapView.web.tsx},ui/}
-│  ├─ features/{auth,loads,trips,review,live-map,drivers,vehicles}/
-│  ├─ tracking/{task.ts,stateMachine.ts,queue.ts,uploader.ts,permissions.ts,config.ts}
-│  ├─ lib/{supabase.ts,mappls.ts,db.ts,geo.ts,sentry.ts,config.ts,database.types.ts}
-│  ├─ theme/tokens.ts
-│  └─ i18n/{en.json,…}
-├─ supabase/
-│  ├─ config.toml  seed.sql
-│  ├─ migrations/0001_phase1_schema.sql  0002_consent.sql  0003_tracking_fixes.sql
-│  ├─ functions/{mappls-proxy,admin-create-driver}/index.ts
-│  └─ tests/*.test.sql (pgTAP)   smoke_phase1.sql (kept for manual runs)
-├─ design/{README.md, stitch/<doc-12-id>/{screen.png,code.html}, logo.svg}
-├─ docs/00-repo-audit.md  01…12
-└─ .github/workflows/ci.yml
-```
+Proposed final layout — same as PHASE1_TASKS.md §1.3 (which this audit endorses), with `design/` + root-level `CLAUDE.md`/`docs/`/`supabase/` after the promotion step.
 
 ---
 
-## Questions
+## Questions (blockers only)
 
-Only the ones that block progress:
+1. **ND-1:** May I relocate to a space-free path (e.g. `C:\dev\namma-lorry`), promote the newest pack to root, delete the verified duplicates, and move `SCREENS/` → `design/`? Is Desktop OneDrive-synced?
+2. **ND-2:** Mappls developer account — which credentials exist (map SDK key, REST client id/secret), and is the web SDK enabled?
+3. **ND-3:** Apple Developer account + physical iPhone available, or defer iOS and reduce W0/M3 to Android + web?
+4. **ND-4:** Local Supabase only for now (it already runs), or link a hosted staging project?
+5. **ND-5:** Client sign-offs in hand? Specifically: RN + Mappls in writing, and admin-only vs self-signup driver registration (decides ND-12's design in M5/M6).
+6. **ND-6:** Approve the stationary-heartbeat (or moving-time-gap) doc change to docs 03/08 before M8?
+7. **ND-7:** If the Mappls spike fails on Expo SDK 57, may I pin an older SDK?
 
-1. **Relocation:** may I move the project to a path without spaces (e.g. `C:\dev\namma-lorry`) and restructure it as described: promote the pack, delete the verified duplicates, move `SCREENS/` → `design/stitch/`? Is the Desktop folder synced by OneDrive?
-2. **Mappls access:** do you have a Mappls developer account yet? Which credentials does it give (map SDK key, REST client id/secret), and is the web SDK enabled for the key?
-3. **iOS:** do you have (or will you buy) an Apple Developer account and a physical iPhone for dev builds? If not, can W0's exit criterion become Android + web only, with iOS deferred?
-4. **Supabase:** local only for now (you'll start Docker Desktop), or do you already have a hosted staging project I should link to?
-5. **Client sign-offs:** has the client confirmed React Native + Mappls in writing, and answered "who registers drivers — admin only or self-signup?" This decides the auth/registration design in W1.
-6. **Stationary-truck gaps:** OK to change doc 03/08 so tracking emits a periodic heartbeat while stationary (or gaps are judged on moving time only)? The docs must change before W3.
-7. **Expo SDK pinning:** if the Mappls spike fails on the latest Expo SDK (57), is pinning an older SDK acceptable, or must we stay on latest?
+*(State already answered by the repo, for the record: git exists ✓, local Supabase running ✓, 0002 + seed done ✓.)*

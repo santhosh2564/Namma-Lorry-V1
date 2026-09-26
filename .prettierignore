@@ -1,0 +1,9 @@
+node_modules
+.expo
+dist
+docs
+supabase
+design
+SCREENS
+namma-lorry-phase1-docs
+package-lock.json

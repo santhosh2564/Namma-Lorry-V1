@@ -1,6 +1,6 @@
 # PHASE1_TASKS — Namma Lorry Phase 1 (single source of truth for progress)
 
-**Created:** 26 Sep 2026 (Prompt 1) · **Planned start:** Mon 28 Sep 2026 (doc 01)
+**Created:** 26 Sep 2026 (Prompt 1) · **Updated:** 26 Sep 2026 (rev 2 — re-verified against `docs/00-repo-audit.md` rev 2) · **Planned start:** Mon 28 Sep 2026 (doc 01)
 **How to use:**
 - Every session starts by reading `CLAUDE.md` and this file.
 - Tick boxes only when the acceptance criteria are met.
@@ -30,6 +30,7 @@ Legend: `[ ]` todo · `[x]` done · `[~]` partial · 🧍 human checkpoint (from
 | State / forms | TanStack Query, Zustand, react-hook-form + zod | CLAUDE.md |
 | i18n | i18next + react-i18next; strings in `src/i18n/` (en first; ta/kn/hi keys with TODO values) | CLAUDE.md rule 10, doc 13 P2/P13 |
 | Backend | Supabase: Postgres + PostGIS, Auth (phone OTP), Realtime, Edge Functions (Deno), pg_cron | CLAUDE.md, TRD §6 |
+| Local Supabase | **Running** (Docker, PG 17): migrations 0001 + 0002 applied, `seed.sql` loaded (4 profiles / 3 vehicles / 4 loads / 1 trip — row-count verified), `tests/_helpers.psql` present, `[auth.sms.test_otp]` → 123456. pgTAP extension not yet created; no `*.test.sql` files yet | Audit rev 2 (verified in the live DB) |
 | Schema | `0001_phase1_schema.sql` is applied **unchanged**; every change goes in a new migration (`0002_consent.sql`, then fixes) | doc 11 hygiene, doc 13 P5 |
 | Verification | Only in Postgres (`verify_trip`); app km is always labelled "approx." | CLAUDE.md rule 1, doc 08 |
 | Testing | pgTAP (`supabase test db`), Jest (jest-expo) + RNTL, Playwright (web), Deno tests (edge functions), optional Maestro | doc 10 §1, doc 13 |
@@ -86,7 +87,7 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-1 | Relocate the repo to a path without spaces (e.g. `C:\dev\namma-lorry`) and restructure: promote the newest pack to the root, delete the verified duplicates, move `SCREENS/` → `design/` with doc-12 names? Is Desktop OneDrive-synced? | Pre-flight / M1 |
 | ND-2 | Mappls account: which credentials exist (map SDK key, REST client id/secret/key)? Is the web SDK enabled and the key domain-restricted? | M3, M6 |
 | ND-3 | iOS: Apple Developer account + physical iPhone available? If not, is M3's exit criterion (and W0's) reduced to Android + web, with iOS deferred? | M3, M12c |
-| ND-4 | Supabase: local only for now, or an existing hosted staging project to link? (Docker Desktop must be running for local.) | M4 |
+| ND-4 | Supabase: local only for now, or an existing hosted staging project to link? *(Update rev 2: the local project is provisioned and running — the remaining question is only hosted staging.)* | M4 |
 | ND-5 | Client sign-offs: written approval of RN + Mappls; who registers drivers (admin only vs self-signup with approval); "transporter" meaning; multi-drop (assumed no); raw-GPS retention period | M5 (auth), pilot |
 | ND-6 | Stationary trucks: 25 m `distanceInterval` produces no points while parked. That triggers `TRACKING_GAP` (>15 min) and `LOW_COVERAGE` (<60/h) on genuine trips, and M10's "no point for > 2 min" banner. Heartbeat while stationary, or judge gaps on moving time only? Docs 03/08 must change first. | M8, M10 |
 | ND-7 | If the Mappls spike fails on Expo SDK 57 / RN 0.87, is pinning an older Expo SDK acceptable? | M1 pinning, M3 |
@@ -120,30 +121,30 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### Pre-flight (before M1; gated on ND-1, ND-24)
 - [ ] Answer ND-1…ND-7 in `docs/00-repo-audit.md`
-- [ ] Relocate the repo if approved; `git init`, `.gitignore`, first commit of docs only
-- [ ] Promote the newest pack to the root (`CLAUDE.md`, `AGENTS.md`, `.env.example`, `docs/01–13`, `supabase/`, `stitch/`); delete the verified duplicates
+- [~] Relocate the repo if approved; `git init`, `.gitignore`, first commit of docs only — **done**: repo + GitHub remote exist (`main` = origin/main, 2 commits), `.gitignore` covers `.env*` + `supabase/.branches|.temp`. Remaining: the relocation itself (ND-1)
+- [ ] Promote the newest pack to the root (`CLAUDE.md`, `AGENTS.md`, `.env.example`, `docs/01–13`, `supabase/`, `stitch/`); delete the verified duplicates. **Note rev 2:** keep the live root `supabase/` (config.toml, seed, 0002 already live there); bring the pack's `tests/smoke_phase1.sql` in as reference only
 - [ ] `SCREENS/` → `design/` renamed by doc 12 ID, plus a `design/README.md` listing ignored elements (ND-18)
-- [ ] 🧍 *(added)* Start Docker Desktop; set `ANDROID_HOME`; decide the Node version (R9)
+- [~] 🧍 *(added)* Start Docker Desktop ✔ (running, supabase stack up) · set `ANDROID_HOME` ✖ · decide the Node version (R9) ✖
 
 ---
 
 ### M1 — Scaffold the app (Prompt 2)
 **Tasks**
-- [ ] Expo app (TS strict, Expo Router) at the repo root, latest stable SDK, **exact versions pinned** (ND-7)
-- [ ] Install: supabase-js, expo-secure-store, expo-location, expo-task-manager, expo-sqlite, @react-native-community/netinfo, expo-device, expo-application, expo-dev-client, @tanstack/react-query, zustand, zod, react-hook-form, i18next, react-i18next
-- [ ] ESLint + Prettier; path alias `@/` → `src/`; Jest (jest-expo) + RNTL; scripts `typecheck`, `lint`, `test`
-- [ ] `app.config.ts` reading `EXPO_PUBLIC_*`; `.env.example` in sync (incl. ND-11); `src/lib/config.ts` zod-validates env and fails loudly in dev
-- [ ] `eas.json` with development / preview / production profiles
-- [ ] GitHub Actions: install, typecheck, lint, test
-- [ ] Placeholder route for **every** screen in §4 (renders screen ID + title)
+- [x] Expo app (TS strict, Expo Router) at the repo root, **SDK 57 pinned to the Expo-validated template matrix** (ND-7): react 19.2.3, react-dom 19.2.3, react-native **0.86.3**, react-native-web ~0.21.0, react-server-dom-webpack 19.2.4, reanimated 4.5.1 + worklets 0.10.1, screens 4.26.0, safe-area-context 5.7.0, gesture-handler 2.32.0. npm-latest RN 0.87.1 was tried first and **rejected**: its Metro web toolchain hits `ERR_PACKAGE_PATH_NOT_EXPORTED` on `react-native/rn-get-polyfills` (R9 evidence for pinning)
+- [x] Install: supabase-js, expo-secure-store, expo-location, expo-task-manager, expo-sqlite, @react-native-community/netinfo, expo-device, expo-application, expo-dev-client, @tanstack/react-query, zustand, zod, react-hook-form, i18next, react-i18next
+- [x] ESLint (eslint-config-expo flat) + Prettier; path alias `@/` → `src/`; Jest (jest-expo) + RNTL; scripts `typecheck`, `lint`, `test`. **Undeclared peers pinned manually:** `@react-native/jest-preset@0.86.3`, `@react-native/assets-registry@0.87.1`, `test-renderer@1.3.0`
+- [x] `app.config.ts` reading `EXPO_PUBLIC_*`; `.env.example` in sync (incl. ND-11 `EXPO_PUBLIC_SENTRY_DSN`); `src/lib/config.ts` zod-validates env and fails loudly in dev. **SDK 57 notes:** top-level `splash` config is removed (splash comes via expo-splash-screen in M2); `expo-keep-awake` is a dep but **not** a plugin (no app.plugin.js; Node ≥22 crashes type-stripping its TS entry)
+- [x] `eas.json` with development / preview / production profiles (+ development_device variant)
+- [x] GitHub Actions: install, typecheck, lint, test (Node 24, `npm ci --legacy-peer-deps`)
+- [x] Placeholder route for **every** screen in §4 (renders screen ID + title) — 21 screens + 4 group layouts + root layout + 3 dev routes
 - [ ] Update CLAUDE.md / TRD layout per ND-9 (after approval)
 
-**Files expected:** `package.json`, `app.config.ts`, `eas.json`, `tsconfig.json`, `babel.config.js`, `eslint.config.js`, `.prettierrc`, `jest.config.js`, `.github/workflows/ci.yml`, `src/lib/config.ts`, `app/_layout.tsx`, all route files in §4 (placeholders), `.env.example`.
+**Files expected:** `package.json`, `app.config.ts`, `eas.json`, `tsconfig.json`, `babel.config.js`, `eslint.config.js`, `.prettierrc`, `jest.config.js`, `.github/workflows/ci.yml`, `src/lib/config.ts`, `app/_layout.tsx`, all route files in §4 (placeholders), `.env.example`. **Also:** `.npmrc` (legacy-peer-deps), `expo-env.d.ts` (surgical — see Known issues), `src/i18n/index.ts`, `src/components/ui/PlaceholderScreen.tsx`, placeholder `assets/` (70-byte 1×1 PNGs until brand assets exist).
 
 **Acceptance**
-- `npm run typecheck`, `npm run lint`, `npm test` pass locally and in CI
-- `npx expo start --web` renders the placeholder S2 sign-in route
-- No old-prototype code ported (none exists)
+- [x] `npm run typecheck`, `npm run lint`, `npm test` pass locally (2 suites / 3 tests green) — CI runs the same on first push
+- [x] `npx expo start --web` serves the app (HTTP 200, bundle compiles 966 modules, all placeholder screens incl. S2 present); `npx expo export --platform web` also succeeds
+- [x] No old-prototype code ported (none exists)
 
 **Human checkpoints:** none in doc 13. *(Added)* Review the pinned versions.
 
@@ -193,25 +194,25 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M4 — Supabase backend (Prompt 5)
 **Tasks**
-- [ ] `supabase init` / `start` (Docker, ND-4); apply `0001` **unchanged**. If it fails on this Supabase version, add a follow-up migration and explain.
-- [ ] `0002_consent.sql`: `profiles.consent_version`, `profiles.consent_at`, SECURITY DEFINER `record_consent(p_version text)` for the current user only
+- [x] `supabase init` / `start` (Docker, ND-4); `0001` applied **unchanged** (byte-identical to the pack copies; verified in `supabase_migrations.schema_migrations`; PG 17)
+- [x] `0002_consent.sql`: `profiles.consent_version`, `profiles.consent_at`, SECURITY DEFINER `record_consent(p_version text)` for the current user only — applied
 - [ ] *(Pending ND-21)* `0003_phase1_fixes.sql`: ND-8 point-upload handling, ND-12 registration, ND-13 admin trip writes + `cancel_trip`, ND-14 trips realtime, `GPS_JUMPS` threshold into `app_settings`, `admin_review_trip` not-found, `setting()` search_path
 - [ ] *(Pending ND-6)* Verification change for stationary gaps, if chosen server-side
-- [ ] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql`:
+- [~] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql` — **helpers done** (`_helpers.psql`: as_user/as_anon/as_postgres, create_user/vehicle/load/trip, insert_track, completed_trip); the `*.test.sql` files and the pgTAP extension itself are still missing:
   - every RLS policy
   - every RPC error code (doc 06)
   - every reason code (doc 08)
   - a late point upload triggers verification
   - the sweeper
   - admin review increments stats exactly once
-- [ ] `supabase/seed.sql`: 1 admin, 3 drivers (test phone numbers), 3 vehicles, 4 loads on real TN/KA coordinates, 1 assigned trip (sample data from DESIGN.md)
+- [x] `supabase/seed.sql`: 1 admin, 3 drivers (test phone numbers), 3 vehicles, 4 loads on real TN/KA coordinates, 1 assigned trip (sample data from DESIGN.md) — loaded and verified; test OTPs wired via `config.toml` `[auth.sms.test_otp]` (→ `123456`)
 - [ ] `src/lib/database.types.ts` (generated) + typed `src/lib/supabase.ts` (secure-store on native, localStorage-safe on web)
-- [ ] `docs/DEV_SETUP.md`: test phone numbers/OTP for local and hosted
+- [ ] `docs/DEV_SETUP.md`: test phone numbers/OTP for local and hosted *(the mapping already exists in `config.toml`; only the doc remains)*
 
 **Files expected:** `supabase/config.toml`, `supabase/migrations/0002_consent.sql` (+ `0003_*` if approved), `supabase/tests/*.test.sql`, `supabase/seed.sql`, `src/lib/database.types.ts`, `src/lib/supabase.ts`, `docs/DEV_SETUP.md`.
 
 **Acceptance**
-- `supabase db reset && supabase test db` passes
+- `supabase db reset && supabase test db` passes *(not yet possible: no `*.test.sql` files; pgTAP extension not created)*
 - pgTAP proves: a driver cannot update `trips`, insert `driver_stats`, or read other drivers' trips/points; an admin can (doc 10 §1; scenario 9)
 - Error codes `TRIP_NOT_FOUND`, `TRIP_NOT_STARTABLE`, `ANOTHER_TRIP_ACTIVE`, `GPS_ACCURACY_TOO_LOW`, `OUTSIDE_PICKUP:<m>`, `TRIP_NOT_ACTIVE`, `FORBIDDEN`, `NOTE_REQUIRED`, `TRIP_NOT_IN_REVIEW` are each covered
 - All 10 reason codes in doc 08 §3 are produced by a test case
@@ -557,3 +558,13 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Changed:** Created `docs/PHASE1_TASKS.md`. A newer pack was found at `namma-lorry-phase1-docs/namma-lorry-phase1-docs/` (adds docs 12/13, `stitch/DESIGN.md`, updated doc 04); a copy of doc 13 also sits at the repo root. No application code written.
 - **Left:** Answer ND-1…ND-24, then pre-flight, then M1 (Prompt 2).
 - **Known issues:** Audit questions still unanswered in `docs/00-repo-audit.md`; three copies of the docs now exist (root loose files, old pack, new nested pack) until pre-flight cleans up.
+
+### 2026-09-26 · Prompt 1 rev 2 (plan re-verified against audit rev 2)
+- **Changed:** Re-read the audit (rev 2), migration 0001 in full, the PRD and doc 10, and the live DB. Marked done: git repo + remote, Docker running, `supabase start`, 0001 applied unchanged, `0002_consent.sql`, `seed.sql`, `tests/_helpers.psql`, `[auth.sms.test_otp]`. Added the "Local Supabase" decision row; updated ND-4 and pre-flight/M4 checkboxes. No application code written.
+- **Left:** Answers ND-1…ND-7; pre-flight restructure (pack promotion, `design/`, relocation); M4 remainder — pgTAP `*.test.sql` + extension, `docs/DEV_SETUP.md`, `0003_phase1_fixes.sql` (pending ND-21), generated types + typed client (needs M1 first) — then M1.
+- **Known issues:** 0001 defects unfixed (ND-8/12/13/14); `supabase test db` has nothing to run yet; `supabase_vector` container restart-loop (cosmetic, analytics only); local PG 17 vs doc 03's "Postgres 15" — hosted staging must also be PG 17 or migrations need review.
+
+### 2026-09-26 · Prompt 2 (M1 — scaffold)
+- **Changed:** Full Expo SDK 57 app scaffolded at the repo root: 34 deps + 13 devDeps pinned; app.config.ts / tsconfig / babel / eslint / prettier / jest / eas.json / CI; `src/lib/config.ts` zod env validation; src/i18n bootstrap; PlaceholderScreen + 21 routes + 4 group layouts + root layout + 3 dev routes; tests for config and PlaceholderScreen. **ND-11 applied:** `EXPO_PUBLIC_SENTRY_DSN` added to `.env.example`. Verified: `tsc --noEmit` clean, ESLint 0 errors/0 warnings (max-warnings 0), Jest 3/3, `expo export --platform web` succeeds, dev server serves the S2 route (HTTP 200 + bundle compiles).
+- **Left:** ND-9 layout doc updates (CLAUDE.md/TRD) still gated on approval; pre-flight restructure (ND-1) still pending; `eas.json` projectId placeholder until first `eas build` (M3); brand assets are 1×1 placeholder PNGs.
+- **Known issues:** (1) **RN pinned to 0.86.3 (template), not npm-latest 0.87.1** — 0.87.1 breaks Metro web bundling (`rn-get-polyfills` not exported); ND-7's fallback is effectively in force, doc 13 P2 wording should say "SDK 57 template matrix". (2) **expo-env.d.ts is hand-written and deliberately omits `expo/types/react-native-web`** — that augmentation collapses RN 0.87-generated `TextStyle`/`ViewStyle` type *aliases* (only interface members merge; aliases get overwritten), losing `fontSize` etc. under strict TS. Re-check when Expo/RN update either side. (3) jest-expo 57 + RNTL 14 have undeclared peers that had to be pinned (`@react-native/jest-preset`, `@react-native/assets-registry`, `test-renderer`). (4) Node 26 + `expo-keep-awake` as config plugin crashes (`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`) — keep-awake stays dep-only until M10. (5) `npx expo start` rewrites tsconfig `include` on boot — the added `.expo/types` entry is expected and committed.
