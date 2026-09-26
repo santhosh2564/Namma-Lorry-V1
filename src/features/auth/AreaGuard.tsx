@@ -6,6 +6,7 @@ import { colors } from '@/theme/tokens';
 
 import { areaOf, hrefFor, type Area } from './routing';
 import { useRoutingDecision } from './useRoutingDecision';
+import { t } from '@/i18n';
 
 /**
  * Layout guard: renders its children only when the root routing decision
@@ -17,7 +18,7 @@ export function AreaGuard({ allowed, children }: { allowed: Area[]; children: Re
   const { destination } = useRoutingDecision();
   if (destination.kind === 'loading') {
     return (
-      <View style={styles.center} accessibilityLabel="Loading">
+      <View style={styles.center} accessibilityLabel={t.common.loading}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );

@@ -25,6 +25,15 @@ export const colors = {
   disabled: '#B8C0CA',
   scrim: 'rgba(15,42,68,0.45)',
   sidebarActive: 'rgba(255,255,255,0.12)',
+  // Text versions of the status colours (M12a contrast check, tokens.test.ts): the brand
+  // colours above stay for icons, fills and map marks; any status-coloured *text* uses these,
+  // which reach WCAG AA 4.5:1 on white, the page background and their own soft chip colour.
+  verifiedText: '#137333',
+  reviewText: '#9A5200',
+  dangerText: '#B3261E',
+  liveText: '#1557B0',
+  /** Background for white text on green (success button); verified itself is 4.2:1. */
+  verifiedStrong: '#137333',
 } as const;
 
 export const fonts = {

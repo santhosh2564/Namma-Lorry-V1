@@ -9,6 +9,7 @@ import { destination } from '@/lib/geo';
 import type { LiveSnapshot } from '@/tracking/liveTrip';
 
 import ActiveTrip from '../../app/driver/trips/[id]/live';
+import { touchTargetIssues } from './helpers/a11y';
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
@@ -22,7 +23,18 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/lib/supabase', () => ({ supabase: {} }));
 jest.mock('@/features/auth/useRoutingDecision', () => ({ localTripQueryKey: ['tracking', 'local-state'] }));
-jest.mock('@/components/map/MapView', () => ({ MapView: () => null }));
+const mockMap: { props: { height?: number } | null } = { props: null };
+const mockDims = { fontScale: 1 };
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => ({ width: 390, height: 844, scale: 3, fontScale: mockDims.fontScale }),
+}));
+jest.mock('@/components/map/MapView', () => ({
+  MapView: (p: { height?: number }) => {
+    mockMap.props = p;
+    return null;
+  },
+}));
 jest.mock('expo-keep-awake', () => ({
   activateKeepAwakeAsync: jest.fn(async () => undefined),
   deactivateKeepAwake: jest.fn(async () => undefined),
@@ -254,5 +266,23 @@ describe('D5 Android back', () => {
     expect(handled).toBe(true);
     expect(mockReplace).toHaveBeenCalledWith('/driver');
     expect(mockEndTrip).not.toHaveBeenCalled();
+  });
+});
+
+describe('D5 accessibility (M12a)', () => {
+  it('every touch target is labelled and at least 48 dp', async () => {
+    await renderD5();
+    expect(screen.root!.queryAll((n) => typeof n.props.onClick === 'function').length).toBeGreaterThan(0);
+    expect(touchTargetIssues(screen.root)).toEqual([]);
+  });
+
+  it('large system font (200 %): big numbers are capped, the map shrinks, END stays on screen', async () => {
+    mockDims.fontScale = 2;
+    await renderD5();
+    expect(mockMap.props?.height).toBe(253); // 30 % instead of 45 %
+    const digits = screen.getByTestId('d5-time').queryAll((n) => n.props.maxFontSizeMultiplier === 1.4);
+    expect(digits.length).toBeGreaterThan(0);
+    expect(screen.getByTestId('d5-end')).toBeTruthy();
+    mockDims.fontScale = 1;
   });
 });

@@ -6,6 +6,7 @@ import type { MaterialIcons } from '@expo/vector-icons';
 import type { ChipTone } from '@/components/ui';
 
 import type { LoadStatus, TripStatus } from './schemas';
+import { t } from '@/i18n';
 
 type Icon = ComponentProps<typeof MaterialIcons>['name'];
 export interface ChipSpec {
@@ -14,21 +15,32 @@ export interface ChipSpec {
   icon: Icon;
 }
 
+/** The label is read when rendered, so it follows the current language. */
+const chip = (label: () => string, tone: ChipTone, icon: Icon): ChipSpec => ({
+  get label() {
+    return label();
+  },
+  tone,
+  icon,
+});
+
+const ts = t.console.tripStatus;
 export const tripChip: Record<TripStatus, ChipSpec> = {
-  assigned: { label: 'Assigned', tone: 'neutral', icon: 'assignment-ind' },
-  in_progress: { label: 'Live', tone: 'live', icon: 'sensors' },
-  completed: { label: 'Awaiting data', tone: 'neutral', icon: 'hourglass-top' },
-  verified: { label: 'Verified', tone: 'verified', icon: 'verified' },
-  needs_review: { label: 'Needs review', tone: 'review', icon: 'warning-amber' },
-  rejected: { label: 'Rejected', tone: 'danger', icon: 'cancel' },
-  cancelled: { label: 'Cancelled', tone: 'neutral', icon: 'block' },
+  assigned: chip(() => ts.assigned, 'neutral', 'assignment-ind'),
+  in_progress: chip(() => ts.in_progress, 'live', 'sensors'),
+  completed: chip(() => ts.completed, 'neutral', 'hourglass-top'),
+  verified: chip(() => ts.verified, 'verified', 'verified'),
+  needs_review: chip(() => ts.needs_review, 'review', 'warning-amber'),
+  rejected: chip(() => ts.rejected, 'danger', 'cancel'),
+  cancelled: chip(() => ts.cancelled, 'neutral', 'block'),
 };
 
+const ls = t.console.loadStatus;
 export const loadChip: Record<LoadStatus, ChipSpec> = {
-  unassigned: { label: 'Unassigned', tone: 'accent', icon: 'pending' },
-  assigned: { label: 'Assigned', tone: 'neutral', icon: 'assignment-ind' },
-  in_trip: { label: 'In trip', tone: 'live', icon: 'local-shipping' },
-  done: { label: 'Done', tone: 'verified', icon: 'task-alt' },
+  unassigned: chip(() => ls.unassigned, 'accent', 'pending'),
+  assigned: chip(() => ls.assigned, 'neutral', 'assignment-ind'),
+  in_trip: chip(() => ls.in_trip, 'live', 'local-shipping'),
+  done: chip(() => ls.done, 'verified', 'task-alt'),
 };
 
 export function tripChipFor(status: string): ChipSpec {

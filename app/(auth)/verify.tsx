@@ -14,7 +14,7 @@ import {
 import { maskPhone, otpSchema } from '@/features/auth/schemas';
 import { useAuthStore } from '@/features/auth/store';
 import { formatMmSs, useCountdown } from '@/features/auth/useCountdown';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { supabase } from '@/lib/supabase';
 import { colors, radius, sizes, space } from '@/theme/tokens';
 
@@ -22,6 +22,7 @@ type Message = { tone: 'error' | 'info'; text: string } | null;
 
 /** S3 Verify OTP (design/2._verify_otp). */
 export default function Verify() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const phone = useAuthStore((s) => s.pendingPhone);
   const sentAt = useAuthStore((s) => s.otpSentAt);

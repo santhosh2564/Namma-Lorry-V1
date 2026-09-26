@@ -10,7 +10,7 @@ import {
   START_FIX_OPTIONS,
   START_FIX_TIMEOUT_MS,
   START_TOLERANCE_MS,
-  TRACKING_OPTIONS,
+  trackingOptions,
   TRIP_LOCATION_TASK,
 } from './config';
 import type { SqlDb, TripStateName, TripStateRow } from './db';
@@ -112,7 +112,7 @@ export interface LocationApi {
   getBackgroundPermissionsAsync(): Promise<{ granted: boolean }>;
   hasServicesEnabledAsync(): Promise<boolean>;
   getCurrentPositionAsync(options: typeof START_FIX_OPTIONS): Promise<LocationLike>;
-  startLocationUpdatesAsync(task: string, options: typeof TRACKING_OPTIONS): Promise<void>;
+  startLocationUpdatesAsync(task: string, options: ReturnType<typeof trackingOptions>): Promise<void>;
   stopLocationUpdatesAsync(task: string): Promise<void>;
   hasStartedLocationUpdatesAsync(task: string): Promise<boolean>;
 }
@@ -200,7 +200,7 @@ export function createEngine(deps: EngineDeps) {
         await q.setState(db, tripId, 'TRACKING', iso(), { last_error: 'PERMISSION_REQUIRED' });
         return false;
       }
-      await location.startLocationUpdatesAsync(TRIP_LOCATION_TASK, TRACKING_OPTIONS);
+      await location.startLocationUpdatesAsync(TRIP_LOCATION_TASK, trackingOptions());
       return true;
     } catch (e) {
       log('startLocationUpdates failed', e);

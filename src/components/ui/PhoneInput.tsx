@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { colors, radius, sizes, space, type } from '@/theme/tokens';
 
 import { Text } from './Text';
+import { t } from '@/i18n';
 
 export interface PhoneInputProps {
   label: string;
@@ -58,7 +59,7 @@ export function PhoneInput({
           autoComplete="tel-national"
           maxLength={10}
           returnKeyType="done"
-          placeholder="98xxx xxxxx"
+          placeholder={t.common.phonePlaceholder}
           placeholderTextColor={colors.disabled}
           style={styles.input}
         />

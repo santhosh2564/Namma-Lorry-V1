@@ -2,7 +2,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import type { ColorValue } from 'react-native';
 
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { colors, fonts } from '@/theme/tokens';
 
 function icon(name: 'local-shipping' | 'history' | 'person-outline') {
@@ -13,6 +13,7 @@ function icon(name: 'local-shipping' | 'history' | 'person-outline') {
 
 /** Driver bottom tabs: Trips · History · Profile (docs/04 §1). */
 export default function DriverTabs() {
+  useLanguage(); // re-render on language change (M12a)
   return (
     <Tabs
       screenOptions={{

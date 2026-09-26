@@ -4,11 +4,11 @@ import { ActivityIndicator, ScrollView, StyleSheet, useWindowDimensions, View } 
 
 import { MapView } from '@/components/map/MapView';
 import type { MapMarker } from '@/components/map/types';
-import { Banner, Button, Card, Chip, Text } from '@/components/ui';
+import { Button, Card, Chip, ErrorBanner, Text } from '@/components/ui';
 import { useReviewQueue, type QueueTrip } from '@/features/review/api';
 import { ageText } from '@/features/review/liveBoard';
 import { reasonViews } from '@/features/trips/summaryModel';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { useNow } from '@/lib/useNow';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
@@ -16,6 +16,7 @@ const c = t.console.reviewQueue;
 
 /** C7 Review Queue (docs/12 C7): needs_review trips, oldest first. */
 export default function ReviewQueue() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const queue = useReviewQueue();
   const now = useNow(60_000);
@@ -30,7 +31,9 @@ export default function ReviewQueue() {
         </Text>
         <Chip label={c.oldestFirst} icon="sort" />
       </View>
-      {queue.isError ? <Banner tone="error" message={t.console.loadError} /> : null}
+      {queue.isError ? (
+        <ErrorBanner error={queue.error} onRetry={() => void queue.refetch()} testID="c7-error" />
+      ) : null}
       {queue.isPending ? (
         <ActivityIndicator color={colors.primary} />
       ) : rows.length === 0 && !queue.isError ? (

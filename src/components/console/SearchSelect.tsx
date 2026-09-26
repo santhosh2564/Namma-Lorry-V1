@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TextField } from '@/components/ui';
 import { matchesSearch } from '@/features/console/consoleData';
 import { colors, radius, space } from '@/theme/tokens';
+import { t } from '@/i18n';
 
 export interface SelectOption {
   id: string;
@@ -70,7 +71,7 @@ export function SearchSelect({
         })}
         {!shown.length ? (
           <Text variant="caption" tone="secondary" style={styles.empty}>
-            No matches.
+            {t.common.noMatches}
           </Text>
         ) : null}
       </ScrollView>

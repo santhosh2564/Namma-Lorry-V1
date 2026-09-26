@@ -4,16 +4,31 @@
 // new mappls.Marker({map, position, html, draggable}) + addListener('dragend') + getPosition(),
 // new mappls.Circle({map, center, radius, …}), new mappls.Polyline({map, path, …}),
 // mappls.remove({map, layer}), mappls.fitBounds({map, cType: 0, bounds: [[lng, lat], …]}).
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef } from 'react';
 import { View } from 'react-native';
 
 import { config } from '@/lib/config';
-import { bounds } from '@/lib/geo';
+import { bounds, simplifyForDisplay } from '@/lib/geo';
 import { colors, radius } from '@/theme/tokens';
 
 import { MapFallback } from './MapFallback';
 import { DEFAULT_CENTER, type AppMapProps, type LatLng } from './types';
 import { useMapplsScript } from './useMapplsScript';
+import { t } from '@/i18n';
+
+/**
+ * Cheap content key for a list of paths: ids, lengths and a numeric hash of every coordinate.
+ * Avoids JSON.stringify-ing thousands of points on every render (C6 re-renders each replay tick).
+ */
+export function pathsKey(lines: { id: string; kind: string; path: LatLng[] }[]): string {
+  return lines
+    .map((l) => {
+      let h = 0;
+      for (const p of l.path) h = (h * 31 + Math.round(p.lat * 1e6) * 7 + Math.round(p.lng * 1e6)) | 0;
+      return `${l.id}:${l.kind}:${l.path.length}:${h}`;
+    })
+    .join('|');
+}
 
 // The Mappls SDK ships no TypeScript types, so its objects are typed as any.
 type Layer = any;
@@ -49,10 +64,10 @@ function toLatLng(p: any): LatLng | null {
 export function MapView(props: AppMapProps) {
   const status = useMapplsScript(config.EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY);
   if (status === 'no-key') {
-    return <MapFallback {...props} reason="Set EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY to show the Mappls map." />;
+    return <MapFallback {...props} reason={t.map.noKey} />;
   }
   if (status === 'error') {
-    return <MapFallback {...props} reason="The Mappls map couldn't load (network or key restriction)." />;
+    return <MapFallback {...props} reason={t.map.loadFailed} />;
   }
   return <MapplsMap {...props} ready={status === 'ready'} />;
 }
@@ -76,34 +91,20 @@ function MapplsMap({
   const id = `mappls-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const map = useRef<any>(null);
   const loaded = useRef(false);
-  const layers = useRef<Layer[]>([]);
   const handlers = useRef({ onPress, onMarkerDragEnd, onMarkerPress });
-  handlers.current = { onPress, onMarkerDragEnd, onMarkerPress };
+  useLayoutEffect(() => {
+    handlers.current = { onPress, onMarkerDragEnd, onMarkerPress };
+  });
   const lastFitKey = useRef<string | undefined>(undefined);
 
-  // Create the map once the SDK is ready.
-  useEffect(() => {
-    if (!ready || map.current || !window.mappls) return;
-    const m = new window.mappls.Map(id, { center: center ?? DEFAULT_CENTER, zoom });
-    map.current = m;
-    m.addListener('load', () => {
-      loaded.current = true;
-      draw();
-    });
-    m.addListener('click', (e: any) => {
-      const p = toLatLng(e?.lngLat);
-      if (p) handlers.current.onPress?.(p);
-    });
-    return () => {
-      map.current?.remove?.();
-      map.current = null;
-      loaded.current = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, id]);
+  // One layer list per overlay kind, so a moving marker (live truck, replay cursor) never
+  // redraws the route polylines or the geofence circles (M12a: memoised map layers).
+  const circleLayers = useRef<Layer[]>([]);
+  const lineLayers = useRef<Layer[]>([]);
+  const markerLayers = useRef<Layer[]>([]);
 
-  function clear() {
-    for (const layer of layers.current) {
+  function clear(list: { current: Layer[] }) {
+    for (const layer of list.current) {
       try {
         if (typeof layer.remove === 'function') layer.remove();
         else window.mappls?.remove({ map: map.current, layer });
@@ -111,16 +112,26 @@ function MapplsMap({
         // layer already gone
       }
     }
-    layers.current = [];
+    list.current = [];
   }
 
-  function draw() {
+  // Display-only simplification: at most MAX_DISPLAY_POINTS per line (Douglas–Peucker).
+  const linesKey = pathsKey(polylines);
+  const shownLines = useMemo(
+    () => polylines.map((pl) => ({ ...pl, path: simplifyForDisplay(pl.path) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [linesKey],
+  );
+  const markersKey = JSON.stringify(markers);
+  const circlesKey = JSON.stringify(circles);
+
+  function drawCircles() {
     const m = map.current;
     const sdk = window.mappls;
     if (!m || !sdk || !loaded.current) return;
-    clear();
+    clear(circleLayers);
     for (const c of circles) {
-      layers.current.push(
+      circleLayers.current.push(
         new sdk.Circle({
           map: m,
           center: c.center,
@@ -133,9 +144,16 @@ function MapplsMap({
         }),
       );
     }
-    for (const pl of polylines) {
+  }
+
+  function drawLines() {
+    const m = map.current;
+    const sdk = window.mappls;
+    if (!m || !sdk || !loaded.current) return;
+    clear(lineLayers);
+    for (const pl of shownLines) {
       if (pl.path.length < 2) continue;
-      layers.current.push(
+      lineLayers.current.push(
         new sdk.Polyline({
           map: m,
           path: pl.path,
@@ -145,6 +163,13 @@ function MapplsMap({
         }),
       );
     }
+  }
+
+  function drawMarkers() {
+    const m = map.current;
+    const sdk = window.mappls;
+    if (!m || !sdk || !loaded.current) return;
+    clear(markerLayers);
     for (const mk of markers) {
       const marker = new sdk.Marker({
         map: m,
@@ -170,21 +195,54 @@ function MapplsMap({
           if (p) handlers.current.onMarkerDragEnd?.(mk.id, p);
         });
       }
-      layers.current.push(marker);
-    }
-    const shouldFit = fitToContent && (fitKey === undefined || fitKey !== lastFitKey.current);
-    if (shouldFit) {
-      lastFitKey.current = fitKey;
-      const pts = [...markers.map((x) => x.position), ...polylines.flatMap((x) => x.path)];
-      const b = bounds(pts);
-      if (b && pts.length > 1) {
-        sdk.fitBounds({ map: m, cType: 0, bounds: b, options: { padding: 60, duration: 500 } });
-      } else if (pts[0]) {
-        m.setCenter(pts[0]);
-        m.setZoom(14);
-      }
+      markerLayers.current.push(marker);
     }
   }
+
+  function fit() {
+    const m = map.current;
+    const sdk = window.mappls;
+    if (!m || !sdk || !loaded.current) return;
+    const shouldFit = fitToContent && (fitKey === undefined || fitKey !== lastFitKey.current);
+    if (!shouldFit) return;
+    lastFitKey.current = fitKey;
+    const pts = [...markers.map((x) => x.position), ...shownLines.flatMap((x) => x.path)];
+    const b = bounds(pts);
+    if (b && pts.length > 1) {
+      sdk.fitBounds({ map: m, cType: 0, bounds: b, options: { padding: 60, duration: 500 } });
+    } else if (pts[0]) {
+      m.setCenter(pts[0]);
+      m.setZoom(14);
+    }
+  }
+
+  function draw() {
+    drawCircles();
+    drawLines();
+    drawMarkers();
+    fit();
+  }
+
+  // Create the map once the SDK is ready.
+  useEffect(() => {
+    if (!ready || map.current || !window.mappls) return;
+    const m = new window.mappls.Map(id, { center: center ?? DEFAULT_CENTER, zoom });
+    map.current = m;
+    m.addListener('load', () => {
+      loaded.current = true;
+      draw();
+    });
+    m.addListener('click', (e: any) => {
+      const p = toLatLng(e?.lngLat);
+      if (p) handlers.current.onPress?.(p);
+    });
+    return () => {
+      map.current?.remove?.();
+      map.current = null;
+      loaded.current = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, id]);
 
   // D5: pan to the truck whenever it moves (zoom in the first time).
   const followed = useRef(false);
@@ -198,18 +256,29 @@ function MapplsMap({
     followed.current = true;
   }, [fLat, fLng]);
 
-  // Redraw overlays when they change.
-  const signature = JSON.stringify({ markers, polylines, circles });
+  // Redraw only the overlay kind that changed.
   useEffect(() => {
-    draw();
+    drawCircles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature]);
+  }, [circlesKey]);
+  useEffect(() => {
+    drawLines();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linesKey]);
+  useEffect(() => {
+    drawMarkers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [markersKey]);
+  useEffect(() => {
+    fit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [markersKey, linesKey, fitKey]);
 
   return (
     <View
       nativeID={id}
       testID={testID}
-      accessibilityLabel="Map"
+      accessibilityLabel={t.a11y.map}
       style={{ height, borderRadius: radius.card, overflow: 'hidden', backgroundColor: colors.surfaceMuted }}
     />
   );

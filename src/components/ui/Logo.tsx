@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { colors, space, type } from '@/theme/tokens';
 
 import { Text } from './Text';
+import { t } from '@/i18n';
 
 /** Amber lorry mark + "Namma Lorry" wordmark (design/namma_lorry_brand_logo). */
 export function Logo({ size = 'md', onDark = false }: { size?: 'md' | 'lg'; onDark?: boolean }) {
@@ -13,7 +14,7 @@ export function Logo({ size = 'md', onDark = false }: { size?: 'md' | 'lg'; onDa
       style={[styles.row, size === 'lg' && styles.stack]}
       accessible
       accessibilityRole="image"
-      accessibilityLabel="Namma Lorry"
+      accessibilityLabel={t.common.appName}
     >
       <MaterialCommunityIcons name="truck" size={icon} color={colors.accent} />
       <Text
@@ -22,7 +23,7 @@ export function Logo({ size = 'md', onDark = false }: { size?: 'md' | 'lg'; onDa
           { color: onDark ? colors.onPrimary : colors.primary },
         ]}
       >
-        Namma Lorry
+        {t.common.appName}
       </Text>
     </View>
   );

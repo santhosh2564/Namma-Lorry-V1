@@ -2,10 +2,13 @@
 // docs/08 thresholds (gaps, coverage) assume ~10 s / 25 m updates.
 import * as Location from 'expo-location';
 
+import { t } from '@/i18n';
+
 /** Background task name registered with expo-task-manager (src/tracking/task.ts). */
 export const TRIP_LOCATION_TASK = 'namma-lorry-trip-location';
 
-export const TRACKING_OPTIONS: Location.LocationTaskOptions = {
+/** Built when tracking starts, so the foreground-service notification is in the driver's language. */
+export const trackingOptions = (): Location.LocationTaskOptions => ({
   accuracy: Location.Accuracy.BestForNavigation,
   timeInterval: 10_000, // Android: ~10 s
   distanceInterval: 25, // metres
@@ -13,11 +16,11 @@ export const TRACKING_OPTIONS: Location.LocationTaskOptions = {
   activityType: Location.ActivityType.AutomotiveNavigation,
   showsBackgroundLocationIndicator: true,
   foregroundService: {
-    notificationTitle: 'Namma Lorry trip in progress',
-    notificationBody: 'Recording your trip for verified experience',
+    notificationTitle: t.tracking.notificationTitle,
+    notificationBody: t.tracking.notificationBody,
     killServiceOnDestroy: false,
   },
-};
+});
 
 /** Fresh fix used for start_trip (docs/06 §1: getCurrentPositionAsync, BestForNavigation). */
 export const START_FIX_OPTIONS: Location.LocationOptions = { accuracy: Location.Accuracy.BestForNavigation };

@@ -1,7 +1,9 @@
 // https://docs.expo.dev/guides/customizing-metro/
-const { getDefaultConfig } = require('expo/metro-config');
+// Sentry's wrapper around expo/metro-config's getDefaultConfig: adds debug IDs to bundles so
+// uploaded source maps match the release (src/lib/sentry.ts).
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 
-const config = getDefaultConfig(__dirname);
+const config = getSentryExpoConfig(__dirname);
 
 // expo-sqlite on web (used only by the dev tracking screen) ships a .wasm build of SQLite
 // that needs SharedArrayBuffer, i.e. a cross-origin isolated page.

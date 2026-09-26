@@ -7,6 +7,7 @@ import { Text } from '@/components/ui';
 
 import { isHovered } from './hover';
 import { colors, fonts, radius, sizes, space } from '@/theme/tokens';
+import { t } from '@/i18n';
 
 export interface NavItem {
   href: '/console' | `/console/${string}`;
@@ -34,7 +35,7 @@ export function Sidebar({ items, collapsed }: { items: NavItem[]; collapsed: boo
         <MaterialCommunityIcons name="truck" size={28} color={colors.accent} />
         {collapsed ? null : (
           <Text variant="subtitle" tone="onPrimary">
-            Namma Lorry Ops
+            {t.console.brand}
           </Text>
         )}
       </View>
@@ -46,7 +47,7 @@ export function Sidebar({ items, collapsed }: { items: NavItem[]; collapsed: boo
             key={item.href}
             onPress={() => router.navigate(item.href)}
             accessibilityRole="link"
-            accessibilityLabel={badge ? `${item.label}, ${badge} waiting` : item.label}
+            accessibilityLabel={badge ? t.a11y.navBadge(item.label, badge) : item.label}
             accessibilityState={{ selected: active }}
             style={(state) => [
               styles.item,

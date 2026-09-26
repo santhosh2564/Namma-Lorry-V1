@@ -61,7 +61,7 @@ describe('isPermanentRowError / isNetworkError', () => {
 describe('tripErrorText', () => {
   it('shows the pickup distance in km', () => {
     expect(tripErrorText(new TripError('OUTSIDE_PICKUP', 3200))).toBe(
-      'You are 3.2 km from the pickup. Move inside the pickup area to start.',
+      "You're 3.2 km from the pickup. Move inside the pickup area to start.",
     );
   });
 });

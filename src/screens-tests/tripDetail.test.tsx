@@ -8,6 +8,7 @@ import { destination } from '@/lib/geo';
 import { TripError } from '@/tracking/errors';
 
 import TripDetail from '../../app/driver/trips/[id]/index';
+import { touchTargetIssues } from './helpers/a11y';
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
@@ -199,5 +200,12 @@ describe('D4 Trip Detail & Start', () => {
     await renderScreen();
     expect(screen.queryByTestId('d4-start')).toBeNull();
     expect(screen.getByTestId('d4-status-not-startable')).toBeTruthy();
+  });
+});
+
+describe('D4 accessibility (M12a)', () => {
+  it('every touch target is labelled and at least 48 dp', async () => {
+    await renderScreen();
+    expect(touchTargetIssues(screen.root)).toEqual([]);
   });
 });

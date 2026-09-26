@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-n
 import { colors, radius, space } from '@/theme/tokens';
 
 import { Text } from './Text';
+import { t } from '@/i18n';
 
 export interface SliderProps {
   label: string;
@@ -47,8 +48,9 @@ export function Slider({ label, value, min, max, step, onChange, format = String
       <View style={styles.row}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Decrease ${label}`}
+          accessibilityLabel={t.a11y.decrease(label)}
           onPress={() => onChange(snap(value - step, min, max, step))}
+          hitSlop={6}
           style={styles.step}
         >
           <MaterialIcons name="remove" size={20} color={colors.primary} />
@@ -86,8 +88,9 @@ export function Slider({ label, value, min, max, step, onChange, format = String
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Increase ${label}`}
+          accessibilityLabel={t.a11y.increase(label)}
           onPress={() => onChange(snap(value + step, min, max, step))}
+          hitSlop={6}
           style={styles.step}
         >
           <MaterialIcons name="add" size={20} color={colors.primary} />

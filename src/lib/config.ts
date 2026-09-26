@@ -15,6 +15,8 @@ const schema = z.object({
   EXPO_PUBLIC_APP_STORE_URL: z.url().optional(),
   // Privacy policy page linked from D1 (docs/09 §6); the link is hidden until set.
   EXPO_PUBLIC_PRIVACY_POLICY_URL: z.url().optional(),
+  // Sentry DSN (public by design: it only allows sending events). Reporting is off while empty (ND-11).
+  EXPO_PUBLIC_SENTRY_DSN: z.url().optional(),
 });
 
 export type AppConfig = z.infer<typeof schema>;
@@ -37,4 +39,5 @@ export const config = parseConfig({
   EXPO_PUBLIC_PLAY_STORE_URL: process.env.EXPO_PUBLIC_PLAY_STORE_URL || undefined,
   EXPO_PUBLIC_APP_STORE_URL: process.env.EXPO_PUBLIC_APP_STORE_URL || undefined,
   EXPO_PUBLIC_PRIVACY_POLICY_URL: process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL || undefined,
+  EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN || undefined,
 });

@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
 
 import { TRIP_LOCATION_TASK } from './config';
 import type { LocationLike } from './mapping';
-import { getTrackingDb } from './runtime';
+import { getTrackingDb } from './trackingDb';
 import { handleLocationUpdate } from './taskHandler';
 
 if (Platform.OS !== 'web') {

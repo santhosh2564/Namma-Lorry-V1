@@ -1,5 +1,6 @@
 // C1 Live Dashboard rules (docs/12 C1), pure and unit-tested.
 import type { LatLng } from '@/lib/geo';
+import { t } from '@/i18n';
 
 /** A live trip with no position update for this long is "stale" (red, "No recent data"). */
 export const STALE_MS = 15 * 60_000;
@@ -55,14 +56,15 @@ export function liveRows(trips: LiveSource[], now: number): LiveRow[] {
 
 /** "40 s ago", "18 min ago", "2 h ago", "3 d ago". */
 export function ageText(ms: number | null): string {
-  if (ms === null) return 'No data yet';
+  const a = t.console.age;
+  if (ms === null) return a.none;
   const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s} s ago`;
+  if (s < 60) return a.s(s);
   const m = Math.floor(s / 60);
-  if (m < 60) return `${m} min ago`;
+  if (m < 60) return a.min(m);
   const h = Math.floor(m / 60);
-  if (h < 48) return `${h} h ago`;
-  return `${Math.floor(h / 24)} d ago`;
+  if (h < 48) return a.h(h);
+  return a.d(Math.floor(h / 24));
 }
 
 export function filterLiveRows(rows: LiveRow[], q: string): LiveRow[] {

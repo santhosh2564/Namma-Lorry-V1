@@ -163,3 +163,24 @@ npm run web          # console + auth screens in the browser (http://localhost:8
 npm start            # dev client for Android/iOS (needs an EAS development build, M3)
 npm run typecheck && npm run lint && npm test
 ```
+
+## 10. Languages (i18n)
+- All UI text lives in `src/i18n/en.json`. Screens read it through the typed catalog: `import { t } from '@/i18n'`,
+  then `t.section.key` for a string or `t.section.fn(…)` for text with values. Never write UI text in a component:
+  `src/i18n/hardcoded.test.ts` fails on literal text, and on any `t.…` string read at module load, because that
+  string would never change language.
+- After adding or renaming keys in `en.json`, run `npm run i18n:sync`. New keys appear in `ta.json`, `kn.json`
+  and `hi.json` as `"TODO: <English>"`, and existing translations are kept. `npm run i18n:check` fails if the
+  files are out of step.
+- Translators replace the `TODO: …` values and keep every `{{placeholder}}`; a test checks that. Untranslated
+  (`TODO`) values show in English at runtime.
+- The language is saved on the phone and on the profile (`set_preferred_language`, migration 0005).
+  To try it, use "Change language" on S2 or the Language row on D8.
+
+## 11. Crash reporting (Sentry)
+- Off by default. Set `EXPO_PUBLIC_SENTRY_DSN` in `.env` (or per EAS profile / web deploy) to turn it on.
+- Before sending, every event and breadcrumb is scrubbed on the device of phone numbers and coordinates
+  (`src/lib/scrub.ts`). Only the user's UUID is attached. No screenshots or view hierarchy are sent.
+- Source maps for EAS builds: set `SENTRY_ORG` and `SENTRY_PROJECT` at build time and `SENTRY_AUTH_TOKEN` as an
+  EAS secret; the `@sentry/react-native/expo` plugin is added only when org and project are set. Releases are named
+  `namma-lorry@<version>+<build>`.

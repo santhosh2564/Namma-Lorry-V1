@@ -11,7 +11,7 @@ import { useVehicleRows } from '@/features/console/queries';
 import { ActivityChip } from '@/features/console/StatusCell';
 import { AddVehicleModal } from '@/features/vehicles/AddVehicleModal';
 import { vehicleTypeLabel } from '@/features/vehicles/schemas';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
 const c = t.console.vehicles.cols;
@@ -19,7 +19,9 @@ const c = t.console.vehicles.cols;
 const columns: Column<VehicleRow>[] = [
   {
     key: 'reg',
-    header: c.reg,
+    get header() {
+      return c.reg;
+    },
     flex: 1.6,
     sortValue: (r) => r.registrationNo,
     render: (r) => (
@@ -31,34 +33,44 @@ const columns: Column<VehicleRow>[] = [
   },
   {
     key: 'type',
-    header: c.type,
+    get header() {
+      return c.type;
+    },
     sortValue: (r) => r.vehicleType,
     render: (r) => <Chip label={vehicleTypeLabel(r.vehicleType)} />,
   },
   {
     key: 'owner',
-    header: c.owner,
+    get header() {
+      return c.owner;
+    },
     flex: 1.4,
     sortValue: (r) => r.ownerName,
     render: (r) => <Text>{r.ownerName ?? '—'}</Text>,
   },
   {
     key: 'trips',
-    header: c.trips,
+    get header() {
+      return c.trips;
+    },
     align: 'right',
     sortValue: (r) => r.trips,
     render: (r) => <Text style={styles.num}>{r.trips}</Text>,
   },
   {
     key: 'last',
-    header: c.last,
+    get header() {
+      return c.last;
+    },
     flex: 1.2,
     sortValue: (r) => r.lastUsedAt,
     render: (r) => <Text>{formatDate(r.lastUsedAt)}</Text>,
   },
   {
     key: 'status',
-    header: c.status,
+    get header() {
+      return c.status;
+    },
     flex: 1.2,
     sortValue: (r) => r.status,
     render: (r) => <ActivityChip status={r.status} />,
@@ -67,6 +79,7 @@ const columns: Column<VehicleRow>[] = [
 
 /** C9 Vehicles. */
 export default function Vehicles() {
+  useLanguage(); // re-render on language change (M12a)
   const { q } = useLocalSearchParams<{ q?: string }>();
   const router = useRouter();
   const vehicles = useVehicleRows();

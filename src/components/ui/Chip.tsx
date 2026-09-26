@@ -10,10 +10,10 @@ export type ChipTone = 'neutral' | 'live' | 'verified' | 'review' | 'danger' | '
 
 const tones: Record<ChipTone, { fg: string; bg: string }> = {
   neutral: { fg: colors.textSecondary, bg: colors.surfaceMuted },
-  live: { fg: colors.live, bg: colors.liveSoft },
-  verified: { fg: colors.verified, bg: colors.verifiedSoft },
-  review: { fg: colors.review, bg: colors.accentSoft },
-  danger: { fg: colors.danger, bg: colors.dangerSoft },
+  live: { fg: colors.liveText, bg: colors.liveSoft },
+  verified: { fg: colors.verifiedText, bg: colors.verifiedSoft },
+  review: { fg: colors.reviewText, bg: colors.accentSoft },
+  danger: { fg: colors.dangerText, bg: colors.dangerSoft },
   accent: { fg: colors.text, bg: colors.accentSoft },
 };
 

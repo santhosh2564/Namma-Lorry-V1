@@ -1,6 +1,8 @@
-// /dev/tracking: developer view of the tracking engine (dev builds only; hidden in M12a).
+// /dev/tracking: developer view of the tracking engine. Dev builds only: app/dev/_layout.tsx
+// redirects every /dev route to / when __DEV__ is false.
 // On web, location comes from a simulator so the queue → upload → end flow can be driven by hand.
 import { useQuery } from '@tanstack/react-query';
+import { Redirect } from 'expo-router';
 import { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -37,13 +39,7 @@ async function loadSnapshot(): Promise<Snapshot> {
 }
 
 export default function DevTracking() {
-  if (!__DEV__) {
-    return (
-      <Screen>
-        <Text>Not available.</Text>
-      </Screen>
-    );
-  }
+  if (!__DEV__) return <Redirect href="/" />; // also guarded by app/dev/_layout.tsx
   return <DevTrackingInner />;
 }
 

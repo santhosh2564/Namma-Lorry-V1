@@ -7,12 +7,13 @@ import { Button, Logo, Screen, Text } from '@/components/ui';
 import { hrefFor } from '@/features/auth/routing';
 import { SignOutButton } from '@/features/auth/SignOutButton';
 import { useRoutingDecision } from '@/features/auth/useRoutingDecision';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { resumeTracking } from '@/tracking/localState';
 import { colors, space } from '@/theme/tokens';
 
 /** S1 Splash: brand, then route per docs/04 §2 (local active trip is checked first). */
 export default function Splash() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const { destination, refetch } = useRoutingDecision();
 

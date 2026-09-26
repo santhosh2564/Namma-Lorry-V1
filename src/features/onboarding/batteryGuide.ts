@@ -2,6 +2,7 @@
 // Pure so each brand mapping is unit-tested (batteryGuide.test.ts).
 // Every guide starts from the app's own "App info" page, which "Open settings" opens:
 // the battery and auto-start switches for Namma Lorry live there on all these skins.
+import { t } from '@/i18n';
 
 export type BatteryBrand = 'xiaomi' | 'vivo' | 'oppo' | 'samsung' | 'generic';
 
@@ -28,51 +29,16 @@ export function detectBrand(manufacturer: string | null, brand: string | null): 
   return 'generic';
 }
 
-const OPEN = 'Tap Open settings (it opens Namma Lorry’s App info).';
-
-const GUIDES: Record<BatteryBrand, Omit<BatteryGuide, 'brand'>> = {
-  xiaomi: {
-    label: 'Xiaomi / Redmi / POCO',
-    steps: [
-      OPEN,
-      'Tap Battery saver and choose No restrictions.',
-      'Go back and turn on Autostart for Namma Lorry.',
-    ],
-  },
-  vivo: {
-    label: 'Vivo / iQOO',
-    steps: [
-      OPEN,
-      'Tap Battery, then Background power consumption, and choose Allow (or turn on Allow high background power consumption).',
-      'Turn on Autostart (in i Manager → App manager → Autostart manager on older phones).',
-    ],
-  },
-  oppo: {
-    label: 'Oppo / Realme / OnePlus',
-    steps: [
-      OPEN,
-      'Tap Battery usage and turn on Allow background activity.',
-      'Turn on Allow auto launch (Auto launch on some models).',
-    ],
-  },
-  samsung: {
-    label: 'Samsung',
-    steps: [
-      OPEN,
-      'Tap Battery and choose Unrestricted.',
-      'In Settings → Battery → Background usage limits, make sure Namma Lorry is not in Sleeping or Deep sleeping apps.',
-    ],
-  },
-  generic: {
-    label: null,
-    steps: [
-      OPEN,
-      'Tap Battery and choose Unrestricted (or Don’t optimise).',
-      'If you see Autostart or Auto launch, turn it on.',
-    ],
-  },
+/** Brand chip text: brand names, not translated. */
+const LABELS: Record<BatteryBrand, string | null> = {
+  xiaomi: 'Xiaomi / Redmi / POCO',
+  vivo: 'Vivo / iQOO',
+  oppo: 'Oppo / Realme / OnePlus',
+  samsung: 'Samsung',
+  generic: null,
 };
 
+/** Steps are in en.json battery.guide: "open" first, then the brand's own steps. */
 export function batteryGuide(brand: BatteryBrand): BatteryGuide {
-  return { brand, ...GUIDES[brand] };
+  return { brand, label: LABELS[brand], steps: [t.battery.guide.open, ...t.battery.guide[brand]] };
 }

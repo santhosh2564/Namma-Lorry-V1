@@ -9,7 +9,8 @@ import { Banner, Button, Card, Logo, PhoneInput, Screen, Text } from '@/componen
 import { mapSendOtpError, type SendOtpError } from '@/features/auth/errors';
 import { nationalPhoneSchema, signInSchema, toE164, type SignInForm } from '@/features/auth/schemas';
 import { useAuthStore } from '@/features/auth/store';
-import { t } from '@/i18n/en';
+import { LanguageSheet } from '@/features/settings/LanguageSheet';
+import { LANGUAGE_NAMES, t, useLanguage } from '@/i18n';
 import { supabase } from '@/lib/supabase';
 import { colors, radius, space } from '@/theme/tokens';
 
@@ -19,7 +20,8 @@ export default function SignIn() {
   const pendingPhone = useAuthStore((s) => s.pendingPhone);
   const setOtpSent = useAuthStore((s) => s.setOtpSent);
   const [sendError, setSendError] = useState<SendOtpError | null>(null);
-  const [showLanguageNote, setShowLanguageNote] = useState(false);
+  const language = useLanguage();
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   const { control, handleSubmit, formState } = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
@@ -93,20 +95,17 @@ export default function SignIn() {
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => setShowLanguageNote((v) => !v)}
+        testID="s2-language"
+        onPress={() => setLanguageOpen(true)}
         style={styles.language}
       >
         <MaterialIcons name="language" size={22} color={colors.live} />
         <View style={styles.grow}>
-          <Text variant="bodyStrong">{t.signIn.changeLanguage}</Text>
-          {showLanguageNote ? (
-            <Text variant="caption" tone="secondary">
-              {t.signIn.languageSoon}
-            </Text>
-          ) : null}
+          <Text variant="bodyStrong">{t.language.current(LANGUAGE_NAMES[language])}</Text>
         </View>
         <MaterialIcons name="expand-more" size={22} color={colors.textSecondary} />
       </Pressable>
+      <LanguageSheet visible={languageOpen} onClose={() => setLanguageOpen(false)} />
 
       <View style={styles.footer}>
         <MaterialIcons name="support-agent" size={20} color={colors.review} />

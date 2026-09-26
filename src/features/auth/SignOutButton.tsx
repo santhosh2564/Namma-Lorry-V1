@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { Banner, Button } from '@/components/ui';
-import { t } from '@/i18n/en';
+import { t } from '@/i18n';
 import { space } from '@/theme/tokens';
 
 import { signOut } from './signOut';

@@ -14,7 +14,7 @@ import {
 
 import { MapView } from '@/components/map/MapView';
 import type { MapMarker } from '@/components/map/types';
-import { Banner, Button, Card, Chip, Slider, Text } from '@/components/ui';
+import { Banner, Button, Card, Chip, ErrorBanner, Slider, Text } from '@/components/ui';
 import { formatPhone } from '@/features/console/consoleData';
 import { usePlannedRoute } from '@/features/loads/api';
 import { formatDistanceKm, tripChipFor } from '@/features/loads/status';
@@ -38,7 +38,8 @@ import {
   timelineItems,
 } from '@/features/review/tripDetail';
 import { reasonViews } from '@/features/trips/summaryModel';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
+import { errorMessage } from '@/lib/errorMessage';
 import { useNow } from '@/lib/useNow';
 import { useRealtimeChanges } from '@/lib/useRealtimeChanges';
 import { colors, fonts, radius, space, type } from '@/theme/tokens';
@@ -47,6 +48,7 @@ const c = t.console.tripDetail;
 
 /** C6 Trip Detail & Review (docs/12 C6, docs/13 P12). */
 export default function ConsoleTripDetail() {
+  useLanguage(); // re-render on language change (M12a)
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
@@ -91,7 +93,11 @@ export default function ConsoleTripDetail() {
   if (trip.isError || !trip.data) {
     return (
       <View style={styles.page}>
-        <Banner tone="error" message={trip.isError ? t.console.loadError : c.notFound} />
+        {trip.isError ? (
+          <ErrorBanner error={trip.error} onRetry={() => void trip.refetch()} testID="c6-error" />
+        ) : (
+          <Banner tone="error" message={c.notFound} />
+        )}
         <Button
           label={c.back}
           variant="text"
@@ -140,10 +146,24 @@ export default function ConsoleTripDetail() {
       <View style={[styles.split, !wide && styles.stack]}>
         <View style={wide ? styles.left : undefined}>
           <RouteCard trip={d} points={points.data ?? null} loading={points.isPending} wide={wide} />
+          {points.isError ? (
+            <ErrorBanner
+              error={points.error}
+              onRetry={() => void points.refetch()}
+              testID="c6-points-error"
+            />
+          ) : null}
         </View>
         <View style={[styles.rightCol, wide && styles.right]}>
           <VerificationCard trip={d} />
           <TimelineCard trip={d} events={events.data ?? []} loading={events.isPending} />
+          {events.isError ? (
+            <ErrorBanner
+              error={events.error}
+              onRetry={() => void events.refetch()}
+              testID="c6-events-error"
+            />
+          ) : null}
           {d.status === 'needs_review' ? <ReviewCard tripId={d.id} /> : null}
         </View>
       </View>
@@ -396,8 +416,7 @@ function ReviewCard({ tripId }: { tripId: string }) {
       await decide.mutateAsync({ approve, note });
       setNote('');
     } catch (e) {
-      const code = e instanceof ReviewError ? e.code : 'UNKNOWN';
-      setError(c.errors[code] ?? c.errors.UNKNOWN!);
+      setError(errorMessage(e instanceof ReviewError ? { message: e.code } : e, c.errors));
     }
   }
 

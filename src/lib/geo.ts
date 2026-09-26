@@ -70,3 +70,83 @@ export const isLatLng = (p: Partial<LatLng> | null | undefined): p is LatLng =>
   Number.isFinite(p.lng) &&
   Math.abs(p.lat!) <= 90 &&
   Math.abs(p.lng!) <= 180;
+
+// ---------- Display simplification (M12a performance) ----------
+
+/** Most points a polyline is drawn with. Raw points stay untouched for replay, km and review. */
+export const MAX_DISPLAY_POINTS = 1_000;
+
+/** Metres on a local equirectangular projection around the path's mean latitude (display only). */
+function project(path: LatLng[]): { x: Float64Array; y: Float64Array } {
+  const k = Math.cos(rad(path.reduce((a, p) => a + p.lat, 0) / path.length));
+  const x = new Float64Array(path.length);
+  const y = new Float64Array(path.length);
+  path.forEach((p, i) => {
+    x[i] = rad(p.lng) * k * R;
+    y[i] = rad(p.lat) * R;
+  });
+  return { x, y };
+}
+
+/**
+ * Douglas–Peucker: keeps the points needed so the line stays within `toleranceM` of the
+ * original. Always keeps the first and last point. Iterative (no recursion depth limit).
+ */
+export function douglasPeucker<T extends LatLng>(path: T[], toleranceM: number): T[] {
+  const n = path.length;
+  if (n <= 2) return path.slice();
+  const { x, y } = project(path);
+  const keep = new Uint8Array(n);
+  keep[0] = 1;
+  keep[n - 1] = 1;
+  const tol2 = toleranceM * toleranceM;
+  const stack: number[] = [0, n - 1];
+  while (stack.length) {
+    const e = stack.pop()!;
+    const s = stack.pop()!;
+    const ax = x[s]!;
+    const ay = y[s]!;
+    const bx = x[e]! - ax;
+    const by = y[e]! - ay;
+    const len2 = bx * bx + by * by;
+    let maxD = -1;
+    let idx = -1;
+    for (let i = s + 1; i < e; i++) {
+      const px = x[i]! - ax;
+      const py = y[i]! - ay;
+      const t = len2 ? Math.max(0, Math.min(1, (px * bx + py * by) / len2)) : 0;
+      const dx = px - t * bx;
+      const dy = py - t * by;
+      const d = dx * dx + dy * dy;
+      if (d > maxD) {
+        maxD = d;
+        idx = i;
+      }
+    }
+    if (idx !== -1 && maxD > tol2) {
+      keep[idx] = 1;
+      stack.push(s, idx, idx, e);
+    }
+  }
+  return path.filter((_, i) => keep[i] === 1);
+}
+
+/** Evenly spaced points, keeping both ends. */
+function sample<T>(path: T[], count: number): T[] {
+  const step = (path.length - 1) / (count - 1);
+  return Array.from({ length: count }, (_, i) => path[Math.round(i * step)]!);
+}
+
+/**
+ * The path to draw: unchanged when short, else Douglas–Peucker with a tolerance that grows
+ * (5 m, 10 m, 20 m…) until at most `maxPoints` remain. Display only (docs/13 P13).
+ * Very long inputs are first thinned to 5 × maxPoints so the cost stays bounded.
+ */
+export function simplifyForDisplay<T extends LatLng>(path: T[], maxPoints = MAX_DISPLAY_POINTS): T[] {
+  if (path.length <= maxPoints) return path;
+  const input = path.length > maxPoints * 5 ? sample(path, maxPoints * 5) : path;
+  let out = input;
+  for (let tol = 5; tol <= 50_000 && out.length > maxPoints; tol *= 2) out = douglasPeucker(input, tol);
+  // Pathological input (noise everywhere): evenly sample what is left.
+  return out.length <= maxPoints ? out : sample(out, maxPoints);
+}

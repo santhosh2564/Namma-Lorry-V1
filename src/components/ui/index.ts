@@ -11,3 +11,4 @@ export { Chip, type ChipTone } from './Chip';
 export { TextField } from './TextField';
 export { FilterChips } from './MultiChips';
 export { Slider } from './Slider';
+export { ErrorBanner } from './ErrorBanner';

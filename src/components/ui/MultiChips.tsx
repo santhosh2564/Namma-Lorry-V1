@@ -29,6 +29,7 @@ export function FilterChips<T extends string>({
             accessibilityRole={multi ? 'checkbox' : 'radio'}
             accessibilityState={multi ? { checked: on } : { selected: on, checked: on }}
             onPress={() => onToggle(o.value)}
+            hitSlop={6}
             style={[styles.chip, on && styles.on]}
           >
             {on && multi ? <MaterialIcons name="check" size={14} color={colors.onPrimary} /> : null}

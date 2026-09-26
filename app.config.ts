@@ -9,6 +9,18 @@ const WHEN_IN_USE =
 const ALWAYS =
   'Namma Lorry records your route in the background only while a trip you started is in progress, so your driving experience can be verified.';
 
+// Sentry source-map upload on EAS builds: only when org/project are set (SENTRY_AUTH_TOKEN is an
+// EAS secret). The DSN itself is EXPO_PUBLIC_SENTRY_DSN, read at runtime (src/lib/sentry.ts).
+const sentryPlugin: NonNullable<ExpoConfig['plugins']> =
+  process.env.SENTRY_ORG && process.env.SENTRY_PROJECT
+    ? [
+        [
+          '@sentry/react-native/expo',
+          { organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT },
+        ],
+      ]
+    : [];
+
 const config: ExpoConfig = {
   name: 'Namma Lorry',
   slug: 'namma-lorry',
@@ -54,7 +66,11 @@ const config: ExpoConfig = {
     'expo-sqlite',
     'expo-secure-store',
     'expo-font',
-    ['expo-splash-screen', { backgroundColor: '#0F2A44', image: './assets/splash-icon.png', imageWidth: 160 }],
+    [
+      'expo-splash-screen',
+      { backgroundColor: '#0F2A44', image: './assets/splash-icon.png', imageWidth: 160 },
+    ],
+    ...sentryPlugin,
   ],
   experiments: { typedRoutes: false },
 };

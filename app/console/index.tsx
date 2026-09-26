@@ -14,7 +14,7 @@ import {
 import { isHovered } from '@/components/console/hover';
 import { SearchInput } from '@/components/console/SearchInput';
 import { MapView } from '@/components/map/MapView';
-import { Banner, Card, Text } from '@/components/ui';
+import { Banner, Card, ErrorBanner, Text } from '@/components/ui';
 import { consoleKeys, useReviewCount } from '@/features/console/queries';
 import { reviewKeys, useAssignedToday, useLiveTrips, type LiveTrip } from '@/features/review/api';
 import {
@@ -26,7 +26,7 @@ import {
   liveRows,
   type LiveRow,
 } from '@/features/review/liveBoard';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { useNow } from '@/lib/useNow';
 import { useRealtimeChanges } from '@/lib/useRealtimeChanges';
 import { colors, fonts, radius, space } from '@/theme/tokens';
@@ -35,6 +35,7 @@ const c = t.console.live;
 
 /** C1 Live Dashboard (docs/12 C1): every in-progress trip on the map, updated by realtime. */
 export default function LiveDashboard() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const qc = useQueryClient();
   const { width } = useWindowDimensions();
@@ -112,7 +113,9 @@ export default function LiveDashboard() {
       {realtime === 'retrying' ? (
         <Banner tone="warn" message={c.realtimeRetrying} testID="c1-realtime-retrying" />
       ) : null}
-      {trips.isError ? <Banner tone="error" message={t.console.loadError} /> : null}
+      {trips.isError ? (
+        <ErrorBanner error={trips.error} onRetry={() => void trips.refetch()} testID="c1-error" />
+      ) : null}
 
       <View style={[styles.split, !wide && styles.stack]}>
         <View style={wide ? styles.mapCol : undefined}>{map}</View>
@@ -199,7 +202,7 @@ function LiveRowView({ row, onPress }: { row: LiveRow; onPress: () => void }) {
           {row.stale ? (
             <View style={styles.staleTag}>
               <MaterialIcons name="warning-amber" size={12} color={colors.danger} />
-              <Text variant="caption" style={{ color: colors.danger }}>
+              <Text variant="caption" style={{ color: colors.dangerText }}>
                 {c.noRecentData}
               </Text>
             </View>

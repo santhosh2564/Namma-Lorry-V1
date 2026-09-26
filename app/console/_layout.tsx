@@ -10,10 +10,11 @@ import { signOut } from '@/features/auth/signOut';
 import { useProfile } from '@/features/auth/useProfile';
 import { formatPhone, routeSearch } from '@/features/console/consoleData';
 import { useReviewCount } from '@/features/console/queries';
-import { t } from '@/i18n/en';
+import { pick, t, useLanguage } from '@/i18n';
 import { colors } from '@/theme/tokens';
 
 export default function ConsoleLayout() {
+  useLanguage(); // re-render on language change (M12a)
   // Admin-only: AreaGuard sends every other role to its own destination (docs/04 §2).
   return (
     <AreaGuard allowed={['console']}>
@@ -23,11 +24,11 @@ export default function ConsoleLayout() {
 }
 
 function titleFor(pathname: string): string {
-  const exact = t.console.titles[pathname.replace(/\/$/, '')];
+  const exact = pick(t.console.titles, pathname.replace(/\/$/, ''), '');
   if (exact) return exact;
-  if (pathname.startsWith('/console/loads/')) return 'Load';
-  if (pathname.startsWith('/console/trips/')) return 'Trip';
-  return 'Console';
+  if (pathname.startsWith('/console/loads/')) return t.console.titles.load;
+  if (pathname.startsWith('/console/trips/')) return t.console.titles.trip;
+  return t.console.titles.console;
 }
 
 function ConsoleShell() {

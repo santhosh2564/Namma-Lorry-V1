@@ -10,6 +10,7 @@ import { colors, radius, space } from '@/theme/tokens';
 import { useAutosuggest } from './api';
 import { parseCoords } from './coords';
 import { RADIUS_MAX_M, RADIUS_MIN_M } from './schemas';
+import { t } from '@/i18n';
 
 export interface PlaceValue {
   address: string;
@@ -19,24 +20,14 @@ export interface PlaceValue {
   radiusM: number;
 }
 
-const copy = {
-  searchHint: 'Type at least 3 characters to search Mappls',
-  noCoords: "Mappls didn't return coordinates for this place. Drop the pin on the map or enter coordinates.",
-  needLocation: 'Pick a suggestion, drop the pin on the map, or enter coordinates.',
-  located: (lat: number, lng: number) =>
-    `Pin at ${lat.toFixed(5)}, ${lng.toFixed(5)}. Drag it on the map to refine.`,
-  coords: 'Coordinates (lat, lng)',
-  coordsHint: 'e.g. 12.95630, 79.94220',
-  coordsInvalid: 'Enter latitude, longitude in decimal degrees.',
-  manual: 'Enter coordinates',
-  hideManual: 'Hide coordinates',
-  searchError: (code: string) =>
-    code === 'RATE_LIMITED'
-      ? 'Too many searches. Wait a moment.'
-      : code === 'CONFIG_MISSING'
-        ? 'Address search is not configured (MAPPLS_REST_KEY). Enter the address and coordinates by hand.'
-        : "Address search isn't available right now. Enter the address and coordinates by hand.",
-};
+const copy = t.console.place;
+/** Mappls proxy error → message (errors from mappls-proxy, docs/06 §4). */
+const searchError = (code: string) =>
+  code === 'RATE_LIMITED'
+    ? copy.rateLimited
+    : code === 'CONFIG_MISSING'
+      ? copy.notConfigured
+      : copy.unavailable;
 
 function useDebounced<T>(value: T, ms: number): T {
   const [v, setV] = useState(value);
@@ -90,13 +81,9 @@ export function PlaceField({
       <View>
         <TextField
           testID={`${testID}-address`}
-          label="Address"
+          label={copy.address}
           value={value.address}
-          placeholder={
-            kind === 'pickup'
-              ? 'SIPCOT Industrial Park, Sriperumbudur'
-              : 'Kurichi Industrial Estate, Coimbatore'
-          }
+          placeholder={kind === 'pickup' ? copy.pickupPlaceholder : copy.dropPlaceholder}
           onChangeText={(t) => {
             setQuery(t);
             setOpen(true);
@@ -110,7 +97,7 @@ export function PlaceField({
         {open && debounced.trim().length >= 3 ? (
           <View style={styles.dropdown} accessibilityRole="list" testID={`${testID}-suggestions`}>
             {suggest.isFetching ? <ActivityIndicator color={colors.primary} style={styles.pad} /> : null}
-            {suggestError ? <Banner tone="warn" message={copy.searchError(suggestError)} /> : null}
+            {suggestError ? <Banner tone="warn" message={searchError(suggestError)} /> : null}
             {suggest.data?.map((s, i) => (
               <Pressable
                 key={`${s.eLoc ?? i}-${s.label}`}
@@ -144,7 +131,7 @@ export function PlaceField({
             ))}
             {suggest.data && suggest.data.length === 0 && !suggest.isFetching ? (
               <Text variant="caption" tone="secondary" style={styles.pad}>
-                No matches.
+                {t.common.noMatches}
               </Text>
             ) : null}
           </View>
@@ -165,7 +152,7 @@ export function PlaceField({
         >
           {located ? copy.located(value.lat!, value.lng!) : noCoords ? copy.noCoords : copy.needLocation}
         </Text>
-        <Pressable accessibilityRole="button" onPress={() => setManual((m) => !m)} hitSlop={8}>
+        <Pressable accessibilityRole="button" onPress={() => setManual((m) => !m)} hitSlop={15}>
           <Text variant="caption" style={styles.link}>
             {manual ? copy.hideManual : copy.manual}
           </Text>
@@ -188,7 +175,7 @@ export function PlaceField({
 
       <Slider
         testID={`${testID}-radius`}
-        label={kind === 'pickup' ? 'Pickup radius' : 'Drop radius'}
+        label={kind === 'pickup' ? copy.pickupRadius : copy.dropRadius}
         value={value.radiusM}
         min={RADIUS_MIN_M}
         max={RADIUS_MAX_M}
@@ -220,5 +207,5 @@ const styles = StyleSheet.create({
   pad: { padding: space.md },
   status: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   flex: { flex: 1 },
-  link: { color: colors.live, textDecorationLine: 'underline' },
+  link: { color: colors.liveText, textDecorationLine: 'underline' },
 });

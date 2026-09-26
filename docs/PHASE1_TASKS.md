@@ -97,7 +97,7 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-8 | **Point-upload poison batch / clock skew.** RLS rejects rows with device time > server now + 2 min or < `started_at` − 1 min. One bad row fails the whole 200-row upsert, and the uploader then retries forever. | 0001 `points_driver_insert` vs TRD §4.3 / doc 13 P9 uploader | New migration: upload through an RPC that filters/clamps invalid rows and reports them, *or* the uploader quarantines rejected rows. Decide before M8. *M8 implemented the client-side option (needs approval):*<br>• The task drops fixes older than `started_at` − 1 min.<br>• The uploader bisects a refused batch and quarantines only the refused rows (kept locally with the reason; never while signed out).<br>• Quarantined rows never reach the server, so `received < expected_points` and the trip ends up `needs_review` / MISSING_POINTS via the sweeper, which surfaces the problem instead of hiding it.<br>• A phone whose clock runs > 2 min fast loses those points. The server-side RPC option would recover them. |
 | ND-9 | Folder layout differs. CLAUDE.md: `src/features/tracking` + `src/tracking/`, `config.ts` and `db.ts` in `src/lib/`. TRD: `src/tracking/config.ts`, adds `lib/geo.ts`, `lib/sentry.ts`. Doc 13 P9: `db.ts` in `src/tracking/`. Doc 12/13 add `src/theme/`, `plugins/`, `/dev/*` routes. | CLAUDE.md, TRD §3, doc 13 | Adopt the §1.3 layout and update CLAUDE.md/TRD to match in M1. |
 | ND-10 | Web audience: CLAUDE.md "Web is a console (admin / owner / shipper)" vs PRD §3 / doc 04 "admin-only; owner/shipper → Coming soon" | CLAUDE.md rule 8 vs PRD | Admin-only in Phase 1 (PRD wins); fix the CLAUDE.md wording. |
-| ND-11 | `SENTRY_DSN` is listed as server-only, but the RN/web app needs it in the bundle. `SENTRY_AUTH_TOKEN` (source maps) is not listed. | `.env.example` vs doc 13 P13 | Add `EXPO_PUBLIC_SENTRY_DSN`; add `SENTRY_AUTH_TOKEN` as an EAS secret. |
+| ND-11 | `SENTRY_DSN` is listed as server-only, but the RN/web app needs it in the bundle. `SENTRY_AUTH_TOKEN` (source maps) is not listed. | `.env.example` vs doc 13 P13 | Add `EXPO_PUBLIC_SENTRY_DSN`; add `SENTRY_AUTH_TOKEN` as an EAS secret. *Done in M12a: `EXPO_PUBLIC_SENTRY_DSN` (optional, zod) in `config.ts` / `.env.example`; `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` are build-time only (EAS secret; the Expo plugin is added only when org/project are set). 🧍 Create the project and set the values (M12c).* |
 | ND-12 | Unregistered numbers: the PRD says refuse them, but `handle_new_user` auto-creates a driver profile for **any** OTP sign-in. | PRD P0-1 vs 0001 | `signInWithOtp({ shouldCreateUser: false })` + `admin-create-driver`; depends on ND-5. *M5: the client half is done (`shouldCreateUser: false`). M6: `admin-create-driver` is done. What's left: turn off "Allow new users to sign up" on hosted (docs/DEV_SETUP.md §4 step 5). Local config keeps it on because the CLI needs it to enable the phone provider.* |
 | ND-13 | Admin bypass: hard rule 2 says status changes only via RPCs, but RLS `trips_admin` is `for all`, so an admin client can set `status`/`tracked_distance_m` directly with no audit or stats. No `cancel_trip` RPC exists, so `cancelled` is otherwise unreachable. | CLAUDE.md rule 2 vs 0001 | New migration: admin `select/insert` only on trips + a `cancel_trip` RPC. |
 | ND-14 | D6 needs realtime on the `trips` row, but only `trip_live` is in the `supabase_realtime` publication. | doc 13 P11 vs 0001 | *Implemented in M10:* migration `0004_trips_realtime.sql` adds `trips` (RLS applies to realtime), and D6 also polls every 10 s until the result is final. |
@@ -140,7 +140,7 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 ### M1 — Scaffold the app (Prompt 2)
 **Tasks**
 - [x] Expo app (TS strict, Expo Router) at the repo root, latest stable SDK, **exact versions pinned** (ND-7) — *done in M5: Expo SDK 57.0.25 / RN 0.86.3 / React 19.2.3 (the SDK 57 template pins RN 0.86, not 0.87); all versions exact*
-- [~] Install *(M5 installed supabase-js, expo-secure-store, TanStack Query, Zustand, zod, react-hook-form; location/task-manager/sqlite/netinfo/device/application/dev-client/i18next still to do)*: supabase-js, expo-secure-store, expo-location, expo-task-manager, expo-sqlite, @react-native-community/netinfo, expo-device, expo-application, expo-dev-client, @tanstack/react-query, zustand, zod, react-hook-form, i18next, react-i18next
+- [~] Install *(M5 installed supabase-js, expo-secure-store, TanStack Query, Zustand, zod, react-hook-form; later milestones added location/task-manager/sqlite/netinfo/device/application; M12a added i18next 26.4.2 (react-i18next not needed: `useLanguage()` re-renders); expo-dev-client still to do)*: supabase-js, expo-secure-store, expo-location, expo-task-manager, expo-sqlite, @react-native-community/netinfo, expo-device, expo-application, expo-dev-client, @tanstack/react-query, zustand, zod, react-hook-form, i18next, react-i18next
 - [x] ESLint + Prettier; path alias `@/` → `src/`; Jest (jest-expo) + RNTL; scripts `typecheck`, `lint`, `test` *(M5)*
 - [~] `app.config.ts` reading `EXPO_PUBLIC_*`; `.env.example` in sync (incl. ND-11); `src/lib/config.ts` zod-validates env and fails loudly in dev *(M5: app.config.ts, root `.env.example`, config.ts done; ND-11 Sentry vars pending)*
 - [ ] `eas.json` with development / preview / production profiles
@@ -475,16 +475,42 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 ### M12 — Hardening, acceptance, release (Prompts 13–15)
 
 #### M12a — Hardening, i18n, observability (Prompt 13)
-- [ ] All strings → `src/i18n/en.json`; `ta.json`, `kn.json`, `hi.json` with the same keys (values prefixed `TODO`); language persisted per user (`profiles.preferred_language`)
-- [ ] Global error boundary; network error states on every data screen; a message for every RPC error code
-- [ ] Sentry native + web with release tagging; scrub phone numbers and coordinates (ND-11)
-- [ ] Accessibility: labels, ≥ 48 px, font scaling on D4/D5, contrast against tokens
-- [ ] Performance: memoised map layers, Douglas-Peucker simplification for display only, no network I/O in the background task
-- [ ] Security review vs doc 09 §4–§5: secrets grep, no client writes to `trips`/`driver_stats`, service role only in functions, RLS tests cover every table
-- [ ] Dev routes behind `__DEV__`
-- [ ] `docs/HARDENING_REPORT.md`
+Details and evidence for every item: `docs/HARDENING_REPORT.md`.
+- [x] All strings → `src/i18n/en.json`; `ta.json`, `kn.json`, `hi.json` with the same keys (values prefixed `TODO`); language persisted per user (`profiles.preferred_language`)
+  - i18next 26.4.2 behind a typed live catalog `t` (`src/i18n/index.ts`); `TODO` values fall back to English.
+  - `npm run i18n:sync` / `i18n:check` keep ta/kn/hi in step.
+  - Migration `0005_preferred_language.sql` (`set_preferred_language` RPC + CHECK); language sheet on S2 and D8.
+  - AST tests fail on any hard-coded UI text or string frozen at module load.
+- [x] Global error boundary; network error states on every data screen; a message for every RPC error code
+  - App-level and route-level boundaries; `ErrorBanner` with Try again; `src/lib/errorMessage.ts`.
+  - A test checks every SQL `raise exception` and Edge Function code has text (it found 5 `MAPPLS_*` codes without one).
+- [x] Sentry native + web with release tagging; scrub phone numbers and coordinates (ND-11)
+  - `@sentry/react-native` 7.11.0; release `namma-lorry@<version>+<build>`; `src/lib/scrub.ts` on every event and breadcrumb; user id only.
+  - Off until `EXPO_PUBLIC_SENTRY_DSN` is set (🧍 create the project, M12c).
+- [x] Accessibility: labels, ≥ 48 px, font scaling on D4/D5, contrast against tokens
+  - Text-colour tokens (`*Text`, `verifiedStrong`); `tokens.test.ts` WCAG AA.
+  - Touch-target/label checker on D4/D5/D7/D8; `maxFontSizeMultiplier` caps; D4/D5 maps shrink at large font.
+  - 🧍 Real large-text and TalkBack/VoiceOver pass → M12b field script.
+- [x] Performance: memoised map layers, Douglas-Peucker simplification for display only, no network I/O in the background task
+  - Per-kind layer redraw and a numeric path key in `MapView.web.tsx`; `simplifyForDisplay` caps lines at 1,000 points.
+  - `src/tracking/trackingDb.ts` split out of `runtime.ts`; `taskIsolation.test.ts` walks the task's import graph.
+- [x] Security review vs doc 09 §4–§5: secrets grep, no client writes to `trips`/`driver_stats`, service role only in functions, RLS tests cover every table
+  - No secrets in tracked files, git history or the web bundle; `src/security.test.ts` pins the rules.
+  - **ND-13 fixed** in `0006_trips_admin_rpc_only.sql`: admins can't UPDATE/DELETE trips.
+  - New `supabase/tests/rls.test.sql` (44 tests, all 9 tables, fails if a new table isn't listed).
+- [x] Dev routes behind `__DEV__` (`app/dev/_layout.tsx` redirects `/dev/*` to `/` in release builds)
+- [x] `docs/HARDENING_REPORT.md`
 
-**Files expected:** `src/i18n/*.json`, `src/lib/sentry.ts`, `src/components/ErrorBoundary.tsx`, `docs/HARDENING_REPORT.md`.
+**Files expected:** `src/i18n/*.json`, `src/lib/sentry.ts`, `src/components/ErrorBoundary.tsx`, `docs/HARDENING_REPORT.md`. *All present, plus:*
+- `src/i18n/{i18n,index,hardcoded}.ts`
+- `src/lib/{scrub,errorMessage}.ts`
+- `src/components/ui/ErrorBanner.tsx`
+- `src/features/settings/{language.ts,LanguageSheet.tsx,LanguageSync.tsx}`
+- `src/features/trips/layout.ts`
+- `src/tracking/trackingDb.ts`
+- `scripts/i18n-sync.js`
+- migrations 0005/0006
+- pgTAP `language.test.sql`, `rls.test.sql`
 
 #### M12b — Acceptance scenarios (Prompt 14)
 - [ ] Automate every doc 10 §4 scenario that can be automated (pgTAP, unit, Playwright, Maestro + GPX)
@@ -562,9 +588,9 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | Tracking-problem banner (GPS off / permission revoked) | D5 (+ D3/D4 permission loss) | M10 (permission re-check M9) | ☑ |
 | Add Driver modal/drawer | C8 | M6 | ☑ |
 | Add Vehicle modal | C9 | M6 | ☑ |
-| Language picker sheet | D8 (and the S2 "Change language" link) | M11 (S2 link M5) | ☑ (English only until M12a) |
+| Language picker sheet | D8 (and the S2 "Change language" link) | M11 (S2 link M5) | ☑ (M12a: shared `LanguageSheet` on S2 and D8, saved per user) |
 
-Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-sink` (M2), `/dev/map` (M3), `/dev/tracking` (M8).
+Dev-only routes (not counted; `app/dev/_layout.tsx` redirects them to `/` in release builds since M12a): `/dev/kitchen-sink` (M2), `/dev/map` (M3), `/dev/tracking` (M8).
 
 ---
 
@@ -835,3 +861,24 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Not verified:** the real Mappls map with markers, rotation and fitting (no key here; the text fallback was used); realtime over a flaky mobile network; C1 with many trips.
 - **Decisions:** ND-33 (no C1 tails), ND-34 (live append from `trip_live`) need approval.
 - **Left:** 🧍 watch a live trip on C1/C6 with the real map while the M9/M10 device test runs; decide ND-33 and ND-34.
+
+### 2026-09-26 · M12a (Prompt 13): hardening, i18n, observability
+- **Changed:** see `docs/HARDENING_REPORT.md` for the full list.
+  - i18n: `en.json` plus `TODO:` ta/kn/hi with a sync script; typed live catalog `t`; per-user language via the new `set_preferred_language` RPC (0005); language sheet on S2 and D8.
+  - Errors: global and route error boundaries; `ErrorBanner` with retry on D4, D6, D8, C1, C4, C6, C7; one error-code mapper with text for all 45 codes.
+  - Sentry: `@sentry/react-native` 7.11.0 on native and web; release tagging; on-device PII scrubbing; Metro debug IDs; conditional Expo plugin.
+  - Accessibility: text-colour tokens (AA); 48 dp targets; font-scale caps; D4/D5 maps shrink at large font.
+  - Performance: per-kind map layer redraw; Douglas–Peucker display cap of 1,000 points; background task isolated from the network modules.
+  - Security: no secrets found; **ND-13 policy fixed (0006)**; `rls.test.sql` covers every table; static security tests.
+  - Dev routes: `app/dev/_layout.tsx` redirects in release builds.
+- **Verified:**
+  - Checks: typecheck; lint (0 errors, the 5 old warnings); format; Jest 768 (+226: i18n parity and fallback, hard-coded and frozen-string scans, error codes, scrubber, Sentry init, error boundary, contrast, touch targets, font scale, Douglas–Peucker, task isolation, security, dev routes).
+  - `supabase db reset` (0001–0006 plus seed); `supabase test db` 63 (+52); Playwright e2e 2/2 (C4 assign under the new policy, C6 review).
+  - `expo export -p web` builds; the bundle holds only the publishable key.
+- **Not verified (needs a device or accounts):** Sentry events reaching a real project; source-map upload; large system font and screen readers on phones; the foreground-service notification text in another language.
+- **Decisions:** ND-11 done (needs the Sentry project). ND-13: the policy half is done; `cancel_trip` is still open.
+- **Left:**
+  - 🧍 translators fill ta/kn/hi
+  - 🧍 Sentry project, DSN and auth token
+  - device accessibility checks go into the M12b field script
+  - `npm audit`: 15 moderate, transitive via Expo (see the report §6)

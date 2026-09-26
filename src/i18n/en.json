@@ -1,0 +1,787 @@
+{
+  "common": {
+    "appName": "Namma Lorry",
+    "signOut": "Sign out",
+    "retry": "Try again",
+    "back": "Back",
+    "loading": "Loading",
+    "close": "Close",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "noMatches": "No matches.",
+    "phonePlaceholder": "98xxx xxxxx",
+    "offline": "You're offline. Check your connection and try again.",
+    "loadFailed": "Couldn't load this. Check your connection and try again.",
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "monthsLong": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ]
+  },
+  "splash": {
+    "tagline": "Your work, verified.",
+    "restoring": "Restoring your trip…",
+    "error": "Couldn't load your account. Check your connection."
+  },
+  "signIn": {
+    "title": "Sign in with your mobile number",
+    "subtitle": "We'll send a 6-digit code by SMS.",
+    "phoneLabel": "Mobile number",
+    "clear": "Clear number",
+    "sendOtp": "Send OTP",
+    "newDriver": "New driver? Contact Namma Lorry to get registered.",
+    "errors": {
+      "invalid_phone": "Enter a valid 10-digit mobile number.",
+      "unregistered": "This number isn't registered with Namma Lorry. Contact Namma Lorry to register.",
+      "rate_limited": "Too many attempts. Please wait a few minutes and try again.",
+      "network": "You're offline. Check your connection and try again.",
+      "sms_failed": "We couldn't send the SMS. Please try again.",
+      "unknown": "Something went wrong. Please try again."
+    }
+  },
+  "verify": {
+    "title": "Enter the code",
+    "edit": "Edit",
+    "codeLabel": "6-digit code",
+    "resend": "Resend code",
+    "resent": "A new code has been sent.",
+    "submit": "Verify & continue",
+    "errors": {
+      "wrong_code": "Wrong code. Check the SMS and try again.",
+      "expired": "This code has expired. Tap \"Resend code\" for a new one.",
+      "rate_limited": "Too many attempts. Please wait a few minutes and try again.",
+      "network": "You're offline. Check your connection and try again.",
+      "unknown": "Something went wrong. Please try again."
+    },
+    "sentTo": "Sent to {{phone}}",
+    "resendIn": "Resend code in {{time}}"
+  },
+  "notice": {
+    "driver-web": {
+      "title": "Trips run on the mobile app",
+      "body": "To start and record trips, install Namma Lorry on your Android or iPhone. This web page is for the operations team.",
+      "playStore": "Get it on Google Play",
+      "appStore": "Download on the App Store"
+    },
+    "coming-soon": {
+      "title": "Coming soon for owners and shippers",
+      "body": "Live tracking for your vehicles and loads is coming in the next release."
+    },
+    "deactivated": {
+      "title": "Your account is deactivated",
+      "body": "Contact Namma Lorry if you think this is a mistake."
+    },
+    "no-profile": {
+      "title": "This number isn't registered",
+      "body": "Contact Namma Lorry to register."
+    },
+    "signOutBlocked": "You have a trip in progress. End the trip before signing out.",
+    "signOutUnsynced": "Trip data is still uploading. Connect to the internet and try again in a moment."
+  },
+  "permissions": {
+    "step": "Step 1 of 2",
+    "stepIos": "Setup",
+    "title": "Allow location for your trips",
+    "disclosure": [
+      {
+        "title": "Only during trips",
+        "body": "Tracking starts when you tap Start trip and stops when you tap End trip. While a trip is running, Namma Lorry records your location in the background, even when the app is closed or the phone is locked, and shows a notification."
+      },
+      {
+        "title": "Builds your verified experience",
+        "body": "Kilometres and trips count only from real GPS. Namma Lorry operations also see where the load is during the trip."
+      },
+      {
+        "title": "Shared with Namma Lorry operations for this load",
+        "body": "Later, the owner and shipper of that load may see it too. It is kept as your trip record; how long is set out in the privacy policy. No contacts, photos or calls are collected."
+      }
+    ],
+    "checklist": "Permissions",
+    "rows": {
+      "location": {
+        "title": "Precise location",
+        "hint": "Choose \"While using the app\" and keep Precise on."
+      },
+      "background": {
+        "title": "Allow all the time",
+        "hint": "Needed to record the trip while the phone is locked."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "hint": "Shows that a trip is being recorded."
+      }
+    },
+    "status": {
+      "allowed": "Allowed",
+      "waiting": "Pending",
+      "allow": "Allow",
+      "settings": "Open settings",
+      "off": "Off"
+    },
+    "blocked": {
+      "location": "Location is required to record trips. Open Settings → Location → Allow, with Precise location on.",
+      "precise": "Precise location is off. Open Settings → Location and turn on Precise location.",
+      "background": "Background location is required to record trips. Open Settings → Location → Allow all the time."
+    },
+    "notificationsOff": "Notifications are off. Trips still record, but you won't see the tracking notification. You can turn them on in Settings.",
+    "gpsOff": "Your phone's location (GPS) is turned off. Turn it on to start trips.",
+    "turnOnGps": "Turn on location",
+    "privacyPolicy": "Read privacy policy",
+    "agree": "By tapping Continue you agree to Namma Lorry using your location as described above.",
+    "continue": "Continue",
+    "consentFailed": "Couldn't save your consent. Check your connection and try again.",
+    "readyCount": "{{n}} of 3 ready"
+  },
+  "battery": {
+    "step": "Step 2 of 2",
+    "title": "Keep tracking running",
+    "body": "Some phones stop apps in the background to save battery. This can break your trip record.",
+    "stepsTitle": "Do this once",
+    "openSettings": "Open settings",
+    "done": "I've done this",
+    "skip": "Skip for now",
+    "openFailed": "Couldn't open settings. Open Settings → Apps → Namma Lorry → Battery yourself.",
+    "detected": "{{brand}} detected",
+    "guide": {
+      "open": "Tap Open settings (it opens Namma Lorry’s App info).",
+      "xiaomi": [
+        "Tap Battery saver and choose No restrictions.",
+        "Go back and turn on Autostart for Namma Lorry."
+      ],
+      "vivo": [
+        "Tap Battery, then Background power consumption, and choose Allow (or turn on Allow high background power consumption).",
+        "Turn on Autostart (in i Manager → App manager → Autostart manager on older phones)."
+      ],
+      "oppo": [
+        "Tap Battery usage and turn on Allow background activity.",
+        "Turn on Allow auto launch (Auto launch on some models)."
+      ],
+      "samsung": [
+        "Tap Battery and choose Unrestricted.",
+        "In Settings → Battery → Background usage limits, make sure Namma Lorry is not in Sleeping or Deep sleeping apps."
+      ],
+      "generic": [
+        "Tap Battery and choose Unrestricted (or Don’t optimise).",
+        "If you see Autostart or Auto launch, turn it on."
+      ]
+    }
+  },
+  "trips": {
+    "title": "My Trips",
+    "live": "Live",
+    "tripInProgress": "Trip in progress",
+    "resume": "Resume trip",
+    "assigned": "Assigned to you",
+    "readyToStart": "Ready to start",
+    "viewDetails": "View details & Start",
+    "emptyTitle": "No trips assigned yet",
+    "emptyBody": "New trips appear here when Namma Lorry assigns them to you.",
+    "offline": "You're offline — trip data is saved on your phone.",
+    "loadFailed": "Couldn't load your trips. Pull down to try again.",
+    "tabs": {
+      "trips": "Trips",
+      "history": "History",
+      "profile": "Profile"
+    },
+    "greeting": "Vanakkam, {{name}}",
+    "elapsed": "{{duration}} so far",
+    "pendingPoints_one": "{{count}} point waiting to upload",
+    "pendingPoints_other": "{{count}} points waiting to upload"
+  },
+  "tripDetail": {
+    "material": "Material",
+    "vehicle": "Vehicle",
+    "planned": "Planned",
+    "start": "START TRIP",
+    "starting": "Starting…",
+    "caption": "Tracking starts now and stops when you end the trip.",
+    "waitingGps": "Waiting for GPS…",
+    "notStartable": "This trip can no longer be started.",
+    "permissionMissing": "Location permission is off. Allow it to start trips.",
+    "fixPermissions": "Fix permissions",
+    "outsideSheetTitle": "Not at the pickup yet",
+    "outsideSheetOk": "OK",
+    "notFound": "This trip isn't available.",
+    "routeUnavailable": "Straight line shown; road route is added when the trip is planned.",
+    "weakGps": "Weak GPS (±{{m}} m). Move to open sky and wait a moment.",
+    "outside": "You're {{distance}} from the pickup. Move inside the circle to start.",
+    "ready": "You're at the pickup · GPS accuracy {{m}} m",
+    "offlineStart": "You're offline. Connect to the internet to start the trip."
+  },
+  "activeTrip": {
+    "live": "Live",
+    "time": "Time",
+    "distance": "Distance",
+    "approx": "approx.",
+    "toDrop": "To drop",
+    "synced": "All trip data synced",
+    "gpsWaiting": "Waiting for the first GPS point…",
+    "gpsStopped": "Stopped · recording resumes when you move",
+    "problem": {
+      "permission": "Location permission was turned off. The trip is not being recorded.",
+      "gps-off": "Your phone's location (GPS) is off. The trip is not being recorded.",
+      "not-running": "Trip recording isn't running on this phone. Tap Fix to restart it.",
+      "no-points": "No GPS point for {{min}} min. Keep the app open and check location is on."
+    },
+    "fix": "Fix",
+    "nearDrop": "You've reached the delivery area",
+    "end": "END TRIP",
+    "keepAwake": "Keep screen on",
+    "keepAwakeHint": "Uses more battery. Tracking works with the screen off.",
+    "notTracking": "This trip isn't recording on this phone.",
+    "endFailed": "Couldn't end the trip. Please try again.",
+    "to": "To {{place}}",
+    "waiting_one": "{{count}} point waiting to upload",
+    "waiting_other": "{{count}} points waiting to upload",
+    "offline_one": "Offline · {{count}} point saved on phone, will upload automatically",
+    "offline_other": "Offline · {{count}} points saved on phone, will upload automatically",
+    "offlineNoPoints": "Offline · trip keeps recording on your phone",
+    "gpsGood": "GPS good",
+    "gpsGoodAccuracy": "GPS good · ±{{m}} m",
+    "gpsWeak": "Weak GPS · ±{{m}} m"
+  },
+  "endSheet": {
+    "title": "End this trip?",
+    "body": "Make sure you have delivered the load.",
+    "confirm": "End trip",
+    "cancel": "Keep tracking",
+    "ending": "Ending…",
+    "outside": "You're {{distance}} from the delivery point. You can still end the trip, but Namma Lorry will review it."
+  },
+  "summary": {
+    "verifyingTitle": "Checking your trip…",
+    "verifyingBody": "This usually takes a few seconds.",
+    "offlineTitle": "Trip ended",
+    "offlineBody": "Ended offline — will verify when you're online.",
+    "verifiedTitle": "Trip verified",
+    "verifiedBody": "Added to your verified experience",
+    "reviewTitle": "Trip under review",
+    "reviewBody": "Namma Lorry will check this. You don't need to do anything.",
+    "rejectedTitle": "Trip not verified",
+    "rejectedBody": "Namma Lorry reviewed this trip and couldn't verify it.",
+    "cancelledTitle": "Trip cancelled",
+    "cancelledBody": "This trip was cancelled by Namma Lorry.",
+    "unknownTitle": "Couldn't load this trip",
+    "kmVerified": "km verified",
+    "duration": "Time",
+    "back": "Back to My Trips",
+    "retrySync": "Try uploading now",
+    "offlinePending_one": "{{count}} point still on this phone",
+    "offlinePending_other": "{{count}} points still on this phone",
+    "total_one": "Your total: {{count}} verified trip · {{km}}",
+    "total_other": "Your total: {{count}} verified trips · {{km}}",
+    "reviewNote": "Note from Namma Lorry: {{note}}"
+  },
+  "reasons": {
+    "START_OUTSIDE_PICKUP": "Trip didn't start at the pickup location",
+    "START_OUTSIDE_PICKUP_value": "Trip didn't start at the pickup location ({{distance}} away)",
+    "END_OUTSIDE_DROP": "Trip didn't end at the delivery location",
+    "END_OUTSIDE_DROP_value": "Trip didn't end at the delivery location ({{distance}} away)",
+    "MOCK_LOCATION": "Fake GPS app detected",
+    "TRACKING_GAP": "Tracking stopped for a long time",
+    "TRACKING_GAP_value": "Tracking stopped for a long time ({{min}} min)",
+    "LOW_COVERAGE": "Not enough GPS data was recorded",
+    "MISSING_POINTS": "Some trip data never uploaded",
+    "SPEED_IMPLAUSIBLE": "Trip speed looks unusual",
+    "SPEED_IMPLAUSIBLE_value": "Trip speed looks unusual ({{kmh}} km/h average)",
+    "GPS_JUMPS": "GPS signal jumped around",
+    "GPS_JUMPS_value": "GPS signal jumped around ({{n}} times)",
+    "DISTANCE_TOO_SHORT": "Distance is much shorter than the route",
+    "DISTANCE_TOO_SHORT_value": "Distance is much shorter than the route ({{pct}}% of the planned km)",
+    "DISTANCE_TOO_LONG": "Distance is much longer than the route",
+    "DISTANCE_TOO_LONG_value": "Distance is much longer than the route ({{pct}}% of the planned km)",
+    "OTHER": "Another check needs a look"
+  },
+  "history": {
+    "title": "Trip history",
+    "filters": {
+      "all": "All",
+      "verified": "Verified",
+      "review": "Under review",
+      "rejected": "Not verified"
+    },
+    "status": {
+      "verified": "Verified",
+      "review": "Under review",
+      "rejected": "Not verified",
+      "verifying": "Checking",
+      "cancelled": "Cancelled"
+    },
+    "emptyTitle": "No trips yet",
+    "emptyBody": "Finished trips appear here.",
+    "emptyFilter": "No trips with this status.",
+    "loadFailed": "Couldn't load your trips. Pull down to try again.",
+    "summary": "{{verified}} verified · {{review}} under review",
+    "monthCount_one": "{{count}} trip",
+    "monthCount_other": "{{count}} trips"
+  },
+  "profile": {
+    "title": "My Profile",
+    "verifiedTitle": "Verified experience",
+    "verifiedCaption": "Calculated by Namma Lorry from GPS — can't be edited",
+    "trips": "Trips",
+    "km": "Verified km",
+    "lastTrip": "Last trip",
+    "language": "Language",
+    "languageHint": "App language",
+    "health": "Location & battery check",
+    "healthHint": "GPS tracking & power saver",
+    "healthGood": "All good",
+    "healthFix": "Needs attention",
+    "privacy": "Privacy policy",
+    "privacyHint": "How your trip data is used",
+    "close": "Close",
+    "since": "Driver since {{month}} on Namma Lorry",
+    "version": "Namma Lorry v{{version}}"
+  },
+  "console": {
+    "nav": {
+      "live": "Live",
+      "loads": "Loads",
+      "trips": "Trips",
+      "review": "Review",
+      "drivers": "Drivers",
+      "vehicles": "Vehicles"
+    },
+    "titles": {
+      "/console": "Live",
+      "/console/loads": "Loads",
+      "/console/loads/new": "Create load",
+      "/console/trips": "Trips",
+      "/console/review": "Review",
+      "/console/drivers": "Drivers",
+      "/console/vehicles": "Vehicles",
+      "load": "Load",
+      "trip": "Trip",
+      "console": "Console"
+    },
+    "live": {
+      "search": "Search vehicle, driver or load",
+      "kpiLive": "live",
+      "kpiStale": "stale",
+      "kpiAssigned": "assigned today",
+      "kpiReview": "need review",
+      "noRecentData": "No recent data",
+      "empty": "No trips are running right now.",
+      "noMatch": "No active trip matches your search.",
+      "realtimeRetrying": "Live updates paused — reconnecting…",
+      "open": "Open trip",
+      "activeTrips": "Active trips ({{count}})"
+    },
+    "tripDetail": {
+      "notFound": "This trip doesn't exist or you can't see it.",
+      "back": "Back to trips",
+      "driver": "Driver",
+      "vehicle": "Vehicle",
+      "started": "Started",
+      "ended": "Ended",
+      "replay": "Replay",
+      "play": "Play replay",
+      "pause": "Pause replay",
+      "noPoints": "No GPS points uploaded yet.",
+      "pointsLoading": "Loading route…",
+      "verification": "Verification",
+      "noReasons": "All checks passed.",
+      "notVerifiedYet": "Not verified yet.",
+      "timeline": "Timeline",
+      "noEvents": "No events yet.",
+      "review": "Review decision",
+      "reviewHint": "A note is required. It is shown to the driver on a rejection and kept in the audit log.",
+      "note": "Note",
+      "notePlaceholder": "What did you check?",
+      "noteRequired": "Write a note before deciding.",
+      "approve": "Approve & verify",
+      "reject": "Reject",
+      "errors": {
+        "TRIP_NOT_IN_REVIEW": "This trip was already decided. The page now shows the latest status.",
+        "NOTE_REQUIRED": "Write a note before deciding.",
+        "FORBIDDEN": "Only admins can review trips.",
+        "TRIP_NOT_FOUND": "This trip doesn't exist.",
+        "NETWORK": "You're offline. Nothing was saved; try again.",
+        "UNKNOWN": "Couldn't save the decision. Nothing was changed; try again."
+      },
+      "lastUpdate": "Last update {{age}}",
+      "replayAt": "{{time}} · point {{i}} of {{n}}",
+      "verifiedBySystem": "Verified by system · {{km}}",
+      "approvedBy": "Approved by {{who}}: {{note}}",
+      "rejectedBy": "Rejected by {{who}}: {{note}}"
+    },
+    "reviewQueue": {
+      "oldestFirst": "Oldest first",
+      "open": "Open & review",
+      "emptyTitle": "All caught up",
+      "emptyBody": "Trips that need a decision appear here.",
+      "title": "Trips to review ({{count}})",
+      "ended": "Ended {{age}}"
+    },
+    "clearSearch": "Clear search",
+    "loadError": "Couldn't load this list. Check your connection.",
+    "cancel": "Cancel",
+    "status": {
+      "on_trip": "On trip",
+      "available": "Available",
+      "inactive": "Inactive"
+    },
+    "drivers": {
+      "add": "Add driver",
+      "empty": "No drivers yet. Add your first driver.",
+      "noMatch": "No drivers match your search.",
+      "cols": {
+        "name": "Name",
+        "phone": "Phone",
+        "trips": "Verified trips",
+        "km": "Verified km",
+        "last": "Last trip",
+        "status": "Status"
+      },
+      "form": {
+        "name": "Full name",
+        "phone": "Mobile number",
+        "language": "Preferred language",
+        "note": "The driver signs in with this number using an SMS code. No invite SMS is sent.",
+        "submit": "Add driver",
+        "errors": {
+          "name_required": "Enter the driver's name.",
+          "name_too_long": "Name is too long.",
+          "invalid_phone": "Enter a valid 10-digit mobile number.",
+          "PHONE_EXISTS": "This number is already registered.",
+          "FORBIDDEN": "Only admins can add drivers.",
+          "NETWORK": "You're offline. Check your connection and try again.",
+          "unknown": "Couldn't add the driver. Please try again."
+        },
+        "namePlaceholder": "Murugan S"
+      },
+      "added": "{{name}} added. They can now sign in with {{phone}}."
+    },
+    "loads": {
+      "create": "Create load",
+      "empty": "No loads yet. Create your first load.",
+      "noMatch": "No loads match these filters.",
+      "searchPlaceholder": "Search Load ID, pickup or drop",
+      "cols": {
+        "code": "Load ID",
+        "pickup": "Pickup",
+        "drop": "Drop",
+        "planned": "Planned",
+        "material": "Material",
+        "created": "Created",
+        "status": "Status",
+        "driver": "Assigned driver"
+      },
+      "status": {
+        "all": "All",
+        "unassigned": "Unassigned",
+        "assigned": "Assigned",
+        "in_trip": "In trip",
+        "done": "Done"
+      },
+      "ranges": {
+        "all": "All time",
+        "today": "Today",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days"
+      }
+    },
+    "createLoad": {
+      "pickup": "Pickup",
+      "drop": "Drop",
+      "details": "Load details",
+      "material": "Material",
+      "weight": "Weight (tonnes)",
+      "shipper": "Shipper",
+      "noShippers": "No shipper accounts yet (optional).",
+      "notes": "Notes",
+      "codeNote": "Load ID is generated automatically.",
+      "plannedPending": "Planned distance appears once both locations are set.",
+      "plannedUnavailable": "Route preview unavailable. The planned distance is fetched again when you save.",
+      "mapHint": "Tap the map to drop a missing pin; drag pins to refine.",
+      "submit": "Create load",
+      "cancel": "Cancel",
+      "distanceFailed": "Couldn't fetch the planned distance from Mappls.",
+      "saveWithout": "Save without planned distance",
+      "saveFailed": "Couldn't save the load. Please try again.",
+      "errors": {
+        "address_required": "Enter the address.",
+        "address_too_long": "Address is too long.",
+        "location_required": "Set the location: pick a suggestion, drop the pin or enter coordinates.",
+        "radius_range": "Radius must be between 100 m and 2 km.",
+        "weight_range": "Enter a weight between 0 and 100 tonnes.",
+        "same_as_pickup": "Drop must be a different place from pickup.",
+        "too_long": "Too long."
+      },
+      "planned": "Planned distance {{km}} · {{eta}}",
+      "materialPlaceholder": "Auto parts"
+    },
+    "loadDetail": {
+      "notFound": "Load not found.",
+      "back": "Back to loads",
+      "route": "Route",
+      "planned": "Planned",
+      "material": "Material",
+      "weight": "Weight",
+      "shipper": "Shipper",
+      "createdBy": "Created by",
+      "notes": "Notes",
+      "assignTitle": "Assign trip",
+      "driver": "Driver",
+      "vehicle": "Vehicle",
+      "searchDriver": "Search drivers",
+      "searchVehicle": "Search vehicles",
+      "busyDriver": "Currently on another trip",
+      "busyVehicle": "Currently on another trip",
+      "inactive": "Inactive",
+      "assign": "Assign",
+      "assignNote": "The driver sees this trip in their app immediately.",
+      "alreadyOpen": "This load already has an open trip.",
+      "assignFailed": "Couldn't assign the trip. Please try again.",
+      "tripTitle": "Trip",
+      "trips": "Trips for this load",
+      "started": "Started",
+      "ended": "Ended",
+      "verifiedKm": "Verified km",
+      "errors": {
+        "driver_required": "Choose a driver.",
+        "vehicle_required": "Choose a vehicle."
+      },
+      "verifiedStats": "{{trips}} verified trips · {{km}} km",
+      "busyWarning": "{{name}} is on another trip right now. You can still assign; they can only start this one after ending the current trip.",
+      "assigned": "Assigned {{when}}"
+    },
+    "trips": {
+      "empty": "No trips yet. Assign a load to create one.",
+      "noMatch": "No trips match these filters.",
+      "searchPlaceholder": "Search Load ID",
+      "allDrivers": "All drivers",
+      "allVehicles": "All vehicles",
+      "cols": {
+        "code": "Load ID",
+        "driver": "Driver",
+        "vehicle": "Vehicle",
+        "started": "Started",
+        "ended": "Ended",
+        "duration": "Duration",
+        "km": "Verified km",
+        "status": "Status",
+        "reasons": "Reasons"
+      }
+    },
+    "vehicles": {
+      "add": "Add vehicle",
+      "empty": "No vehicles yet. Add your first vehicle.",
+      "noMatch": "No vehicles match your search.",
+      "cols": {
+        "reg": "Registration no.",
+        "type": "Type",
+        "owner": "Owner",
+        "trips": "Trips",
+        "last": "Last used",
+        "status": "Status"
+      },
+      "form": {
+        "reg": "Registration number",
+        "regHint": "e.g. TN 23 BK 4521 or 22 BH 1234 AA",
+        "type": "Vehicle type",
+        "submit": "Save vehicle",
+        "errors": {
+          "invalid_registration": "Enter a valid Indian registration number, e.g. TN 23 BK 4521.",
+          "type_required": "Choose the vehicle type.",
+          "duplicate": "This vehicle is already registered.",
+          "unknown": "Couldn't save the vehicle. Please try again."
+        },
+        "regPreview": "Will be saved as {{reg}}",
+        "regPlaceholder": "TN 23 BK 4521"
+      },
+      "added": "{{reg}} added."
+    },
+    "searchResults": "Showing results for \"{{query}}\"",
+    "brand": "Namma Lorry Ops",
+    "adminRole": "Admin",
+    "topSearch": "Search Load ID, vehicle or driver",
+    "pager": {
+      "range": "{{from}}–{{to}} of {{total}}",
+      "page": "Page {{page}} of {{count}}"
+    },
+    "filters": {
+      "status": "Status",
+      "dateRange": "Date range",
+      "driver": "Driver",
+      "vehicle": "Vehicle"
+    },
+    "tripStatus": {
+      "assigned": "Assigned",
+      "in_progress": "Live",
+      "completed": "Awaiting data",
+      "verified": "Verified",
+      "needs_review": "Needs review",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "loadStatus": {
+      "unassigned": "Unassigned",
+      "assigned": "Assigned",
+      "in_trip": "In trip",
+      "done": "Done"
+    },
+    "age": {
+      "none": "No data yet",
+      "s": "{{n}} s ago",
+      "min": "{{n}} min ago",
+      "h": "{{n}} h ago",
+      "d": "{{n}} d ago"
+    },
+    "metrics": {
+      "tracked": "Tracked distance",
+      "points": "Points",
+      "max_gap": "Max gap",
+      "avg_kmh": "Avg speed",
+      "planned_ratio": "Planned ratio",
+      "jumps": "GPS jumps",
+      "mocked": "Mocked points",
+      "start_d": "Start from pickup",
+      "end_d": "End from drop"
+    },
+    "events": {
+      "started": "Started",
+      "ended": "Ended",
+      "verified": "Verified by system",
+      "needs_review": "Flagged for review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled",
+      "expectedPoints": "{{count}} points expected"
+    },
+    "place": {
+      "address": "Address",
+      "searchHint": "Type at least 3 characters to search Mappls",
+      "noCoords": "Mappls didn't return coordinates for this place. Drop the pin on the map or enter coordinates.",
+      "needLocation": "Pick a suggestion, drop the pin on the map, or enter coordinates.",
+      "located": "Pin at {{lat}}, {{lng}}. Drag it on the map to refine.",
+      "coords": "Coordinates (lat, lng)",
+      "coordsHint": "e.g. 12.95630, 79.94220",
+      "coordsInvalid": "Enter latitude, longitude in decimal degrees.",
+      "manual": "Enter coordinates",
+      "hideManual": "Hide coordinates",
+      "pickupRadius": "Pickup radius",
+      "dropRadius": "Drop radius",
+      "rateLimited": "Too many searches. Wait a moment.",
+      "notConfigured": "Address search is not configured (MAPPLS_REST_KEY). Enter the address and coordinates by hand.",
+      "unavailable": "Address search isn't available right now. Enter the address and coordinates by hand.",
+      "pickupPlaceholder": "SIPCOT Industrial Park, Sriperumbudur",
+      "dropPlaceholder": "Kurichi Industrial Estate, Coimbatore"
+    }
+  },
+  "a11y": {
+    "map": "Map",
+    "sortBy": "Sort by {{column}}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "accountMenu": "Account menu for {{name}}",
+    "decrease": "Decrease {{label}}",
+    "increase": "Increase {{label}}",
+    "offline": "Offline",
+    "online": "Online",
+    "navBadge": "{{label}}, {{count}} waiting"
+  },
+  "language": {
+    "title": "Choose language",
+    "current": "Change language: {{language}}",
+    "partial": "Some text still shows in English until the translation is finished.",
+    "saveFailed": "Couldn't save your language. It will be used on this phone only for now."
+  },
+  "errorBoundary": {
+    "title": "Something went wrong",
+    "body": "The app hit an unexpected problem. Your trip data is safe on this phone.",
+    "retry": "Try again",
+    "home": "Go to start"
+  },
+  "errors": {
+    "NETWORK": "You're offline. Check your connection and try again.",
+    "TIMEOUT": "The server took too long to answer. Please try again.",
+    "SESSION_EXPIRED": "Your session has expired. Sign in again.",
+    "UNKNOWN": "Something went wrong. Please try again.",
+    "TRIP_NOT_FOUND": "This trip isn't available.",
+    "TRIP_NOT_STARTABLE": "This trip can no longer be started. Pull to refresh.",
+    "ANOTHER_TRIP_ACTIVE": "You already have a trip in progress. End it before starting another.",
+    "GPS_ACCURACY_TOO_LOW": "Waiting for a better GPS signal. Move to open sky and try again.",
+    "OUTSIDE_PICKUP": "You're {{distance}} from the pickup. Move inside the pickup area to start.",
+    "TRIP_NOT_ACTIVE": "This trip has already ended.",
+    "FORBIDDEN": "You don't have permission to do this.",
+    "NOTE_REQUIRED": "Write a note before deciding.",
+    "TRIP_NOT_IN_REVIEW": "This trip was already decided.",
+    "PROFILE_NOT_FOUND": "Your account wasn't found. Contact Namma Lorry.",
+    "VERSION_REQUIRED": "Couldn't save your consent. Please try again.",
+    "LANGUAGE_NOT_SUPPORTED": "This language isn't available yet.",
+    "UNAUTHENTICATED": "Your session has expired. Sign in again.",
+    "AUTH_CHECK_FAILED": "Couldn't check your sign-in. Please try again.",
+    "AUTH_CONFIG": "The server is not set up correctly. Contact support.",
+    "RATE_LIMITED": "Too many requests. Wait a moment and try again.",
+    "CONFIG_MISSING": "This feature is not set up on the server yet.",
+    "INVALID_REQUEST": "Some details are missing or invalid. Check the form and try again.",
+    "INVALID_JSON": "Some details are missing or invalid. Check the form and try again.",
+    "METHOD_NOT_ALLOWED": "Something went wrong. Please try again.",
+    "NOT_FOUND": "That place couldn't be found.",
+    "NO_ROUTE": "Mappls couldn't find a road route between these places.",
+    "MAPPLS_UNAVAILABLE": "Mappls isn't responding right now. Try again in a moment.",
+    "MAPPLS_AUTH": "Address search is not set up correctly (Mappls key rejected). Contact support.",
+    "MAPPLS_QUOTA": "Address search has reached its limit for now. Enter the address and coordinates by hand.",
+    "MAPPLS_BAD_REQUEST": "Mappls couldn't understand this search. Try different words.",
+    "MAPPLS_BAD_RESPONSE": "Mappls sent an unexpected answer. Try again in a moment.",
+    "PHONE_EXISTS": "This number is already registered.",
+    "CREATE_USER_FAILED": "Couldn't create the account. Please try again.",
+    "PROFILE_UPDATE_FAILED": "The account was created but its details couldn't be saved. Try again.",
+    "INTERNAL": "The server hit a problem. Please try again.",
+    "PERMISSION_DENIED": "You don't have permission to do this.",
+    "DUPLICATE": "This already exists.",
+    "INVALID_VALUE": "Some details are invalid. Check them and try again.",
+    "REFERENCE_MISSING": "Something this depends on no longer exists. Refresh and try again.",
+    "PERMISSION_REQUIRED": "Allow location \"all the time\" to record trips.",
+    "GPS_TIMEOUT": "Waiting for a better GPS signal.",
+    "GPS_UNAVAILABLE": "Location is turned off. Turn it on to start the trip.",
+    "LOCAL_TRIP_ACTIVE": "You already have a trip in progress.",
+    "NO_ACTIVE_TRIP": "No trip is running on this phone.",
+    "TRACKING_START_FAILED": "Trip started but tracking couldn't begin. Keep the app open; it will retry."
+  },
+  "tracking": {
+    "notificationTitle": "Namma Lorry trip in progress",
+    "notificationBody": "Recording your trip for verified experience"
+  },
+  "map": {
+    "unavailable": "Map unavailable",
+    "noKey": "Set EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY to show the Mappls map.",
+    "loadFailed": "The Mappls map couldn't load (network or key restriction).",
+    "nativePending": "The native Mappls map arrives with M3.",
+    "plannedPoints": "Planned route: {{count}} points",
+    "radius": "radius {{m}} m",
+    "markers": {
+      "pickup": "Pickup",
+      "drop": "Drop",
+      "truck": "Truck",
+      "me": "You",
+      "start": "Start",
+      "end": "End"
+    }
+  }
+}

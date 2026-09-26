@@ -12,8 +12,8 @@ const toneStyle: Record<
   { bg: string; fg: string; icon: 'info-outline' | 'warning-amber' | 'error-outline' }
 > = {
   info: { bg: colors.surfaceMuted, fg: colors.primary, icon: 'info-outline' },
-  warn: { bg: colors.accentSoft, fg: colors.review, icon: 'warning-amber' },
-  error: { bg: colors.dangerSoft, fg: colors.danger, icon: 'error-outline' },
+  warn: { bg: colors.accentSoft, fg: colors.reviewText, icon: 'warning-amber' },
+  error: { bg: colors.dangerSoft, fg: colors.dangerText, icon: 'error-outline' },
 };
 
 /** Inline message. Icon + text so meaning never depends on colour alone. */

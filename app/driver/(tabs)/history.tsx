@@ -15,8 +15,8 @@ import {
   type HistoryFilter,
   type HistoryStatus,
 } from '@/features/trips/history';
-import { t } from '@/i18n/en';
-import { colors, fonts, radius, space } from '@/theme/tokens';
+import { t, useLanguage } from '@/i18n';
+import { colors, fonts, radius, sizes, space } from '@/theme/tokens';
 
 const h = t.history;
 const FILTERS: HistoryFilter[] = ['all', 'verified', 'review', 'rejected'];
@@ -33,6 +33,7 @@ const STATUS_CHIP: Record<
 
 /** D7 Trip History (docs/12 D7): filters by status, grouped by month, rows open D6. */
 export default function TripHistory() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const history = useTripHistory();
   const [filter, setFilter] = useState<HistoryFilter>('all');
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    minHeight: 44,
+    minHeight: sizes.touchMin,
     paddingHorizontal: space.md,
     borderRadius: radius.chip,
     backgroundColor: colors.surface,

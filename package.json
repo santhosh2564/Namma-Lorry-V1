@@ -14,7 +14,9 @@
     "format": "prettier --write \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\"",
     "test:functions": "cd supabase/functions && deno task test",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "i18n:sync": "node scripts/i18n-sync.js",
+    "i18n:check": "node scripts/i18n-sync.js --check"
   },
   "dependencies": {
     "@expo-google-fonts/noto-sans": "0.4.2",
@@ -22,6 +24,7 @@
     "@expo/vector-icons": "15.1.1",
     "@hookform/resolvers": "5.9.1",
     "@react-native-community/netinfo": "12.0.1",
+    "@sentry/react-native": "7.11.0",
     "@supabase/supabase-js": "2.117.2",
     "@tanstack/react-query": "5.104.0",
     "expo": "57.0.25",
@@ -41,6 +44,7 @@
     "expo-sqlite": "57.0.3",
     "expo-status-bar": "57.0.1",
     "expo-task-manager": "57.0.20",
+    "i18next": "26.4.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "7.89.0",

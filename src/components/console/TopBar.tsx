@@ -6,6 +6,7 @@ import { Text } from '@/components/ui';
 
 import { isHovered } from './hover';
 import { colors, fonts, radius, shadow, sizes, space, type } from '@/theme/tokens';
+import { t } from '@/i18n';
 
 export interface TopBarProps {
   title: string;
@@ -40,8 +41,8 @@ export function TopBar({ title, onSearch, user, onSignOut, signOutBusy, compact 
       <View style={[styles.search, compact && styles.searchCompact]}>
         <MaterialIcons name="search" size={20} color={colors.textSecondary} />
         <TextInput
-          accessibilityLabel="Search Load ID, vehicle or driver"
-          placeholder="Search Load ID, vehicle or driver"
+          accessibilityLabel={t.console.topSearch}
+          placeholder={t.console.topSearch}
           placeholderTextColor={colors.textSecondary}
           value={q}
           onChangeText={setQ}
@@ -53,9 +54,10 @@ export function TopBar({ title, onSearch, user, onSignOut, signOutBusy, compact 
       <View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Account menu for ${user.name}`}
+          accessibilityLabel={t.a11y.accountMenu(user.name)}
           accessibilityState={{ expanded: menuOpen }}
           onPress={() => setMenuOpen((o) => !o)}
+          hitSlop={4}
           style={styles.avatar}
         >
           <Text style={styles.avatarText}>{initials(user.name)}</Text>
@@ -65,7 +67,7 @@ export function TopBar({ title, onSearch, user, onSignOut, signOutBusy, compact 
             <View style={styles.menuHead}>
               <Text variant="bodyStrong">{user.name}</Text>
               <Text variant="caption" tone="secondary">
-                {user.phone} · Admin
+                {user.phone} · {t.console.adminRole}
               </Text>
             </View>
             <Pressable
@@ -78,7 +80,7 @@ export function TopBar({ title, onSearch, user, onSignOut, signOutBusy, compact 
               style={(state) => [styles.menuItem, isHovered(state) && styles.menuHover]}
             >
               <MaterialIcons name="logout" size={20} color={colors.danger} />
-              <Text tone="danger">Sign out</Text>
+              <Text tone="danger">{t.common.signOut}</Text>
             </Pressable>
           </View>
         ) : null}

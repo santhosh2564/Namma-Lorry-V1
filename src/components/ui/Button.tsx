@@ -24,7 +24,7 @@ export interface ButtonProps {
 const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
   primary: { bg: colors.primary, fg: colors.onPrimary, border: colors.primary },
   danger: { bg: colors.danger, fg: colors.onPrimary, border: colors.danger },
-  success: { bg: colors.verified, fg: colors.onPrimary, border: colors.verified },
+  success: { bg: colors.verifiedStrong, fg: colors.onPrimary, border: colors.verifiedStrong },
   outline: { bg: colors.surface, fg: colors.primary, border: colors.primary },
   dangerOutline: { bg: colors.surface, fg: colors.danger, border: colors.danger },
   text: { bg: 'transparent', fg: colors.primary, border: 'transparent' },

@@ -29,7 +29,7 @@ export function ConsolePage({
               accessibilityRole="button"
               accessibilityLabel={clearLabel}
               onPress={onClearFilter}
-              hitSlop={8}
+              hitSlop={16}
             >
               <MaterialIcons name="close" size={16} color={colors.textSecondary} />
             </Pressable>

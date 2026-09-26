@@ -1,4 +1,5 @@
 // Pure sorting/paging used by DataTable (unit-tested).
+import { t } from '@/i18n';
 
 export type SortDir = 'asc' | 'desc';
 export type SortValue = string | number | null | undefined;
@@ -45,10 +46,9 @@ export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   // Display in IST: operations are in India regardless of the viewer's machine timezone.
   const ist = new Date(d.getTime() + 330 * 60_000);
-  return `${ist.getUTCDate()} ${months[ist.getUTCMonth()]} ${ist.getUTCFullYear()}`;
+  return `${ist.getUTCDate()} ${t.common.months[ist.getUTCMonth()]} ${ist.getUTCFullYear()}`;
 }
 
 /** "14,860.4" with Indian digit grouping. */

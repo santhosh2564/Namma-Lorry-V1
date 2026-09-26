@@ -2,11 +2,19 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { MapView } from '@/components/map/MapView';
-import { Banner, Button, Chip, Text } from '@/components/ui';
+import { Banner, Button, Chip, ErrorBanner, Text } from '@/components/ui';
 import { localTripQueryKey } from '@/features/auth/useRoutingDecision';
 import { formatDistanceKm } from '@/features/loads/status';
 import { cargoText, driverTripKeys, useMyTrip } from '@/features/trips/api';
@@ -17,20 +25,23 @@ import {
   type Fix,
   type StartState,
 } from '@/features/trips/startState';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { useNow } from '@/lib/useNow';
 import { TripError, tripErrorText } from '@/tracking/errors';
 import { watchForegroundFix } from '@/tracking/foregroundLocation';
 import { checkTrackingPermissions, permissionsQueryKey } from '@/tracking/permissions';
 import { getTracking } from '@/tracking/runtime';
 import { colors, radius, sizes, space } from '@/theme/tokens';
+import { tripDetailMapHeight } from '@/features/trips/layout';
 
 const s = t.tripDetail;
 
 /** D4 Trip Detail & Start (docs/12 D4, docs/06 §1 start flow). */
 export default function TripDetail() {
+  useLanguage(); // re-render on language change (M12a)
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { fontScale } = useWindowDimensions();
   const qc = useQueryClient();
   const trip = useMyTrip(id);
   const permissions = useQuery({ queryKey: permissionsQueryKey, queryFn: checkTrackingPermissions });
@@ -62,7 +73,11 @@ export default function TripDetail() {
   if (!trip.data || !load || !tripId) {
     return (
       <SafeAreaView style={[styles.flex, styles.pad]}>
-        <Banner tone="error" message={trip.isError ? t.trips.loadFailed : s.notFound} />
+        {trip.isError ? (
+          <ErrorBanner error={trip.error} onRetry={() => void trip.refetch()} testID="d4-error" />
+        ) : (
+          <Banner tone="error" message={s.notFound} />
+        )}
         <Button label={t.common.back} variant="outline" onPress={() => router.back()} />
       </SafeAreaView>
     );
@@ -116,7 +131,7 @@ export default function TripDetail() {
     <View style={styles.flex}>
       <MapView
         testID="d4-map"
-        height={320}
+        height={tripDetailMapHeight(fontScale)}
         fitToContent
         markers={[
           { id: 'pickup', kind: 'pickup', position: pickup },
@@ -230,9 +245,9 @@ function InfoRow({
 }
 
 const STATUS_STYLE = {
-  ok: { bg: colors.verifiedSoft, fg: colors.verified, icon: 'check-circle' },
-  warn: { bg: colors.accentSoft, fg: colors.review, icon: 'info-outline' },
-  error: { bg: colors.dangerSoft, fg: colors.danger, icon: 'location-off' },
+  ok: { bg: colors.verifiedSoft, fg: colors.verifiedText, icon: 'check-circle' },
+  warn: { bg: colors.accentSoft, fg: colors.reviewText, icon: 'info-outline' },
+  error: { bg: colors.dangerSoft, fg: colors.dangerText, icon: 'location-off' },
   neutral: { bg: colors.surfaceMuted, fg: colors.textSecondary, icon: 'info-outline' },
 } as const;
 
@@ -328,7 +343,7 @@ const styles = StyleSheet.create({
   },
   route: { flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' },
   infoRow: { flexDirection: 'row', gap: space.sm, alignItems: 'center' },
-  infoLabel: { width: 76 },
+  infoLabel: { minWidth: 76, maxWidth: '40%' },
   status: {
     flexDirection: 'row',
     gap: space.sm,

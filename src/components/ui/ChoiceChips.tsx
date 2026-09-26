@@ -35,6 +35,7 @@ export function ChoiceChips<T extends string>({
               accessibilityRole="radio"
               accessibilityState={{ checked: selected }}
               onPress={() => onChange(o.value)}
+              hitSlop={4}
               style={[styles.chip, selected && styles.selected]}
             >
               {selected ? <MaterialIcons name="check" size={16} color={colors.onPrimary} /> : null}

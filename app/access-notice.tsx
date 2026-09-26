@@ -7,7 +7,7 @@ import { AreaGuard } from '@/features/auth/AreaGuard';
 import type { NoticeVariant } from '@/features/auth/routing';
 import { SignOutButton } from '@/features/auth/SignOutButton';
 import { useRoutingDecision } from '@/features/auth/useRoutingDecision';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { config } from '@/lib/config';
 import { colors, space } from '@/theme/tokens';
 
@@ -23,6 +23,7 @@ const icons: Record<NoticeVariant, ComponentProps<typeof MaterialIcons>['name']>
  * never from the URL, so it can't be spoofed to show the wrong message.
  */
 export default function AccessNoticeRoute() {
+  useLanguage(); // re-render on language change (M12a)
   return (
     <AreaGuard allowed={['notice']}>
       <AccessNotice />

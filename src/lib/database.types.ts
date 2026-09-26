@@ -65,13 +65,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "consent_at": string | null,"consent_version": string | null,"created_at": string,"full_name": string,"id": string,"is_active": boolean,"phone": string | null,"preferred_language": string | null,"role": Database["public"]['Enums']["user_role"]
+                    "consent_at": string | null,"consent_version": string | null,"created_at": string,"full_name": string,"id": string,"is_active": boolean,"phone": string | null,"preferred_language": string,"role": Database["public"]['Enums']["user_role"]
                   }
                   Insert: {
-                    "consent_at"?: string | null,"consent_version"?: string | null,"created_at"?: string,"full_name"?: string,"id": string,"is_active"?: boolean,"phone"?: string | null,"preferred_language"?: string | null,"role"?: Database["public"]['Enums']["user_role"]
+                    "consent_at"?: string | null,"consent_version"?: string | null,"created_at"?: string,"full_name"?: string,"id": string,"is_active"?: boolean,"phone"?: string | null,"preferred_language"?: string,"role"?: Database["public"]['Enums']["user_role"]
                   }
                   Update: {
-                    "consent_at"?: string | null,"consent_version"?: string | null,"created_at"?: string,"full_name"?: string,"id"?: string,"is_active"?: boolean,"phone"?: string | null,"preferred_language"?: string | null,"role"?: Database["public"]['Enums']["user_role"]
+                    "consent_at"?: string | null,"consent_version"?: string | null,"created_at"?: string,"full_name"?: string,"id"?: string,"is_active"?: boolean,"phone"?: string | null,"preferred_language"?: string,"role"?: Database["public"]['Enums']["user_role"]
                   }
                   Relationships: [
                     
@@ -339,7 +339,7 @@ isOneToOne: false
 "id": string,
 "is_active": boolean,
 "phone": string | null,
-"preferred_language": string | null,
+"preferred_language": string,
 "role": Database["public"]['Enums']["user_role"]
             }
                           SetofOptions: {
@@ -348,6 +348,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"set_preferred_language":
+{ Args: { "p_language": string }; Returns: string
+                           },
 "setting":
 { Args: { "p_key": string }; Returns: number
                            },

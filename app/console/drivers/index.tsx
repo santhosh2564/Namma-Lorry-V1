@@ -11,7 +11,7 @@ import { formatPhone, matchesSearch, type DriverRow } from '@/features/console/c
 import { useDriverRows } from '@/features/console/queries';
 import { ActivityChip } from '@/features/console/StatusCell';
 import { AddDriverDrawer } from '@/features/drivers/AddDriverDrawer';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { colors, fonts, space } from '@/theme/tokens';
 
 const c = t.console.drivers.cols;
@@ -20,7 +20,9 @@ const statusOrder = { on_trip: 0, available: 1, inactive: 2 };
 const columns: Column<DriverRow>[] = [
   {
     key: 'name',
-    header: c.name,
+    get header() {
+      return c.name;
+    },
     flex: 2,
     sortValue: (r) => r.fullName,
     render: (r) => (
@@ -34,31 +36,46 @@ const columns: Column<DriverRow>[] = [
       </View>
     ),
   },
-  { key: 'phone', header: c.phone, flex: 1.5, render: (r) => <Text numberOfLines={1}>{r.phone}</Text> },
+  {
+    key: 'phone',
+    get header() {
+      return c.phone;
+    },
+    flex: 1.5,
+    render: (r) => <Text numberOfLines={1}>{r.phone}</Text>,
+  },
   {
     key: 'trips',
-    header: c.trips,
+    get header() {
+      return c.trips;
+    },
     align: 'right',
     sortValue: (r) => r.verifiedTrips,
     render: (r) => <Text style={styles.num}>{r.verifiedTrips}</Text>,
   },
   {
     key: 'km',
-    header: c.km,
+    get header() {
+      return c.km;
+    },
     align: 'right',
     sortValue: (r) => r.verifiedKm,
     render: (r) => <Text style={styles.num}>{formatKm(r.verifiedKm)}</Text>,
   },
   {
     key: 'last',
-    header: c.last,
+    get header() {
+      return c.last;
+    },
     flex: 1.2,
     sortValue: (r) => r.lastTripAt,
     render: (r) => <Text>{formatDate(r.lastTripAt)}</Text>,
   },
   {
     key: 'status',
-    header: c.status,
+    get header() {
+      return c.status;
+    },
     flex: 1.2,
     sortValue: (r) => statusOrder[r.status],
     render: (r) => <ActivityChip status={r.status} />,
@@ -67,6 +84,7 @@ const columns: Column<DriverRow>[] = [
 
 /** C8 Drivers. */
 export default function Drivers() {
+  useLanguage(); // re-render on language change (M12a)
   const { q } = useLocalSearchParams<{ q?: string }>();
   const router = useRouter();
   const drivers = useDriverRows();

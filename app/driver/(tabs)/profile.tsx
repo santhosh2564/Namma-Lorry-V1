@@ -3,10 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useState, type ComponentProps, type ReactNode } from 'react';
-import { Linking, Modal, Pressable, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 
-import { Button, Card, Chip, Screen, Text } from '@/components/ui';
+import { Card, Chip, ErrorBanner, Screen, Text } from '@/components/ui';
 import { SignOutButton } from '@/features/auth/SignOutButton';
 import { useProfile } from '@/features/auth/useProfile';
 import { formatPhone } from '@/features/console/consoleData';
@@ -15,7 +14,8 @@ import { needsBatterySetup } from '@/features/onboarding/batteryFlag';
 import { healthCheck, initials } from '@/features/onboarding/health';
 import { useDriverStats } from '@/features/trips/api';
 import { dayMonthIST } from '@/features/trips/history';
-import { t } from '@/i18n/en';
+import { LanguageSheet } from '@/features/settings/LanguageSheet';
+import { LANGUAGE_NAMES, t, useLanguage } from '@/i18n';
 import { config } from '@/lib/config';
 import { permissionsQueryKey, readPermissions } from '@/tracking/permissions';
 import { colors, fonts, radius, space } from '@/theme/tokens';
@@ -23,22 +23,14 @@ import { colors, fonts, radius, space } from '@/theme/tokens';
 const p = t.profile;
 type Icon = ComponentProps<typeof MaterialIcons>['name'];
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const monthYear = (iso: string) => {
   const d = new Date(Date.parse(iso) + 5.5 * 3_600_000);
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  return `${t.common.months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 };
-
-/** Phase 1 ships English only; the others arrive with M12a translations (docs/13 P13). */
-const LANGUAGES = [
-  { code: 'en', label: 'English', available: true },
-  { code: 'ta', label: 'தமிழ் (Tamil)', available: false },
-  { code: 'kn', label: 'ಕನ್ನಡ (Kannada)', available: false },
-  { code: 'hi', label: 'हिन्दी (Hindi)', available: false },
-] as const;
 
 /** D8 My Profile (docs/12 D8): read-only verified experience + settings. */
 export default function MyProfile() {
+  const language = useLanguage();
   const router = useRouter();
   const profile = useProfile();
   const stats = useDriverStats(true);
@@ -79,6 +71,14 @@ export default function MyProfile() {
         ) : null}
       </View>
 
+      {profile.isError || stats.isError ? (
+        <ErrorBanner
+          error={profile.error ?? stats.error}
+          onRetry={() => void Promise.all([profile.refetch(), stats.refetch()])}
+          testID="d8-error"
+        />
+      ) : null}
+
       <Card>
         <View style={styles.verifiedHead}>
           <MaterialIcons name="lock" size={22} color={colors.primary} />
@@ -109,7 +109,7 @@ export default function MyProfile() {
           icon="language"
           title={p.language}
           hint={p.languageHint}
-          value="English"
+          value={LANGUAGE_NAMES[language]}
           onPress={() => setLanguageOpen(true)}
           testID="d8-language"
         />
@@ -199,40 +199,6 @@ function Row({
   );
 }
 
-/** Language picker sheet (docs/12 overlays). English only until M12a. */
-function LanguageSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel={p.close} />
-      <SafeAreaView edges={['bottom']} style={styles.sheet} testID="d8-language-sheet">
-        <Text variant="title">{p.languageSheetTitle}</Text>
-        {LANGUAGES.map((l) => (
-          <View
-            key={l.code}
-            style={styles.langRow}
-            accessibilityState={{ selected: l.code === 'en', disabled: !l.available }}
-          >
-            <MaterialIcons
-              name={l.code === 'en' ? 'radio-button-checked' : 'radio-button-unchecked'}
-              size={22}
-              color={l.available ? colors.primary : colors.disabled}
-            />
-            <View style={styles.flex}>
-              <Text tone={l.available ? 'default' : 'secondary'}>{l.label}</Text>
-              {!l.available ? (
-                <Text variant="caption" tone="secondary">
-                  {p.languageSoon}
-                </Text>
-              ) : null}
-            </View>
-          </View>
-        ))}
-        <Button label={p.close} variant="outline" onPress={onClose} />
-      </SafeAreaView>
-    </Modal>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1, gap: 2 },
   header: {
@@ -290,13 +256,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scrim: { flex: 1, backgroundColor: colors.scrim },
-  sheet: {
-    backgroundColor: colors.surface,
-    padding: space.lg,
-    gap: space.md,
-    borderTopLeftRadius: radius.card + 8,
-    borderTopRightRadius: radius.card + 8,
-  },
-  langRow: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 48 },
 });

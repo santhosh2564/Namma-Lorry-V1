@@ -4,38 +4,23 @@ import NetInfo from '@react-native-community/netinfo';
 import * as Application from 'expo-application';
 import * as Device from 'expo-device';
 import * as Location from 'expo-location';
-import * as SQLite from 'expo-sqlite';
 import { AppState, Platform } from 'react-native';
 
 import { devSessionGet, devSessionSet } from '@/lib/devDriverWeb';
 import { supabase } from '@/lib/supabase';
 
-import { SQLITE_DB_NAME, TRIP_LOCATION_TASK, UPLOAD_INTERVAL_MS } from './config';
-import { fromExpoSqlite, migrate, type SqlDb } from './db';
+import { TRIP_LOCATION_TASK, UPLOAD_INTERVAL_MS } from './config';
+import type { SqlDb } from './db';
 import { counts, getActiveTrip } from './queue';
 import { createSimulatedLocation, type SimulatedLocation } from './simulatedLocation';
 import { createEngine, type LocationApi, type ServerTrip, type TrackingEngine } from './stateMachine';
+import { getTrackingDb } from './trackingDb';
 import { createUploader, type Uploader } from './uploader';
+
+export { getTrackingDb };
 
 const isWeb = Platform.OS === 'web';
 const log = (msg: string, e?: unknown) => console.warn(`[tracking] ${msg}`, e ?? '');
-
-let dbPromise: Promise<SqlDb> | null = null;
-
-/** The tracking database, opened and migrated once per JS runtime (UI and background task share it). */
-export function getTrackingDb(): Promise<SqlDb> {
-  dbPromise ??= (async () => {
-    const raw = await SQLite.openDatabaseAsync(SQLITE_DB_NAME);
-    if (!isWeb) await raw.execAsync('pragma journal_mode = wal; pragma busy_timeout = 5000;');
-    const db = fromExpoSqlite(raw as unknown as Parameters<typeof fromExpoSqlite>[0], !isWeb);
-    await migrate(db);
-    return db;
-  })().catch((e) => {
-    dbPromise = null; // retry next time
-    throw e;
-  });
-  return dbPromise;
-}
 
 const nativeLocation: LocationApi = {
   getForegroundPermissionsAsync: () => Location.getForegroundPermissionsAsync(),

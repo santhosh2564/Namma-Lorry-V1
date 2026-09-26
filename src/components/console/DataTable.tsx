@@ -3,10 +3,11 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button, Text } from '@/components/ui';
-import { colors, radius, shadow, space } from '@/theme/tokens';
+import { colors, radius, shadow, sizes, space } from '@/theme/tokens';
 
 import { isHovered } from './hover';
 import { paginate, sortRows, type SortDir, type SortValue } from './table';
+import { t } from '@/i18n';
 
 export interface Column<T> {
   key: string;
@@ -119,7 +120,7 @@ export function DataTable<T>({
             {c.sortValue ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Sort by ${c.header}`}
+                accessibilityLabel={t.a11y.sortBy(c.header)}
                 accessibilityState={{ selected: active }}
                 onPress={() => toggle(c.key)}
               >
@@ -145,7 +146,7 @@ export function DataTable<T>({
     body = (
       <View style={styles.state}>
         <Text tone="danger">{error}</Text>
-        {onRetry ? <Button label="Try again" variant="text" icon="refresh" onPress={onRetry} /> : null}
+        {onRetry ? <Button label={t.common.retry} variant="text" icon="refresh" onPress={onRetry} /> : null}
       </View>
     );
   } else if (view.total === 0) {
@@ -192,12 +193,12 @@ export function DataTable<T>({
       {view.total > pageSize || (serverPage && view.page > 0) ? (
         <View style={styles.footer}>
           <Text variant="caption" tone="secondary">
-            {view.from}–{view.to} of {view.total}
+            {t.console.pager.range(view.from, view.to, view.total)}
           </Text>
           <View style={styles.pager}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Previous page"
+              accessibilityLabel={t.a11y.previousPage}
               disabled={view.page === 0}
               onPress={() => setPage(view.page - 1)}
               style={styles.pageBtn}
@@ -208,12 +209,10 @@ export function DataTable<T>({
                 color={view.page === 0 ? colors.disabled : colors.primary}
               />
             </Pressable>
-            <Text variant="caption">
-              Page {view.page + 1} of {view.pageCount}
-            </Text>
+            <Text variant="caption">{t.console.pager.page(view.page + 1, view.pageCount)}</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Next page"
+              accessibilityLabel={t.a11y.nextPage}
               disabled={view.page >= view.pageCount - 1}
               onPress={() => setPage(view.page + 1)}
               style={styles.pageBtn}
@@ -243,7 +242,7 @@ const styles = StyleSheet.create({
   vscroll: { maxHeight: '100%' },
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.md },
   header: { backgroundColor: colors.surfaceMuted, minHeight: 44 },
-  headCell: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 44 },
+  headCell: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: sizes.touchMin },
   headText: { letterSpacing: 0.5 },
   bodyRow: { minHeight: 56, borderTopWidth: 1, borderTopColor: colors.border },
   rowHover: { backgroundColor: colors.surfaceMuted },
@@ -261,5 +260,5 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   pager: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  pageBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  pageBtn: { width: sizes.touchMin, height: sizes.touchMin, alignItems: 'center', justifyContent: 'center' },
 });

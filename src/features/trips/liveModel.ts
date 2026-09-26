@@ -74,7 +74,7 @@ export function gpsStatus(i: GpsInput): GpsStatus {
   const ref = i.lastPoint?.recordedAt ?? i.startedAt;
   const since = ref === null ? 0 : i.now - ref;
   if (since > STALE_POINT_MS) {
-    // Updates need 25 m of movement (TRACKING_OPTIONS), so a parked truck records nothing.
+    // Updates need 25 m of movement (trackingOptions), so a parked truck records nothing.
     // A fresh fix next to the last point means "standing still", not "tracking broke".
     const fix = i.currentFix;
     if (

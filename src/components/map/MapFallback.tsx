@@ -5,6 +5,7 @@ import { Text } from '@/components/ui';
 import { colors, radius, space } from '@/theme/tokens';
 
 import type { AppMapProps } from './types';
+import { t } from '@/i18n';
 
 const fmt = (n: number) => n.toFixed(5);
 
@@ -13,12 +14,12 @@ const fmt = (n: number) => n.toFixed(5);
  * It lists what the map would show, so the screen is still usable.
  */
 const FALLBACK = {
-  pickup: { icon: 'place', color: colors.verified, label: 'Pickup' },
-  drop: { icon: 'flag', color: colors.danger, label: 'Drop' },
-  truck: { icon: 'local-shipping', color: colors.accent, label: 'Truck' },
-  me: { icon: 'my-location', color: colors.live, label: 'You' },
-  start: { icon: 'trip-origin', color: colors.verified, label: 'Start' },
-  end: { icon: 'sports-score', color: colors.primary, label: 'End' },
+  pickup: { icon: 'place', color: colors.verified },
+  drop: { icon: 'flag', color: colors.danger },
+  truck: { icon: 'local-shipping', color: colors.accent },
+  me: { icon: 'my-location', color: colors.live },
+  start: { icon: 'trip-origin', color: colors.verified },
+  end: { icon: 'sports-score', color: colors.primary },
 } as const;
 
 export function MapFallback({
@@ -31,11 +32,11 @@ export function MapFallback({
 }: AppMapProps & { reason: string }) {
   const planned = polylines.find((p) => p.kind === 'planned');
   return (
-    <View style={[styles.box, { minHeight: height }]} testID={testID} accessibilityLabel="Map unavailable">
+    <View style={[styles.box, { minHeight: height }]} testID={testID} accessibilityLabel={t.map.unavailable}>
       <View style={styles.head}>
         <MaterialIcons name="map" size={20} color={colors.textSecondary} />
         <Text variant="bodyStrong" tone="secondary">
-          Map unavailable
+          {t.map.unavailable}
         </Text>
       </View>
       <Text variant="caption" tone="secondary">
@@ -49,15 +50,15 @@ export function MapFallback({
           <View key={m.id} style={styles.row}>
             <MaterialIcons name={FALLBACK[m.kind].icon} size={18} color={FALLBACK[m.kind].color} />
             <Text variant="caption">
-              {FALLBACK[m.kind].label} · {fmt(m.position.lat)}, {fmt(m.position.lng)}
-              {circle ? ` · radius ${circle.radiusM} m` : ''}
+              {t.map.markers[m.kind]} · {fmt(m.position.lat)}, {fmt(m.position.lng)}
+              {circle ? ` · ${t.map.radius(circle.radiusM)}` : ''}
             </Text>
           </View>
         );
       })}
       {planned ? (
         <Text variant="caption" tone="secondary">
-          Planned route: {planned.path.length} points
+          {t.map.plannedPoints(planned.path.length)}
         </Text>
       ) : null}
     </View>

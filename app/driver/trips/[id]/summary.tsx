@@ -4,12 +4,12 @@ import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, type ComponentProps } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { Button, Card, Screen, Text } from '@/components/ui';
+import { Button, Card, ErrorBanner, Screen, Text } from '@/components/ui';
 import { formatDistanceKm, formatDuration } from '@/features/loads/status';
 import { fetchTripSummary, shortPlace, summaryKeys, useDriverStats } from '@/features/trips/api';
 import { isFinalStatus, reasonViews, summaryState, type SummaryState } from '@/features/trips/summaryModel';
 import { useTripRealtime } from '@/features/trips/useTripRealtime';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { formatDateIST } from '@/lib/dates';
 import { getLiveSnapshot, liveTripKey, syncNow } from '@/tracking/liveTrip';
 import { colors, radius, space } from '@/theme/tokens';
@@ -19,26 +19,40 @@ const s = t.summary;
 const POLL_MS = 10_000;
 
 type Icon = ComponentProps<typeof MaterialIcons>['name'];
-const HEADER: Record<
-  Exclude<SummaryState['kind'], 'in-progress'>,
-  { icon: Icon | null; color: string; title: string; body: string }
-> = {
-  verifying: { icon: null, color: colors.textSecondary, title: s.verifyingTitle, body: s.verifyingBody },
-  'ended-offline': {
-    icon: 'cloud-off',
-    color: colors.textSecondary,
-    title: s.offlineTitle,
-    body: s.offlineBody,
-  },
-  verified: { icon: 'check-circle', color: colors.verified, title: s.verifiedTitle, body: s.verifiedBody },
-  'needs-review': { icon: 'warning-amber', color: colors.review, title: s.reviewTitle, body: s.reviewBody },
-  rejected: { icon: 'cancel', color: colors.danger, title: s.rejectedTitle, body: s.rejectedBody },
-  cancelled: { icon: 'block', color: colors.textSecondary, title: s.cancelledTitle, body: s.cancelledBody },
-  unknown: { icon: 'help-outline', color: colors.textSecondary, title: s.unknownTitle, body: '' },
+type Kind = Exclude<SummaryState['kind'], 'in-progress'>;
+const HEADER: Record<Kind, { icon: Icon | null; color: string }> = {
+  verifying: { icon: null, color: colors.textSecondary },
+  'ended-offline': { icon: 'cloud-off', color: colors.textSecondary },
+  verified: { icon: 'check-circle', color: colors.verified },
+  'needs-review': { icon: 'warning-amber', color: colors.review },
+  rejected: { icon: 'cancel', color: colors.danger },
+  cancelled: { icon: 'block', color: colors.textSecondary },
+  unknown: { icon: 'help-outline', color: colors.textSecondary },
 };
+
+/** Header texts, read at render so they follow the current language. */
+function headerText(kind: Kind): { title: string; body: string } {
+  switch (kind) {
+    case 'verifying':
+      return { title: s.verifyingTitle, body: s.verifyingBody };
+    case 'ended-offline':
+      return { title: s.offlineTitle, body: s.offlineBody };
+    case 'verified':
+      return { title: s.verifiedTitle, body: s.verifiedBody };
+    case 'needs-review':
+      return { title: s.reviewTitle, body: s.reviewBody };
+    case 'rejected':
+      return { title: s.rejectedTitle, body: s.rejectedBody };
+    case 'cancelled':
+      return { title: s.cancelledTitle, body: s.cancelledBody };
+    default:
+      return { title: s.unknownTitle, body: '' };
+  }
+}
 
 /** D6 Trip Summary (docs/12 D6): Verifying → Verified / Needs review, or ended offline. */
 export default function TripSummary() {
+  useLanguage(); // re-render on language change (M12a)
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const server = useQuery({
@@ -80,7 +94,7 @@ export default function TripSummary() {
   if (state.kind === 'in-progress') return <Redirect href={`/driver/trips/${id}/live`} />;
 
   const row = server.data;
-  const head = HEADER[state.kind];
+  const head = { ...HEADER[state.kind], ...headerText(state.kind) };
   const reasons = reasonViews(row?.verification_reasons, row?.verification_metrics);
   const endedAt = row?.ended_at ?? local.data?.state?.ended_at ?? null;
   const startedAt = row?.started_at ?? local.data?.state?.started_at ?? null;
@@ -100,6 +114,9 @@ export default function TripSummary() {
           <Text tone="secondary" align="center">
             {head.body}
           </Text>
+        ) : null}
+        {state.kind === 'unknown' && server.isError ? (
+          <ErrorBanner error={server.error} onRetry={() => void server.refetch()} testID="d6-error" />
         ) : null}
         {state.kind === 'ended-offline' && state.pending > 0 ? (
           <Text variant="caption" tone="secondary" align="center" testID="d6-pending">

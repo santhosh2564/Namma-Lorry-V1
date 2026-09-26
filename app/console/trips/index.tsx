@@ -11,7 +11,7 @@ import { pick, useUrlState } from '@/features/console/useUrlState';
 import { useTripsPage } from '@/features/loads/api';
 import { DATE_RANGES, PAGE_SIZE, TRIP_STATUSES, type TripStatus } from '@/features/loads/schemas';
 import { formatDistanceKm, formatDuration, tripChip, tripChipFor } from '@/features/loads/status';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { fonts, space } from '@/theme/tokens';
 
 const copy = t.console.trips;
@@ -20,32 +20,54 @@ type Row = NonNullable<ReturnType<typeof useTripsPage>['data']>['rows'][number];
 const columns: Column<Row>[] = [
   {
     key: 'code',
-    header: copy.cols.code,
+    get header() {
+      return copy.cols.code;
+    },
     flex: 1.3,
     render: (r) => <Text style={styles.codeText}>{r.load?.load_code ?? '—'}</Text>,
   },
   {
     key: 'driver',
-    header: copy.cols.driver,
+    get header() {
+      return copy.cols.driver;
+    },
     flex: 1.3,
     render: (r) => <Text numberOfLines={1}>{r.driver?.full_name ?? '—'}</Text>,
   },
   {
     key: 'vehicle',
-    header: copy.cols.vehicle,
+    get header() {
+      return copy.cols.vehicle;
+    },
     flex: 1.2,
     render: (r) => <Text numberOfLines={1}>{r.vehicle?.registration_no ?? '—'}</Text>,
   },
-  { key: 'started', header: copy.cols.started, render: (r) => <Text>{formatDate(r.started_at)}</Text> },
-  { key: 'ended', header: copy.cols.ended, render: (r) => <Text>{formatDate(r.ended_at)}</Text> },
+  {
+    key: 'started',
+    get header() {
+      return copy.cols.started;
+    },
+    render: (r) => <Text>{formatDate(r.started_at)}</Text>,
+  },
+  {
+    key: 'ended',
+    get header() {
+      return copy.cols.ended;
+    },
+    render: (r) => <Text>{formatDate(r.ended_at)}</Text>,
+  },
   {
     key: 'duration',
-    header: copy.cols.duration,
+    get header() {
+      return copy.cols.duration;
+    },
     render: (r) => <Text>{formatDuration(r.started_at, r.ended_at)}</Text>,
   },
   {
     key: 'km',
-    header: copy.cols.km,
+    get header() {
+      return copy.cols.km;
+    },
     align: 'right',
     render: (r) => (
       <Text style={styles.num}>{r.status === 'verified' ? formatDistanceKm(r.tracked_distance_m) : '—'}</Text>
@@ -53,7 +75,9 @@ const columns: Column<Row>[] = [
   },
   {
     key: 'status',
-    header: copy.cols.status,
+    get header() {
+      return copy.cols.status;
+    },
     flex: 1.2,
     render: (r) => {
       const c = tripChipFor(r.status);
@@ -62,7 +86,9 @@ const columns: Column<Row>[] = [
   },
   {
     key: 'reasons',
-    header: copy.cols.reasons,
+    get header() {
+      return copy.cols.reasons;
+    },
     align: 'right',
     render: (r) => <Text style={styles.num}>{r.verification_reasons.length || '—'}</Text>,
   },
@@ -70,6 +96,7 @@ const columns: Column<Row>[] = [
 
 /** C5 Trips: server-side filters (status multi-select, driver, vehicle, date, Load ID search) and pagination. */
 export default function Trips() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const [params, set] = useUrlState<'status' | 'driver' | 'vehicle' | 'q' | 'range' | 'page'>();
   const statuses = (params.status ?? '')
@@ -96,7 +123,7 @@ export default function Trips() {
       <View style={styles.filters}>
         <FilterChips
           multi
-          label="Status"
+          label={t.console.filters.status}
           options={TRIP_STATUSES.map((s) => ({ value: s, label: tripChip[s].label }))}
           selected={statuses}
           onToggle={(v) => {
@@ -107,13 +134,13 @@ export default function Trips() {
       </View>
       <View style={styles.filters}>
         <FilterChips
-          label="Date range"
+          label={t.console.filters.dateRange}
           options={DATE_RANGES.map((r) => ({ value: r, label: t.console.loads.ranges[r] }))}
           selected={[range]}
           onToggle={(v) => set({ range: v === 'all' ? undefined : v, page: undefined })}
         />
         <FilterChips
-          label="Driver"
+          label={t.console.filters.driver}
           options={[
             { value: '', label: copy.allDrivers },
             ...(drivers.data ?? []).map((d) => ({ value: d.id, label: d.fullName })),
@@ -124,7 +151,7 @@ export default function Trips() {
       </View>
       <View style={styles.filters}>
         <FilterChips
-          label="Vehicle"
+          label={t.console.filters.vehicle}
           options={[
             { value: '', label: copy.allVehicles },
             ...(vehicles.data ?? []).map((v) => ({ value: v.id, label: v.registrationNo })),

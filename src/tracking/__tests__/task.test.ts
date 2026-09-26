@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 jest.mock('expo-task-manager', () => ({ defineTask: jest.fn() }));
-jest.mock('../runtime', () => ({ getTrackingDb: jest.fn() }));
+jest.mock('../trackingDb', () => ({ getTrackingDb: jest.fn() }));
 jest.mock('../taskHandler', () => ({ handleLocationUpdate: jest.fn(async () => 1) }));
 
 describe('background task registration (TRD §4.2)', () => {

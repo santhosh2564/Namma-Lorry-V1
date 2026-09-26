@@ -7,7 +7,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { Banner, Button, Card, Chip, Screen, Text } from '@/components/ui';
 import { batteryGuide, detectBrand } from '@/features/onboarding/batteryGuide';
 import { setBatterySetup, type BatterySetup } from '@/features/onboarding/batteryFlag';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { colors, space } from '@/theme/tokens';
 
 const s = t.battery;
@@ -25,6 +25,7 @@ async function openBatterySettings(): Promise<void> {
 
 /** D2 Battery Setup (Android): stop the phone's battery saver from killing trip tracking. */
 export default function BatterySetupScreen() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const guide = batteryGuide(detectBrand(Device.manufacturer, Device.brand));
   const [openFailed, setOpenFailed] = useState(false);

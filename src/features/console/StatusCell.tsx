@@ -1,5 +1,5 @@
 import { Chip } from '@/components/ui';
-import { t } from '@/i18n/en';
+import { t } from '@/i18n';
 
 import type { Activity } from './consoleData';
 

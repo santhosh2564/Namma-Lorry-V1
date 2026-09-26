@@ -1,5 +1,6 @@
 // Typed errors for the tracking engine: start_trip / end_trip RPC codes (docs/06 §1)
 // plus client-side conditions. RPC errors arrive as Postgres exception messages.
+import { pick, t } from '@/i18n';
 
 export type TripErrorCode =
   // start_trip / end_trip (docs/06 §1)
@@ -92,30 +93,14 @@ export function isPermanentRowError(e: RpcErrorLike | null | undefined): boolean
   return !!e && ['42501', '23514', '22P02', '22003', '23503', '23502'].includes(e.code ?? '');
 }
 
-/** Driver-facing text for each code (D4/D5; M12a moves these to i18n). */
+/** Driver-facing text for each code (D4/D5), from en.json `errors`. */
 export function tripErrorText(e: TripError): string {
   switch (e.code) {
     case 'OUTSIDE_PICKUP':
-      return `You are ${((e.distanceM ?? 0) / 1000).toFixed(1)} km from the pickup. Move inside the pickup area to start.`;
-    case 'GPS_ACCURACY_TOO_LOW':
-    case 'GPS_TIMEOUT':
-      return 'Waiting for better GPS signal.';
-    case 'GPS_UNAVAILABLE':
-      return 'Location is turned off. Turn it on to start the trip.';
-    case 'TRIP_NOT_FOUND':
-      return 'Trip not found.';
-    case 'TRIP_NOT_STARTABLE':
-      return 'This trip can no longer be started. Pull to refresh.';
-    case 'ANOTHER_TRIP_ACTIVE':
-    case 'LOCAL_TRIP_ACTIVE':
-      return 'You already have a trip in progress.';
-    case 'PERMISSION_REQUIRED':
-      return 'Allow location "all the time" to record trips.';
+      return t.errors.OUTSIDE_PICKUP(e.distanceM ?? 0);
     case 'NETWORK':
-      return "You're offline. Connect to the internet to start the trip.";
-    case 'TRACKING_START_FAILED':
-      return "Trip started but tracking couldn't begin. Keep the app open; it will retry.";
+      return t.tripDetail.offlineStart;
     default:
-      return 'Something went wrong. Please try again.';
+      return pick(t.errors, e.code, t.errors.UNKNOWN);
   }
 }

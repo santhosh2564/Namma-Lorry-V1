@@ -11,7 +11,7 @@ import { localTripQueryKey } from '@/features/auth/useRoutingDecision';
 import { formatDuration } from '@/features/loads/status';
 import { cargoText, shortPlace, useMyTrips, type DriverTrip } from '@/features/trips/api';
 import { firstName, homeSections } from '@/features/trips/home';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { useNow } from '@/lib/useNow';
 import { getLocalTripState } from '@/tracking/localState';
 import { colors, radius, space } from '@/theme/tokens';
@@ -20,6 +20,7 @@ const s = t.trips;
 
 /** D3 My Trips (docs/12 D3): live trip pinned, assigned trips, empty and offline states. */
 export default function MyTrips() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const profile = useProfile();
   const trips = useMyTrips();
@@ -62,7 +63,7 @@ export default function MyTrips() {
           name={offline ? 'cloud-off' : 'cloud-done'}
           size={24}
           color={offline ? colors.review : colors.verified}
-          accessibilityLabel={offline ? 'Offline' : 'Online'}
+          accessibilityLabel={offline ? t.a11y.offline : t.a11y.online}
         />
       </View>
 

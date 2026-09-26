@@ -5,9 +5,11 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import type { ReactNode } from 'react';
 
 import type { PermissionSnapshot } from '@/features/onboarding/permissionModel';
+import { applyLanguage } from '@/i18n';
 
 import TripHistory from '../../app/driver/(tabs)/history';
 import MyProfile from '../../app/driver/(tabs)/profile';
+import { touchTargetIssues } from './helpers/a11y';
 import * as db from './helpers/supabaseMock';
 
 jest.mock('@/lib/supabase', () => jest.requireActual('./helpers/supabaseMock').module);
@@ -17,8 +19,8 @@ jest.mock('@/lib/config', () => ({
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, replace: jest.fn() }) }));
 jest.mock('@/features/auth/store', () => ({
-  useAuthStore: (sel: (s: { session: { user: { id: string } } }) => unknown) =>
-    sel({ session: { user: { id: 'me' } } }),
+  useAuthStore: (sel: (s: { status: string; session: { user: { id: string } } }) => unknown) =>
+    sel({ status: 'signed-in', session: { user: { id: 'me' } } }),
 }));
 const mockPerms: { current: PermissionSnapshot } = { current: {} as PermissionSnapshot };
 jest.mock('@/tracking/permissions', () => ({
@@ -85,6 +87,12 @@ describe('D7 Trip History', () => {
     expect(screen.getByTestId('d7-trip-139')).not.toHaveTextContent(/125 km/);
     const q = db.log.find((l) => l.table === 'trips')!;
     expect(q.ops).toContainEqual(['eq', ['driver_id', 'me']]);
+  });
+
+  it('every touch target is labelled and at least 48 dp (M12a)', async () => {
+    await render(<TripHistory />, { wrapper });
+    await screen.findByTestId('d7-trip-139');
+    expect(touchTargetIssues(screen.root)).toEqual([]);
   });
 
   it('filters by status and opens D6', async () => {
@@ -161,12 +169,40 @@ describe('D8 My Profile', () => {
     expect(mockPush).toHaveBeenCalledWith('/battery');
   });
 
-  it('language sheet lists the languages, English only for now', async () => {
+  it('language sheet: picking Tamil applies it and saves it on the profile (0005)', async () => {
+    db.rpc.mockResolvedValue({ data: 'ta', error: null });
     await render(<MyProfile />, { wrapper });
     await act(async () => fireEvent.press(await screen.findByTestId('d8-language')));
-    expect(screen.getByTestId('d8-language-sheet')).toHaveTextContent(
-      /English.*தமிழ்.*Coming in the next update/,
-    );
+    const sheet = screen.getByTestId('language-sheet');
+    expect(sheet).toHaveTextContent(/English.*தமிழ் \(Tamil\).*ಕನ್ನಡ.*हिन्दी/);
+    // ta/kn/hi are still TODO: they fall back to English and say so.
+    expect(sheet).toHaveTextContent(/Some text still shows in English/);
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('language-ta'));
+      await new Promise((r) => setTimeout(r, 0)); // let the save (SecureStore + RPC) settle
+    });
+    expect(db.rpc).toHaveBeenCalledWith('set_preferred_language', { p_language: 'ta' });
+    expect(screen.getByTestId('language-ta')).toBeChecked();
+    expect(screen.getByTestId('d8-language')).toHaveTextContent(/தமிழ்/);
+    await act(async () => applyLanguage('en'));
+  });
+
+  it('every touch target is labelled and at least 48 dp (M12a)', async () => {
+    await render(<MyProfile />, { wrapper });
+    await screen.findByTestId('d8-health');
+    expect(touchTargetIssues(screen.root)).toEqual([]);
+    await act(async () => fireEvent.press(screen.getByTestId('d8-language')));
+    expect(touchTargetIssues(screen.root)).toEqual([]);
+  });
+
+  it('network error: plain message and Try again (M12a)', async () => {
+    db.errors.driver_stats = { message: 'TypeError: Network request failed' };
+    await render(<MyProfile />, { wrapper });
+    expect(await screen.findByTestId('d8-error')).toHaveTextContent(/You're offline\. Check your connection/);
+    delete db.errors.driver_stats;
+    await act(async () => fireEvent.press(screen.getByTestId('d8-error-retry')));
+    await waitFor(() => expect(screen.queryByTestId('d8-error')).toBeNull());
+    expect(screen.getByTestId('d8-trips')).toHaveTextContent(/38/);
   });
 
   it('privacy policy row and sign out blocked during an active trip', async () => {

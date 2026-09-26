@@ -6,7 +6,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, useWindowDimensions, View } 
 import { SearchSelect } from '@/components/console/SearchSelect';
 import { formatDate, formatKm } from '@/components/console/table';
 import { MapView } from '@/components/map/MapView';
-import { Banner, Button, Card, Chip, Text } from '@/components/ui';
+import { Banner, Button, Card, Chip, ErrorBanner, Text } from '@/components/ui';
 import { formatPhone } from '@/features/console/consoleData';
 import { useDriverRows, useVehicleRows } from '@/features/console/queries';
 import { ActivityChip } from '@/features/console/StatusCell';
@@ -20,7 +20,7 @@ import {
 import { assignSchema, type AssignInput, type AssignValues, type TripStatus } from '@/features/loads/schemas';
 import { formatDistanceKm, loadChipFor, tripChipFor } from '@/features/loads/status';
 import { vehicleTypeLabel } from '@/features/vehicles/schemas';
-import { t } from '@/i18n/en';
+import { pick, t, useLanguage } from '@/i18n';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
 const copy = t.console.loadDetail;
@@ -38,6 +38,7 @@ function Field({ label, value }: { label: string; value: string }) {
 
 /** C4 Load Detail & Assign. */
 export default function LoadDetail() {
+  useLanguage(); // re-render on language change (M12a)
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -48,7 +49,11 @@ export default function LoadDetail() {
   if (detail.isError || !detail.data) {
     return (
       <View style={styles.pagePad}>
-        <Banner tone="error" message={detail.isError ? t.console.loadError : copy.notFound} />
+        {detail.isError ? (
+          <ErrorBanner error={detail.error} onRetry={() => void detail.refetch()} testID="c4-error" />
+        ) : (
+          <Banner tone="error" message={copy.notFound} />
+        )}
         <Button
           label={copy.back}
           variant="text"
@@ -212,6 +217,13 @@ function AssignCard({ loadId }: { loadId: string }) {
     <Card>
       <Text variant="subtitle">{copy.assignTitle}</Text>
       {drivers.isPending || vehicles.isPending ? <ActivityIndicator color={colors.primary} /> : null}
+      {drivers.isError || vehicles.isError ? (
+        <ErrorBanner
+          error={drivers.error ?? vehicles.error}
+          onRetry={() => void Promise.all([drivers.refetch(), vehicles.refetch()])}
+          testID="c4-lists-error"
+        />
+      ) : null}
       <Controller
         control={control}
         name="driverId"
@@ -222,7 +234,9 @@ function AssignCard({ loadId }: { loadId: string }) {
             placeholder={copy.searchDriver}
             value={field.value}
             onChange={field.onChange}
-            error={fieldState.error ? copy.errors[fieldState.error.message ?? ''] : undefined}
+            error={
+              fieldState.error ? pick(copy.errors, fieldState.error.message, t.errors.UNKNOWN) : undefined
+            }
             options={(drivers.data ?? []).map((d) => ({
               id: d.id,
               label: d.fullName,
@@ -256,7 +270,9 @@ function AssignCard({ loadId }: { loadId: string }) {
             placeholder={copy.searchVehicle}
             value={field.value}
             onChange={field.onChange}
-            error={fieldState.error ? copy.errors[fieldState.error.message ?? ''] : undefined}
+            error={
+              fieldState.error ? pick(copy.errors, fieldState.error.message, t.errors.UNKNOWN) : undefined
+            }
             options={(vehicles.data ?? []).map((v) => ({
               id: v.id,
               label: v.registrationNo,

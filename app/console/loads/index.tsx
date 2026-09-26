@@ -10,7 +10,7 @@ import { pick, useUrlState } from '@/features/console/useUrlState';
 import { useLoadsPage, type LoadSort } from '@/features/loads/api';
 import { DATE_RANGES, LOAD_STATUSES, PAGE_SIZE } from '@/features/loads/schemas';
 import { formatDistanceKm, loadChipFor } from '@/features/loads/status';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { colors, fonts, radius, space } from '@/theme/tokens';
 
 const copy = t.console.loads;
@@ -19,7 +19,9 @@ type Row = NonNullable<ReturnType<typeof useLoadsPage>['data']>['rows'][number];
 const columns: Column<Row>[] = [
   {
     key: 'load_code',
-    header: copy.cols.code,
+    get header() {
+      return copy.cols.code;
+    },
     flex: 1.3,
     sortValue: () => null,
     render: (r) => (
@@ -30,37 +32,49 @@ const columns: Column<Row>[] = [
   },
   {
     key: 'pickup',
-    header: copy.cols.pickup,
+    get header() {
+      return copy.cols.pickup;
+    },
     flex: 2,
     render: (r) => <Text numberOfLines={2}>{r.pickup_address}</Text>,
   },
   {
     key: 'drop',
-    header: copy.cols.drop,
+    get header() {
+      return copy.cols.drop;
+    },
     flex: 2,
     render: (r) => <Text numberOfLines={2}>{r.drop_address}</Text>,
   },
   {
     key: 'planned_distance_m',
-    header: copy.cols.planned,
+    get header() {
+      return copy.cols.planned;
+    },
     align: 'right',
     sortValue: () => null,
     render: (r) => <Text style={styles.num}>{formatDistanceKm(r.planned_distance_m)}</Text>,
   },
   {
     key: 'material',
-    header: copy.cols.material,
+    get header() {
+      return copy.cols.material;
+    },
     render: (r) => <Text numberOfLines={1}>{r.material ?? '—'}</Text>,
   },
   {
     key: 'created_at',
-    header: copy.cols.created,
+    get header() {
+      return copy.cols.created;
+    },
     sortValue: () => null,
     render: (r) => <Text>{formatDate(r.created_at)}</Text>,
   },
   {
     key: 'status',
-    header: copy.cols.status,
+    get header() {
+      return copy.cols.status;
+    },
     flex: 1.3,
     render: (r) => {
       const c = loadChipFor(r.load_status);
@@ -69,7 +83,9 @@ const columns: Column<Row>[] = [
   },
   {
     key: 'driver',
-    header: copy.cols.driver,
+    get header() {
+      return copy.cols.driver;
+    },
     flex: 1.2,
     render: (r) => <Text numberOfLines={1}>{r.driver_name ?? '—'}</Text>,
   },
@@ -77,6 +93,7 @@ const columns: Column<Row>[] = [
 
 /** C2 Loads: server-side filters, search, sort and pagination on the load_list view. */
 export default function Loads() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const [params, set] = useUrlState<'status' | 'q' | 'range' | 'page' | 'sort' | 'dir'>();
   const status = pick(params.status, ['all', ...LOAD_STATUSES] as const, 'all');
@@ -100,13 +117,13 @@ export default function Loads() {
     >
       <View style={styles.filters}>
         <FilterChips
-          label="Status"
+          label={t.console.filters.status}
           options={(['all', ...LOAD_STATUSES] as const).map((s) => ({ value: s, label: copy.status[s] }))}
           selected={[status]}
           onToggle={(v) => set({ status: v === 'all' ? undefined : v, page: undefined })}
         />
         <FilterChips
-          label="Date range"
+          label={t.console.filters.dateRange}
           options={DATE_RANGES.map((r) => ({ value: r, label: copy.ranges[r] }))}
           selected={[range]}
           onToggle={(v) => set({ range: v === 'all' ? undefined : v, page: undefined })}

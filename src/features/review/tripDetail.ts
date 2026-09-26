@@ -1,5 +1,6 @@
 // C6 Trip Detail & Review helpers (docs/12 C6), pure and unit-tested.
 import type { RoutePoint } from './api';
+import { pick, t } from '@/i18n';
 
 // ---------- Replay ----------
 
@@ -63,17 +64,18 @@ export function metricItems(
   expectedPoints: number | null,
 ): MetricItem[] {
   const m = (metrics && typeof metrics === 'object' ? metrics : {}) as Record<string, unknown>;
+  const m_ = t.console.metrics;
   const points = num(m.points);
   const gap = num(m.max_gap_s);
   const items: [string, string, string | null][] = [
     [
       'tracked',
-      'Tracked distance',
+      m_.tracked,
       trackedDistanceM === null ? null : `${Math.round(trackedDistanceM / 100) / 10} km`,
     ],
     [
       'points',
-      'Points',
+      m_.points,
       points === null
         ? null
         : expectedPoints !== null
@@ -82,19 +84,15 @@ export function metricItems(
     ],
     [
       'max_gap',
-      'Max gap',
+      m_.max_gap,
       gap === null ? null : gap < 120 ? `${Math.round(gap)} s` : `${Math.round(gap / 60)} min`,
     ],
-    ['avg_kmh', 'Avg speed', num(m.avg_kmh) === null ? null : `${num(m.avg_kmh)} km/h`],
-    ['planned_ratio', 'Planned ratio', num(m.planned_ratio) === null ? null : String(num(m.planned_ratio))],
-    ['jumps', 'GPS jumps', num(m.jumps) === null ? null : String(num(m.jumps))],
-    ['mocked', 'Mocked points', num(m.mocked) === null ? null : String(num(m.mocked))],
-    [
-      'start_d',
-      'Start from pickup',
-      num(m.start_distance_m) === null ? null : metres(num(m.start_distance_m)!),
-    ],
-    ['end_d', 'End from drop', num(m.end_distance_m) === null ? null : metres(num(m.end_distance_m)!)],
+    ['avg_kmh', m_.avg_kmh, num(m.avg_kmh) === null ? null : `${num(m.avg_kmh)} km/h`],
+    ['planned_ratio', m_.planned_ratio, num(m.planned_ratio) === null ? null : String(num(m.planned_ratio))],
+    ['jumps', m_.jumps, num(m.jumps) === null ? null : String(num(m.jumps))],
+    ['mocked', m_.mocked, num(m.mocked) === null ? null : String(num(m.mocked))],
+    ['start_d', m_.start_d, num(m.start_distance_m) === null ? null : metres(num(m.start_distance_m)!)],
+    ['end_d', m_.end_d, num(m.end_distance_m) === null ? null : metres(num(m.end_distance_m)!)],
   ];
   return items.filter(([, , v]) => v !== null).map(([key, label, value]) => ({ key, label, value: value! }));
 }
@@ -109,25 +107,24 @@ export interface TimelineItem {
   tone: 'neutral' | 'live' | 'verified' | 'review' | 'danger';
 }
 
-const EVENT_LABEL: Record<string, [string, TimelineItem['tone']]> = {
-  started: ['Started', 'live'],
-  ended: ['Ended', 'neutral'],
-  verified: ['Verified by system', 'verified'],
-  needs_review: ['Flagged for review', 'review'],
-  approved: ['Approved', 'verified'],
-  rejected: ['Rejected', 'danger'],
-  cancelled: ['Cancelled', 'neutral'],
+const EVENT_TONE: Record<string, TimelineItem['tone']> = {
+  started: 'live',
+  ended: 'neutral',
+  verified: 'verified',
+  needs_review: 'review',
+  approved: 'verified',
+  rejected: 'danger',
+  cancelled: 'neutral',
 };
 
 const IST_OFFSET_MS = 5.5 * 3_600_000;
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** "26 Sep 06:10" in IST. */
 export function formatDateTimeIST(iso: string): string {
   const d = new Date(Date.parse(iso) + IST_OFFSET_MS);
   const hh = String(d.getUTCHours()).padStart(2, '0');
   const mm = String(d.getUTCMinutes()).padStart(2, '0');
-  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${hh}:${mm}`;
+  return `${d.getUTCDate()} ${t.common.months[d.getUTCMonth()]} ${hh}:${mm}`;
 }
 
 export function timelineItems(
@@ -135,15 +132,16 @@ export function timelineItems(
   reviewerName: string | null,
 ): TimelineItem[] {
   return events.map((e) => {
-    const [label, tone] = EVENT_LABEL[e.type] ?? [e.type, 'neutral' as const];
+    const tone = EVENT_TONE[e.type];
+    const label = tone ? pick(t.console.events, e.type, e.type) : e.type;
     const p = (e.payload && typeof e.payload === 'object' ? e.payload : {}) as Record<string, unknown>;
     let detail: string | null = null;
     if (e.type === 'ended' && typeof p.expected_points === 'number')
-      detail = `${p.expected_points} points expected`;
+      detail = t.console.events.expectedPoints(p.expected_points);
     if (e.type === 'needs_review' && Array.isArray(p.reasons)) detail = p.reasons.join(', ');
     if ((e.type === 'approved' || e.type === 'rejected') && typeof p.note === 'string') {
       detail = `${reviewerName ? `${reviewerName}: ` : ''}${p.note}`;
     }
-    return { id: e.id, label, time: formatDateTimeIST(e.created_at), detail, tone };
+    return { id: e.id, label, time: formatDateTimeIST(e.created_at), detail, tone: tone ?? 'neutral' };
   });
 }

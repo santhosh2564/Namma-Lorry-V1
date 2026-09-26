@@ -16,16 +16,17 @@ import {
   type CreateLoadValues,
 } from '@/features/loads/schemas';
 import { formatDistanceKm, formatEta } from '@/features/loads/status';
-import { t } from '@/i18n/en';
+import { pick, t, useLanguage } from '@/i18n';
 import { isLatLng } from '@/lib/geo';
 import { colors, space } from '@/theme/tokens';
 
 const copy = t.console.createLoad;
-const msg = (m?: string) => (m ? (copy.errors[m] ?? m) : undefined);
+const msg = (m?: string) => (m ? pick(copy.errors, m, m) : undefined);
 const emptyPlace = (): PlaceValue => ({ address: '', radiusM: RADIUS_DEFAULT_M, eLoc: null });
 
 /** C3 Create Load. */
 export default function CreateLoad() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const { width } = useWindowDimensions();
   const wide = width >= 1100;
@@ -124,7 +125,7 @@ export default function CreateLoad() {
             label={copy.material}
             value={field.value}
             onChangeText={field.onChange}
-            placeholder="Auto parts"
+            placeholder={copy.materialPlaceholder}
             error={msg(fieldState.error?.message)}
           />
         )}

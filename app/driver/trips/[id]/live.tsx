@@ -36,7 +36,7 @@ import {
   type TrackPoint,
 } from '@/features/trips/liveModel';
 import { formatShortDistance } from '@/features/trips/startState';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { useNow } from '@/lib/useNow';
 import { TripError } from '@/tracking/errors';
 import { watchForegroundFix } from '@/tracking/foregroundLocation';
@@ -44,6 +44,7 @@ import { getLiveSnapshot, liveTripKey, restartTracking } from '@/tracking/liveTr
 import { openLocationServicesSettings, permissionsQueryKey, readPermissions } from '@/tracking/permissions';
 import { getTracking } from '@/tracking/runtime';
 import { colors, radius, space } from '@/theme/tokens';
+import { activeTripMapHeight } from '@/features/trips/layout';
 
 const s = t.activeTrip;
 const KEEP_AWAKE_TAG = 'namma-lorry-active-trip';
@@ -53,10 +54,11 @@ const KEEP_AWAKE_TAG = 'namma-lorry-active-trip';
  * offline. Leaving the screen (back button, app switch) never stops tracking: only End does.
  */
 export default function ActiveTrip() {
+  useLanguage(); // re-render on language change (M12a)
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
-  const { height } = useWindowDimensions();
+  const { height, fontScale } = useWindowDimensions();
   const trip = useMyTrip(id);
   const live = useQuery({
     queryKey: liveTripKey(id),
@@ -189,7 +191,7 @@ export default function ActiveTrip() {
     <View style={styles.flex}>
       <MapView
         testID="d5-map"
-        height={Math.round(height * 0.45)}
+        height={activeTripMapHeight(height, fontScale)}
         center={pos ?? drop ?? undefined}
         zoom={15}
         follow={pos}
@@ -227,7 +229,7 @@ export default function ActiveTrip() {
           {toDrop?.inside ? (
             <View style={styles.nearDrop} testID="d5-near-drop" accessibilityLiveRegion="polite">
               <MaterialIcons name="flag" size={22} color={colors.verified} />
-              <Text variant="bodyStrong" style={{ color: colors.verified }}>
+              <Text variant="bodyStrong" style={{ color: colors.verifiedText }}>
                 {s.nearDrop}
               </Text>
             </View>
@@ -320,7 +322,7 @@ function Stat({
       <Text variant="digit" numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
-      <Text variant="caption" tone="secondary">
+      <Text variant="caption" tone="secondary" numberOfLines={2} align="center">
         {label}
         {caption ? ` · ${caption}` : ''}
       </Text>

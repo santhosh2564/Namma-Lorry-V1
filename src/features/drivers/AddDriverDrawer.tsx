@@ -5,13 +5,13 @@ import { View } from 'react-native';
 import { Drawer } from '@/components/console/Overlay';
 import { Banner, Button, ChoiceChips, Text, TextField } from '@/components/ui';
 import { useCreateDriver } from '@/features/console/queries';
-import { t } from '@/i18n/en';
+import { pick, t } from '@/i18n';
 import { FunctionError } from '@/lib/functions';
 
 import { addDriverSchema, LANGUAGES, type AddDriverInput, type AddDriverValues } from './schemas';
 
 const copy = t.console.drivers.form;
-const msg = (key: string | undefined) => (key ? (copy.errors[key] ?? copy.errors.unknown) : undefined);
+const msg = (key: string | undefined) => (key ? pick(copy.errors, key, copy.errors.unknown) : undefined);
 
 export function AddDriverDrawer({
   open,
@@ -88,7 +88,7 @@ export function AddDriverDrawer({
             onChangeText={field.onChange}
             onBlur={field.onBlur}
             autoCapitalize="words"
-            placeholder="Murugan S"
+            placeholder={copy.namePlaceholder}
             error={msg(fieldState.error?.message)}
           />
         )}
@@ -107,7 +107,7 @@ export function AddDriverDrawer({
             keyboardType="phone-pad"
             inputMode="tel"
             maxLength={12}
-            placeholder="98xxx xxxxx"
+            placeholder={t.common.phonePlaceholder}
             error={msg(fieldState.error?.message)}
           />
         )}

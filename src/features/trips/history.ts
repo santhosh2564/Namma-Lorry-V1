@@ -1,4 +1,5 @@
 // D7 Trip History (docs/12 D7): driver-facing status, filters and month groups (IST). Pure.
+import { t } from '@/i18n';
 
 export type HistoryStatus = 'verified' | 'review' | 'rejected' | 'verifying' | 'cancelled';
 export type HistoryFilter = 'all' | 'verified' | 'review' | 'rejected';
@@ -42,21 +43,6 @@ export function historyCounts(trips: { status: string }[]): Record<HistoryFilter
 }
 
 const IST_OFFSET_MS = 5.5 * 3_600_000;
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-const SHORT = MONTHS.map((m) => m.slice(0, 3));
 
 /** The date a trip belongs to: when it ended, else started, else was assigned. */
 export const tripDate = (t: HistoryTrip): string => t.ended_at ?? t.started_at ?? t.created_at;
@@ -68,7 +54,7 @@ function ist(iso: string): Date {
 /** "26 Sep" in IST. */
 export function dayMonthIST(iso: string): string {
   const d = ist(iso);
-  return `${d.getUTCDate()} ${SHORT[d.getUTCMonth()]}`;
+  return `${d.getUTCDate()} ${t.common.months[d.getUTCMonth()]}`;
 }
 
 export interface MonthGroup<T> {
@@ -82,16 +68,21 @@ export interface MonthGroup<T> {
 export function groupByMonth<T extends HistoryTrip>(trips: T[]): MonthGroup<T>[] {
   const sorted = trips.slice().sort((a, b) => Date.parse(tripDate(b)) - Date.parse(tripDate(a)));
   const groups: MonthGroup<T>[] = [];
-  for (const t of sorted) {
-    const d = ist(tripDate(t));
+  for (const trip of sorted) {
+    const d = ist(tripDate(trip));
     const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
     let g = groups.at(-1);
     if (!g || g.key !== key) {
-      g = { key, title: `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`, trips: [], distanceM: 0 };
+      g = {
+        key,
+        title: `${t.common.monthsLong[d.getUTCMonth()]} ${d.getUTCFullYear()}`,
+        trips: [],
+        distanceM: 0,
+      };
       groups.push(g);
     }
-    g.trips.push(t);
-    if (historyStatus(t.status) === 'verified') g.distanceM += t.tracked_distance_m ?? 0;
+    g.trips.push(trip);
+    if (historyStatus(trip.status) === 'verified') g.distanceM += trip.tracked_distance_m ?? 0;
   }
   return groups;
 }

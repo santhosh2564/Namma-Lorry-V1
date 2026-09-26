@@ -5,13 +5,13 @@ import { View } from 'react-native';
 import { Modal } from '@/components/console/Overlay';
 import { Banner, Button, ChoiceChips, TextField } from '@/components/ui';
 import { DuplicateVehicleError, useAddVehicle } from '@/features/console/queries';
-import { t } from '@/i18n/en';
+import { pick, t } from '@/i18n';
 
 import { parseRegistration } from './registration';
 import { addVehicleSchema, VEHICLE_TYPES, type AddVehicleInput, type AddVehicleValues } from './schemas';
 
 const copy = t.console.vehicles.form;
-const msg = (key: string | undefined) => (key ? (copy.errors[key] ?? copy.errors.unknown) : undefined);
+const msg = (key: string | undefined) => (key ? pick(copy.errors, key, copy.errors.unknown) : undefined);
 
 export function AddVehicleModal({
   open,
@@ -87,7 +87,7 @@ export function AddVehicleModal({
             onBlur={field.onBlur}
             autoCapitalize="characters"
             autoCorrect={false}
-            placeholder="TN 23 BK 4521"
+            placeholder={copy.regPlaceholder}
             error={msg(fieldState.error?.message)}
             hint={preview.ok ? copy.regPreview(preview.formatted) : copy.regHint}
           />

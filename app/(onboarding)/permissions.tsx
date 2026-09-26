@@ -18,7 +18,7 @@ import {
   type PermissionRow,
   type PermissionSnapshot,
 } from '@/features/onboarding/permissionModel';
-import { t } from '@/i18n/en';
+import { t, useLanguage } from '@/i18n';
 import { config } from '@/lib/config';
 import {
   openAppSettings,
@@ -32,6 +32,8 @@ import {
 import { colors, radius, sizes, space } from '@/theme/tokens';
 
 const s = t.permissions;
+/** Icons for the three disclosure rows (texts in en.json permissions.disclosure). */
+const DISCLOSURE_ICONS = ['play-circle-outline', 'verified', 'groups'] as const;
 const snapshotKey = [...permissionsQueryKey, 'snapshot'] as const;
 
 const REQUEST: Record<PermissionKey, () => Promise<void>> = {
@@ -51,6 +53,7 @@ const ROW_ICON = {
  * before any system dialog: nothing is requested until the driver taps a row's Allow.
  */
 export default function LocationPermission() {
+  useLanguage(); // re-render on language change (M12a)
   const router = useRouter();
   const qc = useQueryClient();
   const userId = useAuthStore((st) => st.session?.user.id);
@@ -105,10 +108,10 @@ export default function LocationPermission() {
       </View>
 
       <Card>
-        {s.disclosure.map((d) => (
-          <View key={d.title} style={styles.disclosureRow}>
+        {s.disclosure.map((d, i) => (
+          <View key={DISCLOSURE_ICONS[i]} style={styles.disclosureRow}>
             <View style={styles.iconBubble}>
-              <MaterialIcons name={d.icon} size={20} color={colors.primary} />
+              <MaterialIcons name={DISCLOSURE_ICONS[i] ?? 'info-outline'} size={20} color={colors.primary} />
             </View>
             <View style={styles.flex}>
               <Text variant="bodyStrong">{d.title}</Text>
@@ -317,8 +320,8 @@ const styles = StyleSheet.create({
   },
   actionText: { color: colors.text },
   actionSettings: { backgroundColor: colors.dangerSoft },
-  actionSettingsText: { color: colors.danger },
+  actionSettingsText: { color: colors.dangerText },
   pressed: { opacity: 0.85 },
   link: { minHeight: sizes.touchMin, justifyContent: 'center', alignSelf: 'flex-start' },
-  linkText: { color: colors.live, textDecorationLine: 'underline' },
+  linkText: { color: colors.liveText, textDecorationLine: 'underline' },
 });

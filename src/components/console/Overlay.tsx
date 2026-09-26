@@ -4,6 +4,7 @@ import { Modal as RNModal, Pressable, ScrollView, StyleSheet, useWindowDimension
 
 import { Text } from '@/components/ui';
 import { colors, radius, sizes, space } from '@/theme/tokens';
+import { t } from '@/i18n';
 
 interface OverlayProps {
   open: boolean;
@@ -19,7 +20,12 @@ function Header({ title, onClose }: { title: string; onClose: () => void }) {
       <Text variant="subtitle" accessibilityRole="header" style={styles.flex}>
         {title}
       </Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.close}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t.common.close}
+        onPress={onClose}
+        style={styles.close}
+      >
         <MaterialIcons name="close" size={22} color={colors.text} />
       </Pressable>
     </View>
@@ -32,7 +38,7 @@ export function Drawer({ open, title, onClose, children, footer }: OverlayProps)
   return (
     <RNModal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.scrimRow}>
-        <Pressable style={styles.flex} accessibilityLabel="Close" onPress={onClose} />
+        <Pressable style={styles.flex} accessibilityLabel={t.common.close} onPress={onClose} />
         <View style={[styles.drawer, { width: Math.min(sizes.drawer, width) }]} accessibilityViewIsModal>
           <Header title={title} onClose={onClose} />
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
@@ -50,7 +56,7 @@ export function Modal({ open, title, onClose, children, footer }: OverlayProps) 
   return (
     <RNModal visible={open} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.scrimCenter}>
-        <Pressable style={StyleSheet.absoluteFill} accessibilityLabel="Close" onPress={onClose} />
+        <Pressable style={StyleSheet.absoluteFill} accessibilityLabel={t.common.close} onPress={onClose} />
         <View style={styles.dialog} accessibilityViewIsModal>
           <Header title={title} onClose={onClose} />
           <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
@@ -89,7 +95,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  close: { width: sizes.touchMin, height: sizes.touchMin, alignItems: 'center', justifyContent: 'center' },
   body: { padding: space.lg, gap: space.lg },
   footer: {
     flexDirection: 'row',
