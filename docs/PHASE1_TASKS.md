@@ -98,7 +98,7 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-9 | Folder layout differs. CLAUDE.md: `src/features/tracking` + `src/tracking/`, `config.ts` and `db.ts` in `src/lib/`. TRD: `src/tracking/config.ts`, adds `lib/geo.ts`, `lib/sentry.ts`. Doc 13 P9: `db.ts` in `src/tracking/`. Doc 12/13 add `src/theme/`, `plugins/`, `/dev/*` routes. | CLAUDE.md, TRD §3, doc 13 | Adopt the §1.3 layout and update CLAUDE.md/TRD to match in M1. |
 | ND-10 | Web audience: CLAUDE.md "Web is a console (admin / owner / shipper)" vs PRD §3 / doc 04 "admin-only; owner/shipper → Coming soon" | CLAUDE.md rule 8 vs PRD | Admin-only in Phase 1 (PRD wins); fix the CLAUDE.md wording. |
 | ND-11 | `SENTRY_DSN` is listed as server-only, but the RN/web app needs it in the bundle. `SENTRY_AUTH_TOKEN` (source maps) is not listed. | `.env.example` vs doc 13 P13 | Add `EXPO_PUBLIC_SENTRY_DSN`; add `SENTRY_AUTH_TOKEN` as an EAS secret. |
-| ND-12 | Unregistered numbers: the PRD says refuse them, but `handle_new_user` auto-creates a driver profile for **any** OTP sign-in. | PRD P0-1 vs 0001 | `signInWithOtp({ shouldCreateUser: false })` + `admin-create-driver`; depends on ND-5. |
+| ND-12 | Unregistered numbers: the PRD says refuse them, but `handle_new_user` auto-creates a driver profile for **any** OTP sign-in. | PRD P0-1 vs 0001 | `signInWithOtp({ shouldCreateUser: false })` + `admin-create-driver`; depends on ND-5. *M5: the client half is done (`shouldCreateUser: false`). A direct GoTrue call with signups enabled can still create a user, so a server-side guard is still needed (0003 or disable signups on hosted).* |
 | ND-13 | Admin bypass: hard rule 2 says status changes only via RPCs, but RLS `trips_admin` is `for all`, so an admin client can set `status`/`tracked_distance_m` directly with no audit or stats. No `cancel_trip` RPC exists, so `cancelled` is otherwise unreachable. | CLAUDE.md rule 2 vs 0001 | New migration: admin `select/insert` only on trips + a `cancel_trip` RPC. |
 | ND-14 | D6 needs realtime on the `trips` row, but only `trip_live` is in the `supabase_realtime` publication. | doc 13 P11 vs 0001 | Add `trips` to the publication in a migration, or poll (doc 13 allows a polling fallback). |
 | ND-15 | Live delay target: doc 01 W4 exit says "~30 s"; PRD goal 4 and doc 10 scenario 11 say "≤ 60 s". | doc 01 vs PRD | Use ≤ 60 s as acceptance, ~30 s as the target. |
@@ -110,6 +110,7 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-21 | Where verification-fix migrations land: doc 13 P5 (M4) applies 0001 unchanged plus 0002 consent only. The audit fixes (ND-8, ND-12, ND-13, ND-14, `GPS_JUMPS` into `app_settings`, `admin_review_trip` not-found, `setting()` search_path) have no milestone. | doc 13 vs audit | Add `0003_phase1_fixes.sql` to M4 (listed as optional tasks there). |
 | ND-22 | Replay slider (C6) and multi-language files are **P1** in the PRD but are built in M11 / M12a per doc 13. | PRD §6 P1 vs doc 13 | Keep them as doc 13 says (no conflict in intent). Confirm they're not release blockers. |
 | ND-23 | S1 Splash and S4 Access Notice have **no route** in the doc 04 route tree. | doc 12 vs doc 04 | `app/index.tsx` (S1) and `app/access-notice.tsx` (S4). |
+| ND-25 | **Route URL clash.** Doc 04 puts `app/index.tsx` (S1), `app/(driver)/index.tsx` (D3) and `app/(console)/index.tsx` (C1) all at `/`. Expo Router rejects duplicate routes. | doc 04 §1 vs Expo Router | *Implemented in M5 (needs approval):* `app/driver/…` (`/driver`) and `app/console/…` (`/console`) as real path segments; `(auth)` and `(onboarding)` stay groups; D4 is `app/driver/trips/[id]/index.tsx`. Update doc 04's route tree when the pack is promoted. |
 | ND-24 | The doc 13 prerequisite "put the pack in the repo root and design PNGs in `design/` named by screen ID" is not done, and there is **no git repo** although doc 13 requires a commit per prompt. | doc 13 vs folder state | Pre-flight tasks, gated on ND-1. |
 
 ---
@@ -129,13 +130,13 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M1 — Scaffold the app (Prompt 2)
 **Tasks**
-- [ ] Expo app (TS strict, Expo Router) at the repo root, latest stable SDK, **exact versions pinned** (ND-7)
-- [ ] Install: supabase-js, expo-secure-store, expo-location, expo-task-manager, expo-sqlite, @react-native-community/netinfo, expo-device, expo-application, expo-dev-client, @tanstack/react-query, zustand, zod, react-hook-form, i18next, react-i18next
-- [ ] ESLint + Prettier; path alias `@/` → `src/`; Jest (jest-expo) + RNTL; scripts `typecheck`, `lint`, `test`
-- [ ] `app.config.ts` reading `EXPO_PUBLIC_*`; `.env.example` in sync (incl. ND-11); `src/lib/config.ts` zod-validates env and fails loudly in dev
+- [x] Expo app (TS strict, Expo Router) at the repo root, latest stable SDK, **exact versions pinned** (ND-7) — *done in M5: Expo SDK 57.0.25 / RN 0.86.3 / React 19.2.3 (the SDK 57 template pins RN 0.86, not 0.87); all versions exact*
+- [~] Install *(M5 installed supabase-js, expo-secure-store, TanStack Query, Zustand, zod, react-hook-form; location/task-manager/sqlite/netinfo/device/application/dev-client/i18next still to do)*: supabase-js, expo-secure-store, expo-location, expo-task-manager, expo-sqlite, @react-native-community/netinfo, expo-device, expo-application, expo-dev-client, @tanstack/react-query, zustand, zod, react-hook-form, i18next, react-i18next
+- [x] ESLint + Prettier; path alias `@/` → `src/`; Jest (jest-expo) + RNTL; scripts `typecheck`, `lint`, `test` *(M5)*
+- [~] `app.config.ts` reading `EXPO_PUBLIC_*`; `.env.example` in sync (incl. ND-11); `src/lib/config.ts` zod-validates env and fails loudly in dev *(M5: app.config.ts, root `.env.example`, config.ts done; ND-11 Sentry vars pending)*
 - [ ] `eas.json` with development / preview / production profiles
 - [ ] GitHub Actions: install, typecheck, lint, test
-- [ ] Placeholder route for **every** screen in §4 (renders screen ID + title)
+- [x] Placeholder route for **every** screen in §4 (renders screen ID + title) *(M5; routes per ND-25)*
 - [ ] Update CLAUDE.md / TRD layout per ND-9 (after approval)
 
 **Files expected:** `package.json`, `app.config.ts`, `eas.json`, `tsconfig.json`, `babel.config.js`, `eslint.config.js`, `.prettierrc`, `jest.config.js`, `.github/workflows/ci.yml`, `src/lib/config.ts`, `app/_layout.tsx`, all route files in §4 (placeholders), `.env.example`.
@@ -151,8 +152,8 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M2 — Design tokens & UI kit (Prompt 3)
 **Tasks**
-- [ ] `src/theme/tokens.ts`: colours (ND-17: brief palette), Noto Sans via expo-font, type scale, 8 px spacing, radii, shadows, status colours
-- [ ] `src/components/ui/`: Button (primary, secondary, danger, success, outline, text; sizes incl. 64 px driver primary; loading/disabled), Card, Chip/StatusChip (6 statuses: text + colour + icon), TextField, PhoneInput (+91), OtpInput (6), ListRow, Banner (info/warn/error/offline), BottomSheet, ConfirmSheet, EmptyState, StatBlock, Screen, SectionHeader
+- [~] *(M5 subset: colours, Noto Sans, type scale, spacing, radii, card shadow; status colours still to add)* `src/theme/tokens.ts`: colours (ND-17: brief palette), Noto Sans via expo-font, type scale, 8 px spacing, radii, shadows, status colours
+- [~] *(M5 subset: Button [primary/danger/success/outline/text, driver 64 px, loading/disabled], Card, Banner, Text, Screen, PhoneInput, OtpInput, Logo)* `src/components/ui/`: Button (primary, secondary, danger, success, outline, text; sizes incl. 64 px driver primary; loading/disabled), Card, Chip/StatusChip (6 statuses: text + colour + icon), TextField, PhoneInput (+91), OtpInput (6), ListRow, Banner (info/warn/error/offline), BottomSheet, ConfirmSheet, EmptyState, StatBlock, Screen, SectionHeader
 - [ ] Console primitives (web): Sidebar, TopBar, DataTable (sortable, sticky header, pagination), Drawer, Modal
 - [ ] Icons: Material Symbols Rounded (ND-16) or the closest maintained RN package
 - [ ] `/dev/kitchen-sink` route (dev only)
@@ -193,8 +194,8 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M4 — Supabase backend (Prompt 5)
 **Tasks**
-- [ ] `supabase init` / `start` (Docker, ND-4); apply `0001` **unchanged**. If it fails on this Supabase version, add a follow-up migration and explain.
-- [ ] `0002_consent.sql`: `profiles.consent_version`, `profiles.consent_at`, SECURITY DEFINER `record_consent(p_version text)` for the current user only
+- [x] `supabase init` / `start` (Docker, ND-4); apply `0001` **unchanged**. If it fails on this Supabase version, add a follow-up migration and explain. *(Verified in M5: 0001 + 0002 + seed apply cleanly on CLI 2.118.0 / Postgres 17.6.1.011; no fix migration needed.)*
+- [x] `0002_consent.sql`: `profiles.consent_version`, `profiles.consent_at`, SECURITY DEFINER `record_consent(p_version text)` for the current user only
 - [ ] *(Pending ND-21)* `0003_phase1_fixes.sql`: ND-8 point-upload handling, ND-12 registration, ND-13 admin trip writes + `cancel_trip`, ND-14 trips realtime, `GPS_JUMPS` threshold into `app_settings`, `admin_review_trip` not-found, `setting()` search_path
 - [ ] *(Pending ND-6)* Verification change for stationary gaps, if chosen server-side
 - [ ] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql`:
@@ -204,9 +205,9 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
   - a late point upload triggers verification
   - the sweeper
   - admin review increments stats exactly once
-- [ ] `supabase/seed.sql`: 1 admin, 3 drivers (test phone numbers), 3 vehicles, 4 loads on real TN/KA coordinates, 1 assigned trip (sample data from DESIGN.md)
-- [ ] `src/lib/database.types.ts` (generated) + typed `src/lib/supabase.ts` (secure-store on native, localStorage-safe on web)
-- [ ] `docs/DEV_SETUP.md`: test phone numbers/OTP for local and hosted
+- [x] `supabase/seed.sql`: 1 admin, 3 drivers (test phone numbers), 3 vehicles, 4 loads on real TN/KA coordinates, 1 assigned trip (sample data from DESIGN.md)
+- [x] `src/lib/database.types.ts` (generated) + typed `src/lib/supabase.ts` (secure-store on native, localStorage-safe on web) *(M5: SecureStore values are chunked because sessions exceed its ~2 KB limit)*
+- [x] `docs/DEV_SETUP.md`: test phone numbers/OTP for local and hosted *(M5)*
 
 **Files expected:** `supabase/config.toml`, `supabase/migrations/0002_consent.sql` (+ `0003_*` if approved), `supabase/tests/*.test.sql`, `supabase/seed.sql`, `src/lib/database.types.ts`, `src/lib/supabase.ts`, `docs/DEV_SETUP.md`.
 
@@ -223,14 +224,14 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M5 — Auth, roles and routing (Prompt 6)
 **Tasks**
-- [ ] S1 Splash, S2 Sign in, S3 Verify OTP, S4 Access Notice (variants: driver-on-web, owner/shipper coming soon, deactivated)
-- [ ] Phone OTP via Supabase; +91 zod validation; 30 s resend timer; error states: unregistered, wrong code, expired, rate-limited (ND-12)
-- [ ] Zustand auth store + TanStack Query profile; role gate per doc 04 §2
-- [ ] Splash checks local tracking state (stub until M8); sign-out blocked while a trip is active (stub flag)
-- [ ] Routing decision as a **pure function** + unit tests for every role × platform × state combination
-- [ ] Screens match `design/` S2/S3 via the UI kit
+- [x] S1 Splash, S2 Sign in, S3 Verify OTP, S4 Access Notice (variants: driver-on-web, owner/shipper coming soon, deactivated, plus `no-profile` for a signed-in user with no profile row)
+- [x] Phone OTP via Supabase; +91 zod validation; 30 s resend timer; error states: unregistered, wrong code, expired, rate-limited (ND-12: `shouldCreateUser: false`). GoTrue returns the same `otp_expired` error for wrong and expired codes, so the app uses time since sending vs `OTP_EXPIRY_SECONDS` (60 s).
+- [x] Zustand auth store + TanStack Query profile; role gate per doc 04 §2, enforced by `AreaGuard` on every route group (a driver on web can't open `/console` by URL)
+- [x] Splash checks local tracking state (stub `src/tracking/localState.ts` until M8); sign-out blocked while a trip is active (same stub). Permission check is also a stub (`src/tracking/permissions.ts`, always "missing") until M9.
+- [x] Routing decision as a **pure function** + unit tests for every role × platform × state combination (`src/features/auth/routing.test.ts`)
+- [x] Screens match `SCREENS/` S2/S3 via the UI kit (no `design/` folder yet, ND-24). ND-18 elements left out: "Driver cabin gateway" / "Secure cabin login" badges, "Protected by Namma Fleet Safety Network", on-screen keypad (the system numeric keyboard is used), dispatch-desk phone number, AIS-140 / Fast-Track footer, "attempts left" (GoTrue doesn't report it).
 
-**Files expected:** `app/index.tsx`, `app/(auth)/{_layout,sign-in,verify}.tsx`, `app/access-notice.tsx`, `src/features/auth/{store.ts,useProfile.ts,routing.ts,routing.test.ts,schemas.ts}`.
+**Files expected:** `app/index.tsx`, `app/(auth)/{_layout,sign-in,verify}.tsx`, `app/access-notice.tsx`, `src/features/auth/{store.ts,useProfile.ts,routing.ts,routing.test.ts,schemas.ts}`. *Also added:* `errors.ts`, `AreaGuard.tsx`, `SignOutButton.tsx`, `signOut.ts`, `useRoutingDecision.ts`, `useCountdown.ts` (+ tests), `src/tracking/{localState,permissions}.ts` stubs, `src/i18n/en.ts`.
 
 **Acceptance (PRD P0-1)**
 - A registered driver who enters the OTP lands on driver home (D3, or D1 if permissions are missing)
@@ -461,14 +462,14 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ## 4. Screen checklist (doc 12: 21 screens + 6 overlays)
 
-Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `design/` in pre-flight). "—" = not designed yet.
+Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `design/` in pre-flight). "—" = not designed yet. Since M5 the driver and console routes live under `app/driver/` and `app/console/` rather than the `(driver)`/`(console)` groups below (ND-25); D4 is `app/driver/trips/[id]/index.tsx`. All 21 routes exist as placeholders.
 
 | ID | Screen | Platform | Route | Milestone | Design ref | Built |
 |---|---|---|---|---|---|---|
-| S1 | Splash | mobile + web | `app/index.tsx` *(ND-23)* | M5 (resume logic M8) | — | ☐ |
-| S2 | Sign in | mobile + web | `app/(auth)/sign-in.tsx` | M5 | `1._sign_in` | ☐ |
-| S3 | Verify OTP | mobile + web | `app/(auth)/verify.tsx` | M5 | `2._verify_otp` | ☐ |
-| S4 | Access Notice (3 variants) | mobile + web | `app/access-notice.tsx` *(ND-23)* | M5 | — | ☐ |
+| S1 | Splash | mobile + web | `app/index.tsx` *(ND-23)* | M5 (resume logic M8) | — | ☑ |
+| S2 | Sign in | mobile + web | `app/(auth)/sign-in.tsx` | M5 | `1._sign_in` | ☑ |
+| S3 | Verify OTP | mobile + web | `app/(auth)/verify.tsx` | M5 | `2._verify_otp` | ☑ |
+| S4 | Access Notice (3 variants) | mobile + web | `app/access-notice.tsx` *(ND-23)* | M5 | — | ☑ |
 | D1 | Location Permission | Android + iOS | `app/(onboarding)/permissions.tsx` | M9 | `3._location_permission` | ☐ |
 | D2 | Battery Setup | Android | `app/(onboarding)/battery.tsx` | M9 | `4._battery_setup` | ☐ |
 | D3 | My Trips | Android + iOS | `app/(driver)/index.tsx` | M9 | `5._my_trips_home` | ☐ |
@@ -557,3 +558,39 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Changed:** Created `docs/PHASE1_TASKS.md`. A newer pack was found at `namma-lorry-phase1-docs/namma-lorry-phase1-docs/` (adds docs 12/13, `stitch/DESIGN.md`, updated doc 04); a copy of doc 13 also sits at the repo root. No application code written.
 - **Left:** Answer ND-1…ND-24, then pre-flight, then M1 (Prompt 2).
 - **Known issues:** Audit questions still unanswered in `docs/00-repo-audit.md`; three copies of the docs now exist (root loose files, old pack, new nested pack) until pre-flight cleans up.
+
+### 2026-09-26 · M5 (Prompt 6): auth, roles and routing
+- **Changed:** M1–M4 app code didn't exist yet, so this session also built the minimum those milestones had to provide (agreed with the user):
+  - Expo SDK 57 app with Expo Router, TS strict, ESLint, Prettier, Jest; exact version pins
+  - theme tokens and the UI-kit subset S1–S4 need
+  - the typed Supabase client (chunked SecureStore on native, guarded localStorage on web) and generated `database.types.ts`
+  - `docs/DEV_SETUP.md`
+  - placeholders for all 21 screens
+
+  M5 itself:
+  - S1–S4 screens, OTP sign-in with `shouldCreateUser: false`, and the error states
+  - pure `decideRoute` (doc 04 §2), with `AreaGuard` on every route group
+  - stubs for local trip state and permissions; sign-out blocked while a trip is active
+- **Verified:**
+  - `npm run typecheck`, `npm run lint` and `npm test` (98 tests) pass
+  - Local Supabase (`supabase start`: 0001 + 0002 + seed applied unchanged) + `expo start --web` + Playwright, against the real local auth server:
+    - signed out → S2
+    - invalid number → button disabled
+    - unregistered number error
+    - wrong code error
+    - admin → `/console`; session survives a reload; sign out → S2
+    - driver on web → S4 "use the mobile app"
+    - driver can't open `/console`; a spoofed `?variant=` is ignored
+    - inactive → S4 deactivated
+    - owner → S4 coming soon
+- **Not verified:**
+  - native (no device/emulator here): SecureStore session, Android SMS autofill, the resume-trip path (stubbed)
+  - "rate limited" and "expired" are unit-tested only
+- **Left:**
+  - the 🧍 checkpoint (log in as the seeded admin and driver on web and on a phone)
+  - the rest of M1 (eas.json, CI, remaining packages), M2 (full kit, kitchen sink), M3, and M4 pgTAP tests
+- **Known issues:**
+  - ND-25 route layout needs approval
+  - ND-12 still needs a server-side guard
+  - "Change language" only shows a "coming soon" note until the M11 language sheet
+  - store buttons on S4 stay hidden until `EXPO_PUBLIC_PLAY_STORE_URL` / `EXPO_PUBLIC_APP_STORE_URL` are set
