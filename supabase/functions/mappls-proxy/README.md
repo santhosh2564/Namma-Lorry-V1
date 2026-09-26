@@ -12,6 +12,7 @@ Edge Function secrets and never reaches the app bundle (CLAUDE.md rule 6).
 | `geocode` | `{ address }` | `{ lat, lng, formattedAddress, eLoc }` |
 | `reverse` | `{ lat, lng }` | `{ formattedAddress }` |
 | `distance` | `{ from: {lat,lng}, to: {lat,lng} }` | `{ distanceM, durationS }` |
+| `route` *(ND-28, not in docs/06)* | `{ from: {lat,lng}, to: {lat,lng} }` | `{ distanceM, durationS, path: [{lat,lng}] }`, a simplified line for drawing the planned route on C3/C4 (display only) |
 
 **Deviation from docs/06 (ND-26):** `lat`/`lng` on `autosuggest` and `geocode` are `number | null`.
 On the standard Mappls plan these APIs return only an `eLoc` (place id). Coordinates for an eLoc
@@ -48,6 +49,7 @@ Errors are `{ error: CODE, message? }`:
 | autosuggest | Autosuggest | `GET https://search.mappls.com/search/places/autosuggest/json?query=&location=lat,lng&region=IND&access_token=` → `suggestedLocations[]{placeName, placeAddress, eLoc, orderIndex}` (query ≤ 45 chars) |
 | geocode | Geocoding | `GET https://search.mappls.com/search/address/geocode?address=&access_token=` → `copResults` (object, or array when `itemCount` > 1) `{formattedAddress, eLoc, …}`; 204 = no match |
 | reverse | Reverse Geocoding | `GET https://search.mappls.com/search/address/rev-geocode?lat=&lng=&access_token=` → `results[0].formatted_address` |
+| route | Route Driving Directions | `GET https://route.mappls.com/route/direction/route_adv/{profile}/{lng,lat};{lng,lat}?geometries=polyline&overview=simplified&access_token=` → `routes[0]{geometry (encoded polyline, 1e5), distance (m), duration (s)}` |
 | distance | Driving Distance-Time Matrix | `GET https://route.mappls.com/route/dm/distance_matrix/{profile}/{lng,lat};{lng,lat}?access_token=` → `results.distances[0][1]` (m), `results.durations[0][1]` (s) |
 
 `distance` uses the **`trucking`** profile by default (lorries). Mappls doesn't support

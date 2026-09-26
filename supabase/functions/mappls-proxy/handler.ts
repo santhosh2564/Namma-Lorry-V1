@@ -21,6 +21,8 @@ export const requestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('geocode'), address: z.string().trim().min(3).max(300) }),
   z.object({ action: z.literal('reverse'), lat, lng }),
   z.object({ action: z.literal('distance'), from: point, to: point }),
+  // Addition to docs/06 §4 (ND-28): planned-route geometry for C3/C4 maps.
+  z.object({ action: z.literal('route'), from: point, to: point }),
 ]);
 
 export interface ProxyDeps {
@@ -77,6 +79,11 @@ export function createHandler(deps: ProxyDeps) {
         }
         case 'distance': {
           const r = await mappls.distance(m, body.from, body.to);
+          if (!r) throw new HttpError(404, 'NO_ROUTE');
+          return json(r);
+        }
+        case 'route': {
+          const r = await mappls.route(m, body.from, body.to);
           if (!r) throw new HttpError(404, 'NO_ROUTE');
           return json(r);
         }

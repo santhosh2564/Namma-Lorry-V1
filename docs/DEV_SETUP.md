@@ -102,7 +102,23 @@ derived from `SUPABASE_URL`, or you can set `SUPABASE_JWKS_URL`.
 The package's agent skill is vendored at `.claude/skills/supabase-server/` (`npx skills add supabase/server`).
 Mappls auth and endpoints are documented in `supabase/functions/mappls-proxy/README.md`.
 
-## 6. Run the app
+## 6. Maps (Mappls Web SDK)
+The console map (C3/C4) loads the Mappls Web SDK v3 with `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY`, a static
+key from the Mappls console. Restrict it to your web domain(s) there. Without the key, or if the SDK
+can't load, a placeholder lists the pins and geofences as text, and pins can be set by entering
+coordinates. Native maps arrive with M3.
+
+## 7. End-to-end tests (Playwright, web console)
+```bash
+npx supabase start && npx supabase db reset   # seeded admin + drivers
+npx playwright install chromium               # once (skip where browsers are preinstalled)
+npm run e2e                                    # starts `expo start --web` if it isn't running
+```
+`e2e/create-load.spec.ts`: an admin creates a load (autosuggest, coordinates, radius, planned
+distance) and assigns it. `mappls-proxy` is mocked in the browser, so no Mappls key is needed. Set
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE` to use a specific Chromium binary.
+
+## 8. Run the app
 ```bash
 npm install
 npm run web          # console + auth screens in the browser (http://localhost:8081)

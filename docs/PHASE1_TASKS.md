@@ -106,13 +106,15 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-17 | Two token palettes. The brief: primary #0F2A44, accent #F5A300, bg #F6F7F9, error #D93025. Stitch `SCREENS/namma_lorry/DESIGN.md`: primary #00152a, secondary #825500 / #feaa11, bg #f8f9ff, error #ba1a1a. | stitch/DESIGN.md vs Stitch export | Brief (`stitch/DESIGN.md`) wins; the Stitch token file is reference only. |
 | ND-18 | Stitch mocks contain out-of-scope features and non-compliant copy: FASTag, Fleet SOS, ratings, e-Way Bill, POD/settlement, "Live Trip Navigation", certification claims, and a disclosure saying location "unlocks priority loads and verified payouts". | SCREENS/* vs PRD §3, doc 09 §1 | Ignore these elements; disclosure text comes from doc 09 only. Record the list in `design/README.md`. |
 | ND-19 | Doc 12 console prompts reference data the schema lacks: **permission-health dot** on C8 Drivers, **"Send invite SMS"** toggle on Add Driver, **shipper select** on C3 and **owner select** on C9 (no way to create owner/shipper profiles), **CSV export** on C5. | doc 12 §6 vs 0001 / PRD | Suggest: drop the permission dot and the SMS invite for Phase 1; make shipper/owner optional and hidden until an admin can create those roles; CSV export optional (P1). |
-| ND-20 | Loads list status (unassigned / assigned / in trip / done) has no column on `loads`. | doc 04/12 C2 vs 0001 | Derive from the latest trip (view or query); no schema change. |
+| ND-20 | Loads list status (unassigned / assigned / in trip / done) has no column on `loads`. | doc 04/12 C2 vs 0001 | Derive from the latest trip (view or query); no schema change. *Done in M7: `load_list` view (0003), with the latest non-cancelled trip deciding the status.* |
 | ND-21 | Where verification-fix migrations land: doc 13 P5 (M4) applies 0001 unchanged plus 0002 consent only. The audit fixes (ND-8, ND-12, ND-13, ND-14, `GPS_JUMPS` into `app_settings`, `admin_review_trip` not-found, `setting()` search_path) have no milestone. | doc 13 vs audit | Add `0003_phase1_fixes.sql` to M4 (listed as optional tasks there). |
 | ND-22 | Replay slider (C6) and multi-language files are **P1** in the PRD but are built in M11 / M12a per doc 13. | PRD §6 P1 vs doc 13 | Keep them as doc 13 says (no conflict in intent). Confirm they're not release blockers. |
 | ND-23 | S1 Splash and S4 Access Notice have **no route** in the doc 04 route tree. | doc 12 vs doc 04 | `app/index.tsx` (S1) and `app/access-notice.tsx` (S4). |
 | ND-25 | **Route URL clash.** Doc 04 puts `app/index.tsx` (S1), `app/(driver)/index.tsx` (D3) and `app/(console)/index.tsx` (C1) all at `/`. Expo Router rejects duplicate routes. | doc 04 §1 vs Expo Router | *Implemented in M5 (needs approval):* `app/driver/…` (`/driver`) and `app/console/…` (`/console`) as real path segments; `(auth)` and `(onboarding)` stay groups; D4 is `app/driver/trips/[id]/index.tsx`. Update doc 04's route tree when the pack is promoted. |
 | ND-26 | **Mappls coordinates are premium.** Doc 06 §4 has `autosuggest` → `[{label, address, lat, lng, eLoc?}]` and `geocode` → `{lat, lng, …}`. The current Mappls Autosuggest and Geocoding APIs return only an `eLoc`; coordinates for an eLoc are a premium "Location Coordinates" field (Place Details, OAuth). | doc 06 §4 vs developer.mappls.com (Sep 2026) | *Implemented in M6 (needs approval):* `lat`/`lng` are `number \| null`, passed through whenever Mappls includes them; `eLoc` is always returned. In C3 (M7) the admin confirms the pin on the map (Mappls web SDK can centre on an eLoc), and the stored lat/lng come from the pin. Alternative: buy the Place Details coordinates add-on. Update doc 06 once decided. |
 | ND-27 | `mappls-proxy` rate limit is in-memory per isolate (60/min/admin), not global. | doc 06 §4 "rate-limit per user" | Fine for a handful of admins. A table-backed limiter is possible if abuse appears. |
+| ND-28 | **Planned route line.** C3/C4 designs show a dashed planned route, but doc 06 §4 only has `distance` (no geometry). | doc 12 C3/C4 vs doc 06 §4 | *Implemented in M7 (needs approval):* new `route` action in `mappls-proxy` (Mappls `route_adv`, trucking profile) returns `{distanceM, durationS, path}`, for display only. `planned_distance_m` still comes from `distance` on save, as doc 06 specifies. It costs one extra Mappls call per C3 preview / C4 view (cached per session). Add to doc 06. |
+| ND-29 | **Date range filter on C2/C5** is presets (All / Today / 7 / 30 days, IST), not a free date picker. C5 filters on the trip's created (assigned) date. CSV export on C5 is not built (ND-19, optional). | doc 12 C2/C5 | Confirm presets are enough for Phase 1. |
 | ND-24 | The doc 13 prerequisite "put the pack in the repo root and design PNGs in `design/` named by screen ID" is not done, and there is **no git repo** although doc 13 requires a commit per prompt. | doc 13 vs folder state | Pre-flight tasks, gated on ND-1. |
 
 ---
@@ -177,9 +179,12 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 **Tasks**
 - [ ] Research the current `mappls-map-react-native` install (maven repo, iOS config files, key setup); **list the required native files and keys before coding**
 - [ ] `plugins/withMappls.ts` local config plugin (the shipped plugin is broken, R1); no hand-edited `android/`/`ios/` unless impossible (explain)
-- [ ] `src/components/map/types.ts` (`AppMapProps` exactly as TRD §5), `MapView.native.tsx`, `MapView.web.tsx` (script-loader hook, loads once)
-- [ ] `{lat,lng}` ↔ `[lng,lat]` only inside map components
-- [ ] `src/lib/geo.ts`: haversine, circle polygon, bearing + unit tests
+- [~] `src/components/map/types.ts` (`AppMapProps` exactly as TRD §5), `MapView.native.tsx`, `MapView.web.tsx` (script-loader hook, loads once).
+  - *Done in M7 (web):* `types.ts` (TRD props plus `draggable` / `onMarkerDragEnd`), `MapView.web.tsx` on the Mappls Web SDK v3, `useMapplsScript.ts`, and a `MapFallback` shown when there's no key or the SDK fails to load.
+  - `MapView.tsx` is a native placeholder until `MapView.native.tsx`.
+  - **The web map has not been rendered yet:** there's no key and this sandbox can't reach Mappls.
+- [x] `{lat,lng}` ↔ `[lng,lat]` only inside map components *(web: `fitBounds` in `MapView.web.tsx`; `geo.bounds()` returns [lng, lat])*
+- [x] `src/lib/geo.ts`: haversine, circle polygon, bearing + unit tests *(M7; plus destination, bounds, isLatLng)*
 - [ ] `/dev/map`: pickup circle, drop pin, dashed planned route, actual route, rotated truck marker, "fit to content"
 
 **Files expected:** `plugins/withMappls.ts`, `src/components/map/{types.ts,MapView.native.tsx,MapView.web.tsx,useMapplsScript.ts}`, `src/lib/geo.ts` + tests, `app/dev/map.tsx`.
@@ -286,18 +291,29 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M7 — Loads and assignment (Prompt 8)
 **Tasks**
-- [ ] C3 Create Load:
-  - pickup/drop autosuggest via proxy, draggable pin
-  - radius slider 100–2,000 m (default 500) drawn as a circle
-  - material, weight, shipper (ND-19), notes
+- [x] C3 Create Load:
+  - pickup/drop autosuggest via proxy (debounced, ≥ 3 chars), draggable pin
+  - the pin can also be set by tapping the map or typing coordinates, needed when Mappls returns no coordinates (ND-26)
+  - radius slider 100–2,000 m (default 500, 50 m steps; drag, ± buttons or keyboard) drawn as a circle
+  - material, weight in tonnes (stored as kg), shipper (ND-19), notes
+    - Shipper is an optional choice among active shipper profiles; none exist yet, so it shows "No shipper accounts yet".
   - on save, fetch planned distance → `planned_distance_m`
+    - If the proxy fails, the admin can "Save without planned distance".
+    - A route preview (`route` action, ND-28) shows the planned line and "Planned distance … · ~… h" before saving.
   - load code generated by the DB
-- [ ] C4 Load Detail & Assign: both geofences + planned route; driver search with verified stats and a busy warning; vehicle select; creates a `trips` row; shows the resulting trip
-- [ ] C2 Loads and C5 Trips: server-side pagination, filters, search; status chips; load status derived (ND-20)
-- [ ] Shared zod schemas `src/features/loads/schemas.ts`
-- [ ] Playwright test: admin creates a load and assigns it
+- [x] C4 Load Detail & Assign: both geofences + planned route; driver search with verified stats and a busy warning; vehicle select; creates a `trips` row; shows the resulting trip.
+  - The busy warning ("on another trip") doesn't block assigning.
+  - The unique-index violation (one open trip per load) shows "This load already has an open trip".
+  - The trip card shows status, driver, vehicle and start/end times, plus the load's trip history.
+- [x] C2 Loads and C5 Trips: server-side pagination, filters, search; status chips; load status derived (ND-20)
+  - C2 runs on the new `load_list` view (migration 0003, `security_invoker`, pgTAP tested): status tabs, date range, search on Load ID / pickup / drop, and server-side sort on Load ID, planned km and created date.
+  - C5 filters on status (multi-select), driver, vehicle, date range and Load ID search.
+  - All filters live in the URL, and rows open C4.
+  - Status labels follow docs/06 §5.
+- [x] Shared zod schemas `src/features/loads/schemas.ts`
+- [x] Playwright test: admin creates a load and assigns it (`e2e/create-load.spec.ts`, `npm run e2e`; `mappls-proxy` mocked)
 
-**Files expected:** `app/(console)/loads/{index,new,[id]}.tsx`, `app/(console)/trips/index.tsx`, `src/features/loads/*`, `src/features/trips/*` (console queries), `e2e/create-load.spec.ts`, `playwright.config.ts`.
+**Files expected:** `app/(console)/loads/{index,new,[id]}.tsx`, `app/(console)/trips/index.tsx`, `src/features/loads/*`, `src/features/trips/*` (console queries), `e2e/create-load.spec.ts`, `playwright.config.ts`. *Built at `app/console/…` (ND-25). Trip list queries live in `src/features/loads/api.ts`. Also added: `supabase/migrations/0003_load_list_view.sql`, `supabase/tests/load_list.test.sql`, `src/components/map/*`, `src/components/console/{SearchSelect,SearchInput}.tsx`, `src/components/ui/{Slider,MultiChips}.tsx`.*
 
 **Acceptance (PRD P0-2, P0-3)**
 - Load ID format `NL-YYYY-NNNNNN`; pickup/drop via autosuggest or pin; radius default 500 m; material and weight optional; planned distance fetched from Mappls
@@ -493,10 +509,10 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | D7 | Trip History | Android + iOS | `app/(driver)/history.tsx` | M11 | `9._trip_history_tab` | ☐ |
 | D8 | My Profile | Android + iOS | `app/(driver)/profile.tsx` | M11 | `10._my_profile_tab` | ☐ |
 | C1 | Live Dashboard | web | `app/(console)/index.tsx` | M11 | — | ☐ |
-| C2 | Loads | web | `app/(console)/loads/index.tsx` | M7 | — | ☐ |
-| C3 | Create Load | web | `app/(console)/loads/new.tsx` | M7 | — | ☐ |
-| C4 | Load Detail & Assign | web | `app/(console)/loads/[id].tsx` | M7 | — | ☐ |
-| C5 | Trips | web | `app/(console)/trips/index.tsx` | M7 | — | ☐ |
+| C2 | Loads | web | `app/(console)/loads/index.tsx` | M7 | — | ☑ |
+| C3 | Create Load | web | `app/(console)/loads/new.tsx` | M7 | — | ☑ |
+| C4 | Load Detail & Assign | web | `app/(console)/loads/[id].tsx` | M7 | — | ☑ |
+| C5 | Trips | web | `app/(console)/trips/index.tsx` | M7 | — | ☑ |
 | C6 | Trip Detail & Review | web | `app/(console)/trips/[id].tsx` | M11 | — | ☐ |
 | C7 | Review Queue | web | `app/(console)/review/index.tsx` | M11 | — | ☐ |
 | C8 | Drivers | web | `app/(console)/drivers/index.tsx` | M6 | — | ☑ |
@@ -667,3 +683,32 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
   - Playwright on web with the publishable key: M5 auth flows (12 checks) and M6 console (15 checks) pass.
 - **Not verified:** hosted deploy (needs your Supabase access token).
 - **Hosted project:** the app only needs its URL + publishable key in `.env`. `SUPABASE_SECRET_KEY` is injected into Edge Functions automatically and must not be put in the app.
+
+### 2026-09-26 · M7 (Prompt 8): loads and assignment
+- **Changed:**
+  - C2 Loads, C3 Create Load, C4 Load Detail & Assign and C5 Trips.
+  - Migration `0003_load_list_view.sql` (`load_list`, `security_invoker`) and its pgTAP test `supabase/tests/load_list.test.sql`: status derivation, cancelled trips ignored, and RLS for admin / driver / shipper / anon.
+  - Web map on the Mappls Web SDK v3 (`src/components/map/`, an M3 subset), with a fallback panel. `src/lib/geo.ts`.
+  - `mappls-proxy` gains a `route` action (ND-28).
+  - DataTable gains server-side paging and sorting, clickable rows, and a fixed-width layout (the M6 tables no longer clip their columns).
+  - New UI pieces: Slider (keyboard and ± accessible), FilterChips, SearchSelect, SearchInput.
+  - `expo-asset` installed; it was a missing peer of `expo-font` that broke Jest for anything importing icons.
+  - Playwright set up: `playwright.config.ts`, `e2e/`, `npm run e2e`.
+- **Mappls Web SDK (developer.mappls.com Web JS V3.0, Sep 2026):**
+  - Script `https://sdk.mappls.com/map/sdk/web?v=3.0&access_token=<static key>`.
+  - Classes: `mappls.Map`, `Marker({draggable, html})` with `addListener('dragend')` / `getPosition()`, `Circle`, `Polyline`, `mappls.remove({map, layer})`, `mappls.fitBounds({map, cType: 0, bounds: [[lng, lat]…]})`.
+  - Unverified: the dashed-line option (`dasharray`) and the click-event payload (`e.lngLat`) aren't documented; they follow MapLibre conventions.
+- **Verified:**
+  - Checks: typecheck, lint, format; Jest 195; Deno 31 (including the `route` action and polyline decoding); `supabase test db` (9 checks); `supabase db reset` applies 0001–0003.
+  - `npm run e2e` passes twice in a row against local Supabase. The run:
+    - hits C3 validation, then fills pickup from a suggestion with coordinates and drop from a suggestion without coordinates plus typed coordinates
+    - moves a radius slider and checks the route-preview strip
+    - saves: planned distance sent to `distance` with the right coordinates, `NL-YYYY-NNNNNN` code, 41 km and 6.5 t shown on C4
+    - hits assign validation, assigns with driver/vehicle search → trip "Assigned"
+    - finds the load in C2 by search (Assigned, Ravi Kumar) and the trip in C5 (status filter + search)
+  - Manual browser run: the busy-driver warning shows and assigning still works.
+  - The M6 console suite (15 checks) still passes.
+- **Not verified:**
+  - The real Mappls map and live autosuggest / route / distance calls: no `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY` or `MAPPLS_REST_KEY`, and Mappls is unreachable from this sandbox. The e2e mocks the proxy.
+  - The "admin creates a load in < 2 min" acceptance needs a human with the real map.
+- **Left:** 🧍 set both Mappls keys, check the map renders on C3/C4, drag a pin, and confirm the dashed planned route; decide ND-26, ND-28 and ND-29.

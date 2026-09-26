@@ -32,6 +32,11 @@ export interface DistanceResult {
   durationS: number;
 }
 
+export interface RouteResult extends DistanceResult {
+  /** Simplified planned-route geometry (display only; never the official km). */
+  path: LatLng[];
+}
+
 /** Error codes the proxy can return (see supabase/functions/mappls-proxy/README.md). */
 export type MapplsErrorCode =
   | 'INVALID_REQUEST'
@@ -56,4 +61,5 @@ export const mappls = {
   geocode: (address: string) => call<GeocodeResult>({ action: 'geocode', address }),
   reverse: (at: LatLng) => call<ReverseResult>({ action: 'reverse', lat: at.lat, lng: at.lng }),
   distance: (from: LatLng, to: LatLng) => call<DistanceResult>({ action: 'distance', from, to }),
+  route: (from: LatLng, to: LatLng) => call<RouteResult>({ action: 'route', from, to }),
 };

@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { Button, Text } from '@/components/ui';
 import { colors, radius, shadow, space } from '@/theme/tokens';
 
+import { isHovered } from './hover';
 import { paginate, sortRows, type SortDir, type SortValue } from './table';
 
 export interface Column<T> {
@@ -30,6 +31,13 @@ export interface DataTableProps<T> {
   pageSize?: number;
   /** Minimum table width before it scrolls horizontally (narrow windows). */
   minWidth?: number;
+  /** Server-side sorting: the table shows `sort` and reports header clicks; rows are not re-sorted. */
+  sort?: { key: string; dir: SortDir };
+  onSortChange?: (s: { key: string; dir: SortDir }) => void;
+  /** Server-side paging: `rows` is already the current page. */
+  serverPage?: { page: number; total: number; onPageChange: (page: number) => void };
+  onRowPress?: (row: T) => void;
+  rowAccessibilityLabel?: (row: T) => string;
 }
 
 /** Sortable table with a sticky header and client-side pagination (console, web-first). */
@@ -44,19 +52,48 @@ export function DataTable<T>({
   initialSort,
   pageSize = 20,
   minWidth = 760,
+  sort: controlledSort,
+  onSortChange,
+  serverPage,
+  onRowPress,
+  rowAccessibilityLabel,
 }: DataTableProps<T>) {
-  const [sort, setSort] = useState(initialSort);
-  const [page, setPage] = useState(0);
+  const [localSort, setLocalSort] = useState(initialSort);
+  // Explicit width: inside a horizontal ScrollView, flex columns would otherwise size to their longest text.
+  const [cardWidth, setCardWidth] = useState(0);
+  const [localPage, setLocalPage] = useState(0);
+  const sort = onSortChange ? controlledSort : localSort;
 
   const sorted = useMemo(() => {
-    const col = columns.find((c) => c.key === sort?.key);
-    return rows && col?.sortValue && sort ? sortRows(rows, col.sortValue, sort.dir) : (rows ?? []);
-  }, [rows, columns, sort]);
-  const view = paginate(sorted, page, pageSize);
+    if (onSortChange) return rows ?? [];
+    const col = columns.find((c) => c.key === localSort?.key);
+    return rows && col?.sortValue && localSort ? sortRows(rows, col.sortValue, localSort.dir) : (rows ?? []);
+  }, [rows, columns, localSort, onSortChange]);
+
+  const view = serverPage
+    ? (() => {
+        const pageCount = Math.max(1, Math.ceil(serverPage.total / pageSize));
+        const from = serverPage.total ? serverPage.page * pageSize + 1 : 0;
+        return {
+          rows: sorted,
+          page: serverPage.page,
+          pageCount,
+          from,
+          to: from ? from + sorted.length - 1 : 0,
+          total: serverPage.total,
+        };
+      })()
+    : paginate(sorted, localPage, pageSize);
+  const setPage = serverPage ? serverPage.onPageChange : setLocalPage;
 
   function toggle(key: string) {
-    setPage(0);
-    setSort((s) => (s?.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+    const next: { key: string; dir: SortDir } =
+      sort?.key === key ? { key, dir: sort.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' };
+    if (onSortChange) onSortChange(next);
+    else {
+      setLocalPage(0);
+      setLocalSort(next);
+    }
   }
 
   const header = (
@@ -118,28 +155,41 @@ export function DataTable<T>({
       </View>
     );
   } else {
-    body = view.rows.map((row) => (
-      <View key={rowKey(row)} style={[styles.row, styles.bodyRow]}>
-        {columns.map((c) => (
-          <View key={c.key} style={[styles.cell, { flex: c.flex ?? 1 }, c.align === 'right' && styles.right]}>
-            {c.render(row)}
-          </View>
-        ))}
-      </View>
-    ));
+    body = view.rows.map((row) => {
+      const cells = columns.map((c) => (
+        <View key={c.key} style={[styles.cell, { flex: c.flex ?? 1 }, c.align === 'right' && styles.right]}>
+          {c.render(row)}
+        </View>
+      ));
+      return onRowPress ? (
+        <Pressable
+          key={rowKey(row)}
+          accessibilityRole="link"
+          accessibilityLabel={rowAccessibilityLabel?.(row)}
+          onPress={() => onRowPress(row)}
+          style={(state) => [styles.row, styles.bodyRow, isHovered(state) && styles.rowHover]}
+        >
+          {cells}
+        </Pressable>
+      ) : (
+        <View key={rowKey(row)} style={[styles.row, styles.bodyRow]}>
+          {cells}
+        </View>
+      );
+    });
   }
 
   return (
-    <View style={styles.card}>
+    <View style={styles.card} onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}>
       <ScrollView horizontal contentContainerStyle={styles.hscroll}>
-        <View style={{ minWidth, flex: 1 }}>
+        <View style={{ width: Math.max(minWidth, cardWidth) }}>
           <ScrollView stickyHeaderIndices={[0]} style={styles.vscroll}>
             {header}
             <View>{body}</View>
           </ScrollView>
         </View>
       </ScrollView>
-      {view.total > pageSize ? (
+      {view.total > pageSize || (serverPage && view.page > 0) ? (
         <View style={styles.footer}>
           <Text variant="caption" tone="secondary">
             {view.from}–{view.to} of {view.total}
@@ -196,7 +246,8 @@ const styles = StyleSheet.create({
   headCell: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 44 },
   headText: { letterSpacing: 0.5 },
   bodyRow: { minHeight: 56, borderTopWidth: 1, borderTopColor: colors.border },
-  cell: { paddingHorizontal: space.sm, justifyContent: 'center' },
+  rowHover: { backgroundColor: colors.surfaceMuted },
+  cell: { paddingHorizontal: space.sm, justifyContent: 'center', minWidth: 0 },
   right: { alignItems: 'flex-end' },
   headRight: { justifyContent: 'flex-end' },
   state: { padding: space.xl, alignItems: 'center', gap: space.sm },

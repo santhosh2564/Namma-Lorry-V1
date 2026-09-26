@@ -8,6 +8,7 @@ export const MAPPLS = {
   geocode: 'https://search.mappls.com/search/address/geocode',
   reverse: 'https://search.mappls.com/search/address/rev-geocode',
   distance: 'https://route.mappls.com/route/dm/distance_matrix',
+  route: 'https://route.mappls.com/route/direction/route_adv',
 } as const;
 
 export interface LatLng {
@@ -35,6 +36,11 @@ export interface ReverseResult {
 export interface DistanceResult {
   distanceM: number;
   durationS: number;
+}
+
+export interface RouteResult extends DistanceResult {
+  /** Simplified route geometry for drawing the planned route (display only). */
+  path: LatLng[];
 }
 
 export interface MapplsDeps {
@@ -123,6 +129,45 @@ export function normaliseDistance(body: Json | null): DistanceResult | null {
   return d !== null && t !== null ? { distanceM: Math.round(d), durationS: Math.round(t) } : null;
 }
 
+/** Decodes a Google/OSRM encoded polyline (precision 5 = 1e5), as returned by route_adv. */
+export function decodePolyline(encoded: string, precision = 5): LatLng[] {
+  const factor = 10 ** precision;
+  const out: LatLng[] = [];
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  while (index < encoded.length) {
+    for (const axis of [0, 1]) {
+      let result = 0;
+      let shift = 0;
+      let byte: number;
+      do {
+        byte = encoded.charCodeAt(index++) - 63;
+        result |= (byte & 0x1f) << shift;
+        shift += 5;
+      } while (byte >= 0x20 && index < encoded.length);
+      const delta = result & 1 ? ~(result >> 1) : result >> 1;
+      if (axis === 0) lat += delta;
+      else lng += delta;
+    }
+    out.push({ lat: lat / factor, lng: lng / factor });
+  }
+  return out;
+}
+
+export function normaliseRoute(body: Json | null): RouteResult | null {
+  const route = Array.isArray(body?.routes) ? (body!.routes as Json[])[0] : undefined;
+  const d = num(route?.distance);
+  const t = num(route?.duration);
+  const geometry = str(route?.geometry);
+  if (d === null || t === null) return null;
+  return {
+    distanceM: Math.round(d),
+    durationS: Math.round(t),
+    path: geometry ? decodePolyline(geometry) : [],
+  };
+}
+
 export async function autosuggest(deps: MapplsDeps, query: string, near?: LatLng): Promise<Suggestion[]> {
   const url = new URL(MAPPLS.autosuggest);
   url.searchParams.set('query', query);
@@ -153,4 +198,12 @@ export async function distance(deps: MapplsDeps, from: LatLng, to: LatLng): Prom
     url.searchParams.set('region', 'ind');
   }
   return normaliseDistance(await call(deps, url));
+}
+
+export async function route(deps: MapplsDeps, from: LatLng, to: LatLng): Promise<RouteResult | null> {
+  const url = new URL(`${MAPPLS.route}/${deps.profile}/${from.lng},${from.lat};${to.lng},${to.lat}`);
+  url.searchParams.set('geometries', 'polyline');
+  url.searchParams.set('overview', 'simplified');
+  url.searchParams.set('alternatives', 'false');
+  return normaliseRoute(await call(deps, url));
 }

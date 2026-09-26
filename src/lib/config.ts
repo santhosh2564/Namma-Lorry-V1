@@ -7,6 +7,9 @@ const schema = z.object({
   // Publishable key (sb_publishable_…). The legacy anon JWT is no longer used.
   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().startsWith('sb_publishable_'),
   EXPO_PUBLIC_APP_ENV: z.enum(['development', 'staging', 'production']).default('development'),
+  // Mappls Web/Map SDK static key (restricted by domain / package in the Mappls console).
+  // Optional: without it the console shows a map placeholder and coordinate fields.
+  EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY: z.string().min(8).optional(),
   // Store listing links for S4 "use the mobile app"; buttons are hidden until set (M12c).
   EXPO_PUBLIC_PLAY_STORE_URL: z.url().optional(),
   EXPO_PUBLIC_APP_STORE_URL: z.url().optional(),
@@ -28,6 +31,7 @@ export const config = parseConfig({
   EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   EXPO_PUBLIC_APP_ENV: process.env.EXPO_PUBLIC_APP_ENV,
+  EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY: process.env.EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY || undefined,
   EXPO_PUBLIC_PLAY_STORE_URL: process.env.EXPO_PUBLIC_PLAY_STORE_URL || undefined,
   EXPO_PUBLIC_APP_STORE_URL: process.env.EXPO_PUBLIC_APP_STORE_URL || undefined,
 });

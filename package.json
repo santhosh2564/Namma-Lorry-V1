@@ -13,7 +13,8 @@
     "test": "jest",
     "format": "prettier --write \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\"",
-    "test:functions": "cd supabase/functions && deno task test"
+    "test:functions": "cd supabase/functions && deno task test",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@expo-google-fonts/noto-sans": "0.4.2",
@@ -23,6 +24,7 @@
     "@supabase/supabase-js": "2.117.2",
     "@tanstack/react-query": "5.104.0",
     "expo": "57.0.25",
+    "expo-asset": "57.0.18",
     "expo-constants": "57.0.19",
     "expo-font": "57.0.4",
     "expo-linking": "57.0.11",
@@ -42,6 +44,7 @@
     "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.1",
     "@testing-library/react-native": "14.0.1",
     "@types/jest": "29.5.14",
     "@types/react": "19.2.18",

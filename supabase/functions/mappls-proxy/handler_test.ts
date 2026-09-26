@@ -236,6 +236,47 @@ Deno.test('distance: driving profile adds rtype and region', async () => {
   assertEquals(calls[0]!.url.searchParams.get('region'), 'ind');
 });
 
+Deno.test('route: trucking route_adv, decoded simplified geometry, rounded totals', async () => {
+  const { handler, calls } = setup({
+    'https://route.mappls.com/route/direction/route_adv/': {
+      // Polyline for (38.5,-120.2) → (40.7,-120.95) → (43.252,-126.453): the reference example of the format.
+      body: {
+        code: 'Ok',
+        routes: [{ geometry: '_p~iF~ps|U_ulLnnqC_mqNvxq`@', distance: 2282.3, duration: 252.4 }],
+      },
+    },
+  });
+  const res = await handler(
+    post(
+      { action: 'route', from: { lat: 12.9563, lng: 79.9422 }, to: { lat: 10.9608, lng: 76.9656 } },
+      'admin-token',
+    ),
+  );
+  assertEquals(await res.json(), {
+    distanceM: 2282,
+    durationS: 252,
+    path: [
+      { lat: 38.5, lng: -120.2 },
+      { lat: 40.7, lng: -120.95 },
+      { lat: 43.252, lng: -126.453 },
+    ],
+  });
+  const url = calls[0]!.url;
+  assertEquals(url.pathname, '/route/direction/route_adv/trucking/79.9422,12.9563;76.9656,10.9608');
+  assertEquals(url.searchParams.get('geometries'), 'polyline');
+  assertEquals(url.searchParams.get('overview'), 'simplified');
+});
+
+Deno.test('route: no routes → 404 NO_ROUTE', async () => {
+  const { handler } = setup({
+    'https://route.mappls.com/route/direction/route_adv/': { body: { code: 'NoRoute', routes: [] } },
+  });
+  const res = await handler(
+    post({ action: 'route', from: { lat: 1, lng: 2 }, to: { lat: 3, lng: 4 } }, 'admin-token'),
+  );
+  assertEquals(res.status, 404);
+});
+
 Deno.test('distance: no route in response → 404 NO_ROUTE', async () => {
   const { handler } = setup({
     'https://route.mappls.com/route/dm/distance_matrix/': { body: { results: { code: 'NoRoute' } } },

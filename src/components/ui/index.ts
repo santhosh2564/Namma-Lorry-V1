@@ -9,3 +9,5 @@ export { Text } from './Text';
 export { ChoiceChips } from './ChoiceChips';
 export { Chip, type ChipTone } from './Chip';
 export { TextField } from './TextField';
+export { FilterChips } from './MultiChips';
+export { Slider } from './Slider';
