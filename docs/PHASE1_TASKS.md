@@ -117,6 +117,8 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-30 | **Notifications on D1.** The D1 design keeps Continue disabled "until all are allowed". Tracking works without notification permission (the Android foreground service still runs; iOS uses the location indicator), and a driver who refuses it would be stuck. | doc 12 D1 | *Implemented in M9 (needs approval):* notifications must be **asked** once, but may be refused; D1 then explains what the driver misses and offers Settings. Precise + "all the time" location stay mandatory. |
 | ND-31 | **Planned route on D4.** The D4 design shows a dashed road route, but the `route` action (ND-28) is admin-only and loads store no route geometry, so drivers can't get one. | doc 12 D4 vs doc 06 §4 | *Implemented in M9 (needs approval):* a straight dashed pickup → drop line and the planned km. Road geometry for drivers needs either a stored `loads.planned_path` saved from C3, or a driver-scoped `route` action. |
 | ND-32 | **"No point for > 2 min" vs a parked truck.** TRACKING_OPTIONS use a 25 m distance filter, so a truck standing still (loading, traffic, rest) records nothing, and a plain 2-minute rule would show the problem banner at every stop. | doc 13 P11 vs TRD §4.1 (ND-6) | *Implemented in M10 (needs approval):* while D5 is open it also watches foreground GPS; if a fresh fix is within 50 m of the last recorded point the row says "Stopped" and no banner shows. Moving with nothing recorded, no fresh fix, or the task not running still raises the banner. |
+| ND-33 | **C1 route tails.** The C1 design shows navy route tails behind each truck; M11's prompt asks only for markers. Drawing tails needs recent `trip_points` per live trip on every update. | doc 12 C1 vs doc 13 P12 | *M11:* markers only; the full live route is on C6. Add short tails (e.g. last 30 min) in M12a if ops want them. |
+| ND-34 | **C6 live append source.** Only `trip_live` (latest position) and `trips` are in the realtime publication; `trip_points` is not (a full point stream to every console would be heavy). | 0001 / 0004 | *Implemented in M11 (needs approval):* C6 appends each `trip_live` update as a provisional point and reloads all `trip_points` when the trip's status changes. Points uploaded in one batch show up as a single step until that reload. |
 | ND-29 | **Date range filter on C2/C5** is presets (All / Today / 7 / 30 days, IST), not a free date picker. C5 filters on the trip's created (assigned) date. CSV export on C5 is not built (ND-19, optional). | doc 12 C2/C5 | Confirm presets are enough for Phase 1. |
 | ND-24 | The doc 13 prerequisite "put the pack in the repo root and design PNGs in `design/` named by screen ID" is not done, and there is **no git repo** although doc 13 requires a commit per prompt. | doc 13 vs folder state | Pre-flight tasks, gated on ND-1. |
 
@@ -448,17 +450,18 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M11 — Live console, review, history, profile (Prompt 12)
 **Tasks**
-- [ ] C1 Live Dashboard: all `in_progress` trips from `trip_live` on the Mappls web map; markers rotated by heading; side list with last-update age (red > 15 min); KPI strip; realtime with resubscribe + refetch on reconnect
-- [ ] C6 Trip Detail & Review:
-  - route from `trip_points` (1,000 per page) + live append; planned route dashed; start/end markers
-  - replay slider (P1-1, ND-22)
-  - metrics + reason chips; `trip_events` timeline
-  - review panel only when `needs_review` → `admin_review_trip` with mandatory note; refetch after the decision (no optimistic UI)
-- [ ] C7 Review Queue: `needs_review` oldest first, reason chips, mini map, opens C6, empty state "All caught up"
-- [ ] D7 Trip History: status filters, grouped by month, → D6
-- [ ] D8 My Profile: read-only `driver_stats` with the "can't be edited" caption, language picker sheet, permission/battery health check, privacy policy link, sign out (blocked during an active trip)
+- [x] C1 Live Dashboard (`app/console/index.tsx`): every `in_progress` trip with its `trip_live` position on the Mappls web map; truck markers rotated by heading, a red ring when stale; side list with search and last-update age (red "No recent data" > 15 min, stale first); KPI strip (live · stale · assigned today (IST) · need review → C7); realtime on `trip_live` + `trips` via `useRealtimeChanges` (resubscribe with backoff on channel errors and on reconnect, refetch on every (re)subscribe); `trip_live` updates are merged into the cache without a refetch; the map only re-fits when the set of trips changes (new `fitKey` map prop). No route tails yet (ND-33).
+- [x] C6 Trip Detail & Review (`app/console/trips/[id].tsx`):
+  - route from `trip_points`, 1,000 per page until a short page (`fetchAllPoints`), plus live append from realtime `trip_live` (ND-34); planned route dashed (Mappls `route` action, straight line fallback); pickup/drop geofences; start/end markers (new `start`/`end` kinds)
+  - replay slider with play/pause (~300 steps over the whole trip, P1-1)
+  - verification outcome, reason chips (code + docs/08 text), metrics grid; `trip_events` timeline in IST
+  - review card only when `needs_review`: mandatory note (checked before any call), Approve & verify / Reject → `admin_review_trip`; no optimistic UI — trip, events, queue, badge and driver list are refetched after every decision, and errors (e.g. `TRIP_NOT_IN_REVIEW`) are shown
+  - C5 Trips rows now open C6
+- [x] C7 Review Queue (`app/console/review/index.tsx`): `needs_review` oldest first (by `ended_at`), plain-language reason chips, mini map (pickup, drop, end, planned line), "Open & review" → C6, empty state "All caught up"
+- [x] D7 Trip History (`app/driver/(tabs)/history.tsx`): filters All / Verified / Under review / Not verified with counts, summary strip, grouped by IST month, km only for verified trips, rows → D6, pull to refresh, empty states
+- [x] D8 My Profile (`app/driver/(tabs)/profile.tsx`): header (initials, name, phone, driver since), read-only `driver_stats` (trips, verified km, last trip) with "Calculated by Namma Lorry from GPS — can't be edited"; language picker sheet (English only until M12a, others "Coming in the next update"; drivers can't write `preferred_language`, so nothing is saved yet); location & battery health check → D1 or D2; privacy policy link (when configured); sign out blocked during an active trip or while data is unsynced
 
-**Files expected:** `app/(console)/index.tsx`, `app/(console)/trips/[id].tsx`, `app/(console)/review/index.tsx`, `app/(driver)/{history,profile}.tsx`, `src/features/{live-map,review}/*`, `src/features/trips/ReplaySlider.tsx`, `LanguageSheet.tsx`.
+**Files expected:** `app/(console)/index.tsx`, `app/(console)/trips/[id].tsx`, `app/(console)/review/index.tsx`, `app/(driver)/{history,profile}.tsx`, `src/features/{live-map,review}/*`, `src/features/trips/ReplaySlider.tsx`, `LanguageSheet.tsx`. *Built at `app/console/…` and `app/driver/(tabs)/…` (ND-25); console queries and models in `src/features/review/{api,liveBoard,tripDetail}.ts`; realtime in `src/lib/useRealtimeChanges.ts`; D7/D8 models in `src/features/trips/history.ts` and `src/features/onboarding/health.ts`; the replay slider and language sheet live inside their screens.*
 
 **Acceptance (PRD P0-8, P0-11, P0-12)**
 - Active trips show on the Mappls map; marker and polyline update without refresh; ≤ 60 s behind the phone (scenario 11; ND-15)
@@ -540,15 +543,15 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | D4 | Trip Detail & Start | Android + iOS | `app/(driver)/trips/[id].tsx` → `app/driver/trips/[id]/index.tsx` | M9 | `6._trip_detail_start` | ☑ |
 | D5 | Active Trip | Android + iOS | `app/(driver)/trips/[id]/live.tsx` → `app/driver/trips/[id]/live.tsx` | M10 | `7._active_trip` | ☑ |
 | D6 | Trip Summary | Android + iOS | `app/(driver)/trips/[id]/summary.tsx` → `app/driver/trips/[id]/summary.tsx` | M10 | `8._trip_summary` (verified only) | ☑ |
-| D7 | Trip History | Android + iOS | `app/(driver)/history.tsx` | M11 | `9._trip_history_tab` | ☐ |
-| D8 | My Profile | Android + iOS | `app/(driver)/profile.tsx` | M11 | `10._my_profile_tab` | ☐ |
-| C1 | Live Dashboard | web | `app/(console)/index.tsx` | M11 | — | ☐ |
+| D7 | Trip History | Android + iOS | `app/(driver)/history.tsx` → `app/driver/(tabs)/history.tsx` | M11 | `9._trip_history_tab` | ☑ |
+| D8 | My Profile | Android + iOS | `app/(driver)/profile.tsx` → `app/driver/(tabs)/profile.tsx` | M11 | `10._my_profile_tab` | ☑ |
+| C1 | Live Dashboard | web | `app/(console)/index.tsx` → `app/console/index.tsx` | M11 | — | ☑ |
 | C2 | Loads | web | `app/(console)/loads/index.tsx` | M7 | — | ☑ |
 | C3 | Create Load | web | `app/(console)/loads/new.tsx` | M7 | — | ☑ |
 | C4 | Load Detail & Assign | web | `app/(console)/loads/[id].tsx` | M7 | — | ☑ |
 | C5 | Trips | web | `app/(console)/trips/index.tsx` | M7 | — | ☑ |
-| C6 | Trip Detail & Review | web | `app/(console)/trips/[id].tsx` | M11 | — | ☐ |
-| C7 | Review Queue | web | `app/(console)/review/index.tsx` | M11 | — | ☐ |
+| C6 | Trip Detail & Review | web | `app/(console)/trips/[id].tsx` → `app/console/trips/[id].tsx` | M11 | — | ☑ |
+| C7 | Review Queue | web | `app/(console)/review/index.tsx` → `app/console/review/index.tsx` | M11 | — | ☑ |
 | C8 | Drivers | web | `app/(console)/drivers/index.tsx` | M6 | — | ☑ |
 | C9 | Vehicles | web | `app/(console)/vehicles/index.tsx` | M6 | — | ☑ |
 
@@ -559,7 +562,7 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | Tracking-problem banner (GPS off / permission revoked) | D5 (+ D3/D4 permission loss) | M10 (permission re-check M9) | ☑ |
 | Add Driver modal/drawer | C8 | M6 | ☑ |
 | Add Vehicle modal | C9 | M6 | ☑ |
-| Language picker sheet | D8 (and the S2 "Change language" link) | M11 (S2 link M5) | ☐ |
+| Language picker sheet | D8 (and the S2 "Change language" link) | M11 (S2 link M5) | ☑ (English only until M12a) |
 
 Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-sink` (M2), `/dev/map` (M3), `/dev/tracking` (M8).
 
@@ -811,3 +814,24 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Not verified (needs a device):** the real background task and foreground-service notification during a trip, keep-awake on a phone, Android hardware back, and the airplane-mode real trip below. In this sandbox the local realtime service hadn't been running in earlier milestones (Supabase was started with services excluded); it was started for this check, and DEV_SETUP now says D6 needs it.
 - **Decisions:** ND-14 done (0004); ND-32 (stopped vs broken) needs approval.
 - **Left:** 🧍 the M10 real-trip checkpoint (airplane mode mid-trip, end offline, reconnect → verified with zero missing points); decide ND-32.
+
+### 2026-09-26 · M11 (Prompt 12): live console, review, history, profile
+- **Changed:**
+  - C1 Live Dashboard, C6 Trip Detail & Review, C7 Review Queue, D7 Trip History, D8 My Profile (see the M11 tasks above). C5 rows open C6.
+  - `src/lib/useRealtimeChanges.ts`: postgres_changes with refetch on every (re)subscribe, backoff resubscribe on channel errors, immediate resubscribe on reconnect.
+  - Map: `start` / `end` marker kinds, `stale` red ring, `onMarkerPress`, `fitKey` (fit only when the content set changes).
+  - Driver profile query includes `created_at`; `driver_stats` query includes `last_verified_at`.
+  - Dev preview: the D2 "done" flag persists for the browser session.
+  - New Playwright spec `e2e/review-trip.spec.ts` (doc 10 §1 review-approve): the driver finishes a trip away from the drop through the real RPCs and RLS (supabase-js, test OTP), the admin finds it in C7, can't decide without a note, approves in C6; the trip is verified, the approval is on the timeline, and `driver_stats` goes up by exactly one.
+- **Verified:**
+  - Checks: Jest 478 (+69: realtime hook incl. retry/backoff/reconnect, C1 board and merge rules, C6 paging/replay/metrics/timeline, D7 grouping, D8 health; RNTL: 7 C6, 7 C1+C7, 8 D7+D8), typecheck, lint, format; `supabase test db`; e2e 2/2.
+  - **Real backend, two browsers** (local Supabase with realtime; driver preview at 390×844, admin at 1440×900):
+    - driver starts the seeded trip → C1 shows it (1 live, 0 stale, 1 assigned today) without reload
+    - 20 + 1 points uploaded → C6 goes from 21 to 22 points through realtime, "Last update 0 s ago"
+    - driver ends away from the drop → C6 flips to needs review by itself (END_OUTSIDE_DROP 397 km, GPS_JUMPS, DISTANCE_TOO_SHORT); timeline Started / Ended (22 points expected) / Flagged
+    - C7 lists it; Approve without a note is refused; with a note → "Approved by Namma Lorry Ops: …", review card gone, C7 empty
+    - driver D7 shows the trip Verified; D8 shows 1 trip, last trip 26 Sep, health "All good"; no console errors
+  - Fixed during the run: metric distances showed "396574 m" (now km over 1 km); the D8 health row squeezed its title; the C7 title said "(0)" while loading.
+- **Not verified:** the real Mappls map with markers, rotation and fitting (no key here; the text fallback was used); realtime over a flaky mobile network; C1 with many trips.
+- **Decisions:** ND-33 (no C1 tails), ND-34 (live append from `trip_live`) need approval.
+- **Left:** 🧍 watch a live trip on C1/C6 with the real map while the M9/M10 device test runs; decide ND-33 and ND-34.

@@ -6,11 +6,13 @@ export type { LatLng };
 export interface MapMarker {
   id: string;
   position: LatLng;
-  /** `me`: the driver's own position (blue dot, D4). */
-  kind: 'truck' | 'pickup' | 'drop' | 'me';
+  /** `me`: the driver's own position (blue dot, D4). `start` / `end`: where a trip began / ended (C6). */
+  kind: 'truck' | 'pickup' | 'drop' | 'me' | 'start' | 'end';
   heading?: number;
   /** Extension to TRD §5: lets the admin drag a pin to refine a location (C3). */
   draggable?: boolean;
+  /** C1: no recent data; drawn with a red ring. */
+  stale?: boolean;
 }
 
 export interface MapPolyline {
@@ -35,6 +37,13 @@ export interface AppMapProps {
   /** Extension to TRD §5: fired when a draggable marker is dropped. */
   onMarkerDragEnd?: (id: string, p: LatLng) => void;
   fitToContent?: boolean;
+  /**
+   * With `fitToContent`: fit only when this key changes (e.g. the set of trips on C1), so live
+   * position updates don't keep re-zooming the map. Without it the map fits on every redraw.
+   */
+  fitKey?: string;
+  /** Extension to TRD §5 (C1): a marker was clicked. */
+  onMarkerPress?: (id: string) => void;
   /** Extension to TRD §5 (D5): keep the map centred on this point as it moves. */
   follow?: LatLng | null;
   /** Height of the map area in px (default 360). */

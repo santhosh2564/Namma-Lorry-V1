@@ -117,7 +117,11 @@ npx playwright install chromium               # once (skip where browsers are pr
 npm run e2e                                    # starts `expo start --web` if it isn't running
 ```
 `e2e/create-load.spec.ts`: an admin creates a load (autosuggest, coordinates, radius, planned
-distance) and assigns it. `mappls-proxy` is mocked in the browser, so no Mappls key is needed. Set
+distance) and assigns it. `mappls-proxy` is mocked in the browser, so no Mappls key is needed.
+`e2e/review-trip.spec.ts`: the seeded driver finishes a trip away from the drop through the real RPCs
+(supabase-js with the test OTP), then the admin reviews it in C7/C6 (note required) and approves it.
+It needs the seeded trip still `assigned`, so run `npx supabase db reset` before a rerun (it skips
+otherwise). Set
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to use a specific Chromium binary.
 
 ## 8. Tracking engine dev screen

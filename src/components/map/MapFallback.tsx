@@ -17,6 +17,8 @@ const FALLBACK = {
   drop: { icon: 'flag', color: colors.danger, label: 'Drop' },
   truck: { icon: 'local-shipping', color: colors.accent, label: 'Truck' },
   me: { icon: 'my-location', color: colors.live, label: 'You' },
+  start: { icon: 'trip-origin', color: colors.verified, label: 'Start' },
+  end: { icon: 'sports-score', color: colors.primary, label: 'End' },
 } as const;
 
 export function MapFallback({

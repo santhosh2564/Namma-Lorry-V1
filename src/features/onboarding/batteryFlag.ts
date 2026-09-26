@@ -3,10 +3,13 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+import { devSessionGet, devSessionSet } from '@/lib/devDriverWeb';
+
 const KEY = 'nl.battery_setup';
 export type BatterySetup = 'done' | 'skipped';
 
-let webValue: BatterySetup | null = null; // dev browser preview only
+// Dev browser preview only (kept for the session, like the simulated permissions).
+let webValue: BatterySetup | null = Platform.OS === 'web' ? devSessionGet<BatterySetup>('battery') : null;
 
 export async function getBatterySetup(): Promise<BatterySetup | null> {
   if (Platform.OS === 'web') return webValue;
@@ -15,7 +18,10 @@ export async function getBatterySetup(): Promise<BatterySetup | null> {
 }
 
 export async function setBatterySetup(v: BatterySetup): Promise<void> {
-  if (Platform.OS === 'web') return void (webValue = v);
+  if (Platform.OS === 'web') {
+    webValue = v;
+    return devSessionSet('battery', v);
+  }
   await SecureStore.setItemAsync(KEY, v).catch(() => undefined);
 }
 

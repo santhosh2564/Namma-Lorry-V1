@@ -85,11 +85,41 @@ export function useDriverStats(enabled: boolean) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('driver_stats')
-        .select('verified_trips, verified_distance_m')
+        .select('verified_trips, verified_distance_m, last_verified_at')
         .eq('driver_id', userId!)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
+  });
+}
+
+// ---------- D7 Trip History ----------
+
+/** Phase 1 volumes: a driver has at most a few hundred trips, so one page of 500 is enough. */
+export const HISTORY_LIMIT = 500;
+
+async function fetchHistory(userId: string) {
+  const { data, error } = await supabase
+    .from('trips')
+    .select(
+      'id, status, created_at, started_at, ended_at, tracked_distance_m, load:loads(load_code, pickup_address, drop_address)',
+    )
+    .eq('driver_id', userId)
+    .in('status', ['completed', 'verified', 'needs_review', 'rejected', 'cancelled'])
+    .order('ended_at', { ascending: false, nullsFirst: false })
+    .limit(HISTORY_LIMIT);
+  if (error) throw error;
+  return data;
+}
+
+export type HistoryRow = Awaited<ReturnType<typeof fetchHistory>>[number];
+
+export function useTripHistory() {
+  const userId = useAuthStore((s) => s.session?.user.id);
+  return useQuery({
+    queryKey: ['driver', 'history', userId],
+    enabled: !!userId,
+    queryFn: () => fetchHistory(userId!),
   });
 }

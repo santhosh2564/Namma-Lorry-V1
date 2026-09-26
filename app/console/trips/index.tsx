@@ -155,8 +155,7 @@ export default function Trips() {
           total: trips.data?.total ?? 0,
           onPageChange: (p) => set({ page: p ? String(p) : undefined }),
         }}
-        // C6 Trip Detail arrives in M11; until then rows open the load.
-        onRowPress={(r) => r.load && router.push(`/console/loads/${r.load.id}`)}
+        onRowPress={(r) => router.push(`/console/trips/${r.id}`)}
         rowAccessibilityLabel={(r) => `Open ${r.load?.load_code ?? 'trip'}`}
       />
     </ConsolePage>

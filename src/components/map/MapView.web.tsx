@@ -23,8 +23,8 @@ declare global {
   }
 }
 
-function pinHtml(color: string, rotate = 0) {
-  return `<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:${color};border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);transform:rotate(${-45 + rotate}deg)"></div>`;
+function pinHtml(color: string, rotate = 0, ring: string = '#fff') {
+  return `<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:${color};border:3px solid ${ring};box-shadow:0 1px 4px rgba(0,0,0,.35);transform:rotate(${-45 + rotate}deg)"></div>`;
 }
 
 const markerColor = {
@@ -32,6 +32,8 @@ const markerColor = {
   drop: colors.danger,
   truck: colors.accent,
   me: colors.live,
+  start: colors.verified,
+  end: colors.primary,
 } as const;
 
 const dotHtml = (color: string) =>
@@ -64,6 +66,8 @@ function MapplsMap({
   onPress,
   onMarkerDragEnd,
   fitToContent,
+  fitKey,
+  onMarkerPress,
   follow,
   height = 360,
   testID,
@@ -73,8 +77,9 @@ function MapplsMap({
   const map = useRef<any>(null);
   const loaded = useRef(false);
   const layers = useRef<Layer[]>([]);
-  const handlers = useRef({ onPress, onMarkerDragEnd });
-  handlers.current = { onPress, onMarkerDragEnd };
+  const handlers = useRef({ onPress, onMarkerDragEnd, onMarkerPress });
+  handlers.current = { onPress, onMarkerDragEnd, onMarkerPress };
+  const lastFitKey = useRef<string | undefined>(undefined);
 
   // Create the map once the SDK is ready.
   useEffect(() => {
@@ -147,9 +152,18 @@ function MapplsMap({
         html:
           mk.kind === 'me'
             ? dotHtml(markerColor.me)
-            : pinHtml(markerColor[mk.kind], mk.kind === 'truck' ? (mk.heading ?? 0) : 0),
+            : mk.kind === 'start' || mk.kind === 'end'
+              ? dotHtml(markerColor[mk.kind])
+              : pinHtml(
+                  markerColor[mk.kind],
+                  mk.kind === 'truck' ? (mk.heading ?? 0) : 0,
+                  mk.stale ? colors.danger : '#fff',
+                ),
         draggable: !!mk.draggable,
       });
+      if (handlers.current.onMarkerPress) {
+        marker.addListener('click', () => handlers.current.onMarkerPress?.(mk.id));
+      }
       if (mk.draggable) {
         marker.addListener('dragend', () => {
           const p = toLatLng(marker.getPosition());
@@ -158,7 +172,9 @@ function MapplsMap({
       }
       layers.current.push(marker);
     }
-    if (fitToContent) {
+    const shouldFit = fitToContent && (fitKey === undefined || fitKey !== lastFitKey.current);
+    if (shouldFit) {
+      lastFitKey.current = fitKey;
       const pts = [...markers.map((x) => x.position), ...polylines.flatMap((x) => x.path)];
       const b = bounds(pts);
       if (b && pts.length > 1) {
