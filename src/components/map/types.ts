@@ -6,7 +6,8 @@ export type { LatLng };
 export interface MapMarker {
   id: string;
   position: LatLng;
-  kind: 'truck' | 'pickup' | 'drop';
+  /** `me`: the driver's own position (blue dot, D4). */
+  kind: 'truck' | 'pickup' | 'drop' | 'me';
   heading?: number;
   /** Extension to TRD §5: lets the admin drag a pin to refine a location (C3). */
   draggable?: boolean;

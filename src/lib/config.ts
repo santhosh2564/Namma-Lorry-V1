@@ -13,6 +13,8 @@ const schema = z.object({
   // Store listing links for S4 "use the mobile app"; buttons are hidden until set (M12c).
   EXPO_PUBLIC_PLAY_STORE_URL: z.url().optional(),
   EXPO_PUBLIC_APP_STORE_URL: z.url().optional(),
+  // Privacy policy page linked from D1 (docs/09 §6); the link is hidden until set.
+  EXPO_PUBLIC_PRIVACY_POLICY_URL: z.url().optional(),
 });
 
 export type AppConfig = z.infer<typeof schema>;
@@ -34,4 +36,5 @@ export const config = parseConfig({
   EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY: process.env.EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY || undefined,
   EXPO_PUBLIC_PLAY_STORE_URL: process.env.EXPO_PUBLIC_PLAY_STORE_URL || undefined,
   EXPO_PUBLIC_APP_STORE_URL: process.env.EXPO_PUBLIC_APP_STORE_URL || undefined,
+  EXPO_PUBLIC_PRIVACY_POLICY_URL: process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL || undefined,
 });

@@ -128,6 +128,22 @@ uploader's backoff. It has buttons to start or end a trip by ID, flush, resume, 
   provides on the dev server.
 - **Native:** real GPS via the background task. Needs an EAS development build (M3/M9).
 
+### Driver app preview in the browser (dev only)
+`EXPO_PUBLIC_DEV_DRIVER_WEB=1 npm run web` lets a driver use D1–D4 in the browser: routing treats the
+browser as Android, the D1 permission dialogs are simulated (each Allow grants), and GPS is the
+simulated position from `/dev/tracking` (kept in sessionStorage). Sign in as `9000000011`, allow the
+three permissions, skip D2, open the seeded trip; set the position to `12.9570, 79.9425` on
+`/dev/tracking` and reopen the trip to get "You're at the pickup" and an enabled START. Without the
+variable (and in every production build) drivers on web get S4 as before.
+
+## 8a. Driver onboarding on a phone (M9)
+- D1 asks for precise location → "Allow all the time" → notifications, one at a time, after the
+  disclosure. On Android 11+ "Allow all the time" opens the app's location settings page.
+- The consent version is `CONSENT_VERSION` in `src/features/onboarding/consent.ts`. Bump it when the
+  D1 text or privacy policy changes; every driver then sees D1 again.
+- D2 is shown once per phone (Android only). To see it again, clear the app's data.
+- Set `EXPO_PUBLIC_PRIVACY_POLICY_URL` to show the "Read privacy policy" link on D1.
+
 ## 9. Run the app
 ```bash
 npm install

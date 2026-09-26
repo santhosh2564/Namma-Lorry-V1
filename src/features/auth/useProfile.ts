@@ -15,7 +15,7 @@ export function useProfile() {
       // RLS `profiles_self` limits this to the caller's own row.
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, role, full_name, phone, is_active, preferred_language')
+        .select('id, role, full_name, phone, is_active, preferred_language, consent_version')
         .eq('id', userId!)
         .maybeSingle();
       if (error) throw error;

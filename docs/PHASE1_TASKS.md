@@ -114,6 +114,8 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-26 | **Mappls coordinates are premium.** Doc 06 §4 has `autosuggest` → `[{label, address, lat, lng, eLoc?}]` and `geocode` → `{lat, lng, …}`. The current Mappls Autosuggest and Geocoding APIs return only an `eLoc`; coordinates for an eLoc are a premium "Location Coordinates" field (Place Details, OAuth). | doc 06 §4 vs developer.mappls.com (Sep 2026) | *Implemented in M6 (needs approval):* `lat`/`lng` are `number \| null`, passed through whenever Mappls includes them; `eLoc` is always returned. In C3 (M7) the admin confirms the pin on the map (Mappls web SDK can centre on an eLoc), and the stored lat/lng come from the pin. Alternative: buy the Place Details coordinates add-on. Update doc 06 once decided. |
 | ND-27 | `mappls-proxy` rate limit is in-memory per isolate (60/min/admin), not global. | doc 06 §4 "rate-limit per user" | Fine for a handful of admins. A table-backed limiter is possible if abuse appears. |
 | ND-28 | **Planned route line.** C3/C4 designs show a dashed planned route, but doc 06 §4 only has `distance` (no geometry). | doc 12 C3/C4 vs doc 06 §4 | *Implemented in M7 (needs approval):* new `route` action in `mappls-proxy` (Mappls `route_adv`, trucking profile) returns `{distanceM, durationS, path}`, for display only. `planned_distance_m` still comes from `distance` on save, as doc 06 specifies. It costs one extra Mappls call per C3 preview / C4 view (cached per session). Add to doc 06. |
+| ND-30 | **Notifications on D1.** The D1 design keeps Continue disabled "until all are allowed". Tracking works without notification permission (the Android foreground service still runs; iOS uses the location indicator), and a driver who refuses it would be stuck. | doc 12 D1 | *Implemented in M9 (needs approval):* notifications must be **asked** once, but may be refused; D1 then explains what the driver misses and offers Settings. Precise + "all the time" location stay mandatory. |
+| ND-31 | **Planned route on D4.** The D4 design shows a dashed road route, but the `route` action (ND-28) is admin-only and loads store no route geometry, so drivers can't get one. | doc 12 D4 vs doc 06 §4 | *Implemented in M9 (needs approval):* a straight dashed pickup → drop line and the planned km. Road geometry for drivers needs either a stored `loads.planned_path` saved from C3, or a driver-scoped `route` action. |
 | ND-29 | **Date range filter on C2/C5** is presets (All / Today / 7 / 30 days, IST), not a free date picker. C5 filters on the trip's created (assigned) date. CSV export on C5 is not built (ND-19, optional). | doc 12 C2/C5 | Confirm presets are enough for Phase 1. |
 | ND-24 | The doc 13 prerequisite "put the pack in the repo root and design PNGs in `design/` named by screen ID" is not done, and there is **no git repo** although doc 13 requires a commit per prompt. | doc 13 vs folder state | Pre-flight tasks, gated on ND-1. |
 
@@ -386,22 +388,22 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M9 — Driver onboarding and trip start (Prompt 10)
 **Tasks**
-- [ ] D1 Location Permission:
-  - prominent disclosure from doc 09 §1–§3 **before** any system dialog (ND-18: not the Stitch copy)
-  - request foreground → background → notifications
-  - status rows; "Open settings" when blocked
-  - `record_consent` on continue
-  - re-check on every foreground; route back to D1 if background location is lost
-- [ ] D2 Battery Setup (Android only): `expo-device` manufacturer detection; instructions for Xiaomi/Redmi/POCO, Vivo/iQOO, Oppo/Realme/OnePlus, Samsung, generic; open settings via Linking/IntentLauncher
-- [ ] `app.config.ts`: expo-location plugin (background + foreground service), iOS/Android permission strings from doc 09 §3, `UIBackgroundModes: location`
-- [ ] D3 My Trips: live trip pinned with Resume, assigned list, empty and offline states, pull to refresh
-- [ ] D4 Trip Detail & Start:
-  - map with pickup circle, drop, planned route, live dot, distance to pickup
-  - states: waiting for GPS, accuracy > 50 m, outside radius (distance, disabled), ready, starting
-  - START → `tracking.startTrip` → D5
-  - "Outside pickup" sheet overlay
+- [x] D1 Location Permission:
+  - prominent disclosure from doc 09 §1–§3 **before** any system dialog (ND-18: not the Stitch copy). Nothing is requested until the driver taps a row's Allow.
+  - request foreground → background → notifications, strictly in order (`permissionModel.ts`); notifications are optional (ND-30)
+  - status rows ("n of 3 ready"); "Open settings" when blocked or when iOS approximate location needs Settings; GPS-off banner
+  - `record_consent('2026-09-v1')` on Continue. Routing also requires the current consent version, so a driver who has the permissions but not the consent still sees D1.
+  - re-check on every foreground (`usePermissionRecheck` invalidates the permission and local-trip queries); `DriverGate` routes back to D1 if location is lost. An active trip keeps D5; its banner is M10.
+- [x] D2 Battery Setup (Android only): `expo-device` manufacturer + brand detection; instructions for Xiaomi/Redmi/POCO, Vivo/iQOO, Oppo/Realme/OnePlus, Samsung, generic. "Open settings" opens Namma Lorry's App info (`Linking.openSettings`), falling back to the battery-optimisation list (`IntentLauncher`). Done/skipped is remembered per phone (SecureStore).
+- [x] `app.config.ts`: expo-location plugin (background + foreground service); iOS `infoPlist` with the doc 09 §3 strings and `UIBackgroundModes: ['location']`; `expo-notifications` plugin (POST_NOTIFICATIONS). expo-task-manager also adds `fetch` to UIBackgroundModes by default.
+- [x] D3 My Trips (bottom tabs Trips · History · Profile): live trip pinned with Resume (the local trip wins, so it shows offline), assigned list, empty, offline and error states, pull to refresh
+- [x] D4 Trip Detail & Start:
+  - map with pickup circle, drop, planned route (straight dashed line, ND-31), live dot (`me` marker), distance to pickup from a foreground-only `watchPositionAsync`
+  - states (`startState.ts`, mirrors `start_trip`: accuracy ≤ 50 m, distance ≤ radius + accuracy): waiting for GPS (no fix or older than 30 s), accuracy > 50 m, outside radius (distance, disabled), ready, starting; plus permission missing, in progress (Resume), not startable
+  - START → `tracking.startTrip` → D5 (also on `TRACKING_START_FAILED`, since the trip has started)
+  - "Outside pickup" sheet when the server refuses the start fix
 
-**Files expected:** `app/(onboarding)/{_layout,permissions,battery}.tsx`, `app/(driver)/{_layout,index}.tsx`, `app/(driver)/trips/[id].tsx`, `src/features/trips/*`, `src/tracking/permissions.ts`, `app.config.ts` updates, RNTL tests for D4 button states (doc 10 §1).
+**Files expected:** `app/(onboarding)/{_layout,permissions,battery}.tsx`, `app/(driver)/{_layout,index}.tsx`, `app/(driver)/trips/[id].tsx`, `src/features/trips/*`, `src/tracking/permissions.ts`, `app.config.ts` updates, RNTL tests for D4 button states (doc 10 §1). *Built at `app/driver/_layout.tsx`, `app/driver/(tabs)/{_layout,index}.tsx` and `app/driver/trips/[id]/index.tsx` (ND-25). Also: `src/features/onboarding/*` (permission model, battery guide, consent, DriverGate), `src/tracking/foregroundLocation.ts`, `src/lib/devDriverWeb.ts`, RNTL tests in `src/screens-tests/` (outside `app/` so Expo Router doesn't treat them as routes).*
 
 **Acceptance (PRD P0-4, P0-5)**
 - Start Trip is disabled until background permission is granted, with an explanation
@@ -528,10 +530,10 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | S2 | Sign in | mobile + web | `app/(auth)/sign-in.tsx` | M5 | `1._sign_in` | ☑ |
 | S3 | Verify OTP | mobile + web | `app/(auth)/verify.tsx` | M5 | `2._verify_otp` | ☑ |
 | S4 | Access Notice (3 variants) | mobile + web | `app/access-notice.tsx` *(ND-23)* | M5 | — | ☑ |
-| D1 | Location Permission | Android + iOS | `app/(onboarding)/permissions.tsx` | M9 | `3._location_permission` | ☐ |
-| D2 | Battery Setup | Android | `app/(onboarding)/battery.tsx` | M9 | `4._battery_setup` | ☐ |
-| D3 | My Trips | Android + iOS | `app/(driver)/index.tsx` | M9 | `5._my_trips_home` | ☐ |
-| D4 | Trip Detail & Start | Android + iOS | `app/(driver)/trips/[id].tsx` | M9 | `6._trip_detail_start` | ☐ |
+| D1 | Location Permission | Android + iOS | `app/(onboarding)/permissions.tsx` | M9 | `3._location_permission` | ☑ |
+| D2 | Battery Setup | Android | `app/(onboarding)/battery.tsx` | M9 | `4._battery_setup` | ☑ |
+| D3 | My Trips | Android + iOS | `app/(driver)/index.tsx` → `app/driver/(tabs)/index.tsx` | M9 | `5._my_trips_home` | ☑ |
+| D4 | Trip Detail & Start | Android + iOS | `app/(driver)/trips/[id].tsx` → `app/driver/trips/[id]/index.tsx` | M9 | `6._trip_detail_start` | ☑ |
 | D5 | Active Trip | Android + iOS | `app/(driver)/trips/[id]/live.tsx` | M10 | `7._active_trip` | ☐ |
 | D6 | Trip Summary | Android + iOS | `app/(driver)/trips/[id]/summary.tsx` | M10 | `8._trip_summary` (verified only) | ☐ |
 | D7 | Trip History | Android + iOS | `app/(driver)/history.tsx` | M11 | `9._trip_history_tab` | ☐ |
@@ -549,7 +551,7 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | Overlay | Used on | Milestone | Built |
 |---|---|---|---|
 | End Trip confirmation sheet | D5 | M10 | ☐ |
-| "Outside pickup" sheet | D4 | M9 | ☐ |
+| "Outside pickup" sheet | D4 | M9 | ☑ |
 | Tracking-problem banner (GPS off / permission revoked) | D5 (+ D3/D4 permission loss) | M10 (permission re-check M9) | ☐ |
 | Add Driver modal/drawer | C8 | M6 | ☑ |
 | Add Vehicle modal | C9 | M6 | ☑ |
@@ -762,3 +764,26 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
   - M5 auth (12), M6 console (15) and the M7 e2e spec still pass.
 - **Not verified (needs a device):** the background task on Android/iOS (screen off, OS kills, reboot), the foreground-service notification, real GPS quality, and NetInfo/AppState triggers on a phone. This sandbox has no emulator. It's the M9 🧍 checkpoint.
 - **Decisions:** ND-8 client-side quarantine (needs approval); ND-6 unchanged (TRD as written).
+
+### 2026-09-26 · M9 (Prompt 10): driver onboarding and trip start
+- **Changed:**
+  - D1 (`app/(onboarding)/permissions.tsx`): doc 09 disclosure first, ordered requests, status rows, Open settings, GPS-off banner, `record_consent` on Continue. Pure rules in `src/features/onboarding/permissionModel.ts`; native reads/requests in `src/tracking/permissions.ts` (the M5 stub is gone).
+  - Routing: a native driver goes to D3 only with precise + "all the time" location **and** the current consent version (`CONSENT_VERSION`). `DriverGate` + `usePermissionRecheck` re-check on every app foreground and send the driver back to D1.
+  - D2 (`app/(onboarding)/battery.tsx`, `batteryGuide.ts`): brand detection and steps; shown once per phone after D1 on Android.
+  - D3 (`app/driver/(tabs)/index.tsx`): bottom tabs; pinned live trip (local state first); assigned cards; empty/offline/error states; pull to refresh. Driver queries in `src/features/trips/api.ts`.
+  - D4 (`app/driver/trips/[id]/index.tsx`, `startState.ts`): map, foreground GPS watch (`src/tracking/foregroundLocation.ts`), all start states, START → engine → D5, outside-pickup sheet.
+  - Map: new `me` marker kind (blue dot) on web and the fallback.
+  - `app.config.ts`: iOS `infoPlist` strings + `UIBackgroundModes: ['location']`, `locationAlwaysPermission`, `expo-notifications` plugin. Installed expo-notifications 57.0.21 and expo-intent-launcher 57.0.1 (SDK-matched, exact).
+  - Config: optional `EXPO_PUBLIC_PRIVACY_POLICY_URL` (D1 link hidden until set).
+  - Dev: `EXPO_PUBLIC_DEV_DRIVER_WEB=1` previews the driver app in a browser with simulated permissions and GPS (DEV_SETUP §8). Off in production builds.
+- **Verified:**
+  - Checks: Jest 349 (+70: permission model, battery guide, start state, D3 sections, 10 RNTL D4 tests, 6 RNTL D1 tests), typecheck, lint, format; `expo config` shows the iOS strings, UIBackgroundModes and Android background/foreground-service permissions.
+  - **Real backend** (local Supabase, driver preview in Chromium at 390×844, Playwright):
+    - Murugan: sign in → D1 (0 of 3) → Allow ×3 → Continue → `profiles.consent_version = '2026-09-v1'` → D2 → D3 shows the seeded trip
+    - D4 at the default simulated position shows "You're 231 km from the pickup" with START disabled; at the pickup it shows "GPS accuracy 8 m" and START is enabled
+    - START → server trip `in_progress` (start 12.957, 79.9425, ±8 m) → D5 route; D3 then pins the live trip with Resume
+    - Ravi (no trips): empty state; with background location revoked, the next check sends him back to D1 ("2 of 3 ready")
+  - No console errors during the walkthrough.
+- **Not verified (needs a device):** real permission dialogs (Android 11+ "Allow all the time" settings page, iOS "Change to Always Allow"), OEM battery settings pages, AppState foreground re-check on a phone, and the native map (still the M3 placeholder on native). This sandbox has no emulator.
+- **Decisions:** ND-30 (notifications optional), ND-31 (straight planned line on D4), both need approval. D1 copy on retention points to the privacy policy until the retention period is decided (PRD open question).
+- **Left:** 🧍 the M9 device checkpoint below (also covers M8's background task); set `EXPO_PUBLIC_PRIVACY_POLICY_URL`; decide ND-30 and ND-31.

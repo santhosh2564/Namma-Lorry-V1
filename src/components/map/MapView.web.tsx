@@ -27,7 +27,15 @@ function pinHtml(color: string, rotate = 0) {
   return `<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;background:${color};border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);transform:rotate(${-45 + rotate}deg)"></div>`;
 }
 
-const markerColor = { pickup: colors.verified, drop: colors.danger, truck: colors.accent } as const;
+const markerColor = {
+  pickup: colors.verified,
+  drop: colors.danger,
+  truck: colors.accent,
+  me: colors.live,
+} as const;
+
+const dotHtml = (color: string) =>
+  `<div style="width:18px;height:18px;border-radius:50%;background:${color};border:3px solid #fff;box-shadow:0 0 0 6px ${color}33"></div>`;
 
 function toLatLng(p: any): LatLng | null {
   if (!p) return null;
@@ -135,7 +143,10 @@ function MapplsMap({
       const marker = new sdk.Marker({
         map: m,
         position: mk.position,
-        html: pinHtml(markerColor[mk.kind], mk.kind === 'truck' ? (mk.heading ?? 0) : 0),
+        html:
+          mk.kind === 'me'
+            ? dotHtml(markerColor.me)
+            : pinHtml(markerColor[mk.kind], mk.kind === 'truck' ? (mk.heading ?? 0) : 0),
         draggable: !!mk.draggable,
       });
       if (mk.draggable) {

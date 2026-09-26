@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import * as SQLite from 'expo-sqlite';
 import { AppState, Platform } from 'react-native';
 
+import { devSessionGet, devSessionSet } from '@/lib/devDriverWeb';
 import { supabase } from '@/lib/supabase';
 
 import { SQLITE_DB_NAME, UPLOAD_INTERVAL_MS } from './config';
@@ -49,8 +50,18 @@ const nativeLocation: LocationApi = {
 let simulated: SimulatedLocation | null = null;
 /** Web dev only (/dev/tracking). */
 export function getSimulatedLocation(): SimulatedLocation {
-  simulated ??= createSimulatedLocation(Date.now);
+  if (!simulated) {
+    simulated = createSimulatedLocation(Date.now);
+    const saved = devSessionGet<SimulatedLocation['position']>('position');
+    if (saved) simulated.position = saved;
+  }
   return simulated;
+}
+
+/** Web dev only: move the simulated phone (kept across reloads for the driver preview). */
+export function setSimulatedPosition(position: SimulatedLocation['position']): void {
+  getSimulatedLocation().position = position;
+  devSessionSet('position', position);
 }
 
 async function hasSession(): Promise<boolean> {

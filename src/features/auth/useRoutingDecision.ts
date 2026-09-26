@@ -2,7 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Platform } from 'react-native';
 
 import { getLocalTripState } from '@/tracking/localState';
-import { checkTrackingPermissions } from '@/tracking/permissions';
+import { devDriverWeb, driverAppPlatform } from '@/lib/devDriverWeb';
+import { hasCurrentConsent } from '@/features/onboarding/consent';
+import { checkTrackingPermissions, permissionsQueryKey } from '@/tracking/permissions';
 
 import { decideRoute, type Destination, type Loadable } from './routing';
 import { useAuthStore } from './store';
@@ -18,20 +20,25 @@ export const localTripQueryKey = ['tracking', 'local-state'] as const;
 
 /** Gathers auth, profile and device state and feeds the pure `decideRoute`. */
 export function useRoutingDecision(): { destination: Destination; refetch: () => void } {
-  const native = Platform.OS !== 'web';
+  const native = driverAppPlatform;
   const auth = useAuthStore((s) => s.status);
   const profile = useProfile();
   const isDriver = profile.data?.role === 'driver';
 
   const localTrip = useQuery({ queryKey: localTripQueryKey, queryFn: getLocalTripState, enabled: native });
   const permissions = useQuery({
-    queryKey: ['tracking', 'permissions'],
+    queryKey: permissionsQueryKey,
     queryFn: checkTrackingPermissions,
     enabled: native && isDriver,
   });
+  // D1 is done when location is ready *and* the current notice was agreed to (docs/09 §1).
+  const onboarding: Loadable<{ ok: boolean }> =
+    permissions.status === 'success'
+      ? { status: 'ready', value: { ok: permissions.data.ok && hasCurrentConsent(profile.data) } }
+      : toLoadable(permissions);
 
   const destination = decideRoute({
-    platform: Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web',
+    platform: Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' || devDriverWeb ? 'android' : 'web',
     localTrip: toLoadable(localTrip),
     auth,
     profile:
@@ -43,7 +50,7 @@ export function useRoutingDecision(): { destination: Destination; refetch: () =>
               status: 'ready',
               value: profile.data ? { role: profile.data.role, isActive: profile.data.is_active } : null,
             },
-    permissions: toLoadable(permissions),
+    permissions: onboarding,
   });
 
   return {

@@ -14,10 +14,10 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { startAuthListener } from '@/features/auth/store';
+import { driverAppPlatform } from '@/lib/devDriverWeb';
 import { startTrackingRuntime } from '@/tracking/runtime';
 import { colors } from '@/theme/tokens';
 
@@ -34,7 +34,7 @@ export default function RootLayout() {
 
   useEffect(() => startAuthListener(), []);
   // Upload loop + resume of an interrupted trip (native only; web never runs trips).
-  useEffect(() => (Platform.OS === 'web' ? undefined : startTrackingRuntime()), []);
+  useEffect(() => (driverAppPlatform ? startTrackingRuntime() : undefined), []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) void SplashScreen.hideAsync();

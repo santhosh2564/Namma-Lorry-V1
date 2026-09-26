@@ -1,12 +1,14 @@
 import { Stack } from 'expo-router';
 
 import { AreaGuard } from '@/features/auth/AreaGuard';
+import { DriverGate } from '@/features/onboarding/DriverGate';
 
 export default function DriverLayout() {
   return (
     <AreaGuard allowed={['driver']}>
-      {/* M9: bottom tabs Trips · History · Profile */}
-      <Stack screenOptions={{ headerShown: false }} />
+      <DriverGate>
+        <Stack screenOptions={{ headerShown: false }} />
+      </DriverGate>
     </AreaGuard>
   );
 }

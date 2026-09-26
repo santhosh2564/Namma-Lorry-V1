@@ -15,12 +15,12 @@ export type Loadable<T> = { status: 'loading' } | { status: 'error' } | { status
 
 export interface RoutingInput {
   platform: Platform;
-  /** Local tracking state (stub until M8). Ignored on web: web never runs trips. */
+  /** Local tracking state (src/tracking). Ignored on web: web never runs trips. */
   localTrip: Loadable<{ activeTripId: string | null }>;
   auth: 'loading' | 'signed-out' | 'signed-in';
   /** `null` = signed in but no profile row is visible. */
   profile: Loadable<{ role: Role; isActive: boolean } | null>;
-  /** Tracking permissions (stub until M9). Only consulted for drivers on native. */
+  /** Precise + "all the time" location and current consent (D1). Only consulted for drivers on native. */
   permissions: Loadable<{ ok: boolean }>;
 }
 

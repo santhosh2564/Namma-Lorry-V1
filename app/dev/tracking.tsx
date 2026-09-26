@@ -8,7 +8,7 @@ import { Banner, Button, Card, Screen, Text, TextField } from '@/components/ui';
 import type { PointRow, TripStateRow } from '@/tracking/db';
 import { TripError, tripErrorText } from '@/tracking/errors';
 import { counts, lastPoint, listTripStates, type QueueCounts } from '@/tracking/queue';
-import { getSimulatedLocation, getTracking, syncTick } from '@/tracking/runtime';
+import { getSimulatedLocation, getTracking, setSimulatedPosition, syncTick } from '@/tracking/runtime';
 import { handleLocationUpdate } from '@/tracking/taskHandler';
 import { colors, fonts, space } from '@/theme/tokens';
 
@@ -159,7 +159,7 @@ function DevTrackingInner() {
             onChangeText={(v) => {
               setPos(v);
               const m = /^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/.exec(v);
-              if (m) getSimulatedLocation().position = { lat: Number(m[1]), lng: Number(m[2]), accuracy: 8 };
+              if (m) setSimulatedPosition({ lat: Number(m[1]), lng: Number(m[2]), accuracy: 8 });
             }}
           />
         ) : null}
