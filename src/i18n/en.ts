@@ -66,6 +66,7 @@ export const en = {
       body: 'Contact Namma Lorry to register.',
     },
     signOutBlocked: 'You have a trip in progress. End the trip before signing out.',
+    signOutUnsynced: 'Trip data is still uploading. Connect to the internet and try again in a moment.',
   },
   console: {
     nav: {

@@ -23,6 +23,20 @@ const config: ExpoConfig = {
   web: { favicon: './assets/favicon.png', output: 'single', bundler: 'metro' },
   plugins: [
     'expo-router',
+    [
+      'expo-location',
+      {
+        // Permission text from docs/09 §3.
+        locationWhenInUsePermission:
+          'Namma Lorry uses your location to start and end trips at the pickup and delivery points.',
+        locationAlwaysAndWhenInUsePermission:
+          'Namma Lorry records your route in the background only while a trip you started is in progress, so your driving experience can be verified.',
+        isIosBackgroundLocationEnabled: true,
+        isAndroidBackgroundLocationEnabled: true,
+        isAndroidForegroundServiceEnabled: true,
+      },
+    ],
+    'expo-sqlite',
     'expo-secure-store',
     'expo-font',
     ['expo-splash-screen', { backgroundColor: '#0F2A44', image: './assets/splash-icon.png', imageWidth: 160 }],

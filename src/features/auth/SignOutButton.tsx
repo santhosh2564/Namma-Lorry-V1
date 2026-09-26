@@ -12,13 +12,13 @@ import { signOut } from './signOut';
 export function SignOutButton({ variant = 'text' }: { variant?: 'text' | 'outline' }) {
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
-  const [blocked, setBlocked] = useState(false);
+  const [blocked, setBlocked] = useState<null | 'TRIP_ACTIVE' | 'TRIP_UNSYNCED'>(null);
 
   async function onPress() {
     setBusy(true);
     try {
       const result = await signOut(queryClient);
-      setBlocked(!result.ok);
+      setBlocked(result.ok ? null : result.reason);
     } finally {
       setBusy(false);
     }
@@ -26,7 +26,13 @@ export function SignOutButton({ variant = 'text' }: { variant?: 'text' | 'outlin
 
   return (
     <View style={{ gap: space.sm }}>
-      {blocked ? <Banner tone="warn" message={t.notice.signOutBlocked} testID="signout-blocked" /> : null}
+      {blocked ? (
+        <Banner
+          tone="warn"
+          message={blocked === 'TRIP_ACTIVE' ? t.notice.signOutBlocked : t.notice.signOutUnsynced}
+          testID="signout-blocked"
+        />
+      ) : null}
       <Button label={t.common.signOut} variant={variant} icon="logout" loading={busy} onPress={onPress} />
     </View>
   );

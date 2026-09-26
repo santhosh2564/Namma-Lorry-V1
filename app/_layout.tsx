@@ -1,3 +1,7 @@
+// Must be the first import: the background location task has to be defined at module
+// top level before the app renders, including when the OS wakes the app headless (TRD §4.2).
+import '@/tracking/task';
+
 import {
   NotoSans_400Regular,
   NotoSans_500Medium,
@@ -10,12 +14,12 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { startAuthListener } from '@/features/auth/store';
+import { startTrackingRuntime } from '@/tracking/runtime';
 import { colors } from '@/theme/tokens';
-
-// M8: `import '@/tracking/task'` goes first here (TaskManager.defineTask at module top level).
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -29,6 +33,8 @@ export default function RootLayout() {
   });
 
   useEffect(() => startAuthListener(), []);
+  // Upload loop + resume of an interrupted trip (native only; web never runs trips).
+  useEffect(() => (Platform.OS === 'web' ? undefined : startTrackingRuntime()), []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) void SplashScreen.hideAsync();

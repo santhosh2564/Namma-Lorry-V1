@@ -1,22 +1,27 @@
-// STUB until M8. The real implementation reads `trip_state` from the SQLite queue
-// (TRD §4.3) and restarts the background location task when a trip is TRACKING.
-// S1 Splash calls this before anything else (docs/04 §2), and sign-out is blocked
-// while it reports an active trip.
+// Local trip state for routing (S1 Splash, docs/04 §2) and sign-out blocking.
+import { Platform } from 'react-native';
+
+import { getTracking, unsyncedSummary } from './runtime';
 
 export interface LocalTripState {
+  /** Trip that is TRACKING on this device → Splash resumes Active Trip. */
   activeTripId: string | null;
+  /** Trip ended on this device but not yet confirmed by the server. */
+  unsyncedTripId: string | null;
+  /** Points not yet uploaded. */
+  pendingPoints: number;
 }
-
-let devActiveTripId: string | null = null;
 
 export async function getLocalTripState(): Promise<LocalTripState> {
-  return { activeTripId: devActiveTripId };
+  // Web never runs trips (TRD §4.4) and must not open the device database.
+  if (Platform.OS === 'web') return { activeTripId: null, unsyncedTripId: null, pendingPoints: 0 };
+  const s = await unsyncedSummary();
+  return { activeTripId: s.activeTripId, unsyncedTripId: s.unsyncedTripId, pendingPoints: s.pending };
 }
 
-/** Test/dev hook only; M8 replaces this module. */
-export function __setStubActiveTrip(tripId: string | null) {
-  devActiveTripId = tripId;
+/** Restarts the location task for a persisted TRACKING trip and retries any pending end. */
+export async function resumeTracking(_tripId?: string): Promise<void> {
+  if (Platform.OS === 'web') return;
+  const { engine } = await getTracking();
+  await engine.resumeOnLaunch();
 }
-
-/** STUB until M8: restart the location task for a trip found in local state. */
-export async function resumeTracking(_tripId: string): Promise<void> {}

@@ -88,13 +88,13 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-3 | iOS: Apple Developer account + physical iPhone available? If not, is M3's exit criterion (and W0's) reduced to Android + web, with iOS deferred? | M3, M12c |
 | ND-4 | Supabase: local only for now, or an existing hosted staging project to link? (Docker Desktop must be running for local.) | M4 |
 | ND-5 | Client sign-offs: written approval of RN + Mappls; who registers drivers (admin only vs self-signup with approval); "transporter" meaning; multi-drop (assumed no); raw-GPS retention period | M5 (auth), pilot |
-| ND-6 | Stationary trucks: 25 m `distanceInterval` produces no points while parked. That triggers `TRACKING_GAP` (>15 min) and `LOW_COVERAGE` (<60/h) on genuine trips, and M10's "no point for > 2 min" banner. Heartbeat while stationary, or judge gaps on moving time only? Docs 03/08 must change first. | M8, M10 |
+| ND-6 | Stationary trucks: 25 m `distanceInterval` produces no points while parked. That triggers `TRACKING_GAP` (>15 min) and `LOW_COVERAGE` (<60/h) on genuine trips, and M10's "no point for > 2 min" banner. Heartbeat while stationary, or judge gaps on moving time only? Docs 03/08 must change first. *M8 kept TRD §4.2 exactly (still open).* | M8, M10 |
 | ND-7 | If the Mappls spike fails on Expo SDK 57 / RN 0.87, is pinning an older Expo SDK acceptable? | M1 pinning, M3 |
 
 ### 2.2 Contradictions and gaps between docs
 | ID | Conflict | Where | Proposed resolution (needs approval) |
 |---|---|---|---|
-| ND-8 | **Point-upload poison batch / clock skew.** RLS rejects rows with device time > server now + 2 min or < `started_at` − 1 min. One bad row fails the whole 200-row upsert, and the uploader then retries forever. | 0001 `points_driver_insert` vs TRD §4.3 / doc 13 P9 uploader | New migration: upload through an RPC that filters/clamps invalid rows and reports them, *or* the uploader quarantines rejected rows. Decide before M8. |
+| ND-8 | **Point-upload poison batch / clock skew.** RLS rejects rows with device time > server now + 2 min or < `started_at` − 1 min. One bad row fails the whole 200-row upsert, and the uploader then retries forever. | 0001 `points_driver_insert` vs TRD §4.3 / doc 13 P9 uploader | New migration: upload through an RPC that filters/clamps invalid rows and reports them, *or* the uploader quarantines rejected rows. Decide before M8. *M8 implemented the client-side option (needs approval):*<br>• The task drops fixes older than `started_at` − 1 min.<br>• The uploader bisects a refused batch and quarantines only the refused rows (kept locally with the reason; never while signed out).<br>• Quarantined rows never reach the server, so `received < expected_points` and the trip ends up `needs_review` / MISSING_POINTS via the sweeper, which surfaces the problem instead of hiding it.<br>• A phone whose clock runs > 2 min fast loses those points. The server-side RPC option would recover them. |
 | ND-9 | Folder layout differs. CLAUDE.md: `src/features/tracking` + `src/tracking/`, `config.ts` and `db.ts` in `src/lib/`. TRD: `src/tracking/config.ts`, adds `lib/geo.ts`, `lib/sentry.ts`. Doc 13 P9: `db.ts` in `src/tracking/`. Doc 12/13 add `src/theme/`, `plugins/`, `/dev/*` routes. | CLAUDE.md, TRD §3, doc 13 | Adopt the §1.3 layout and update CLAUDE.md/TRD to match in M1. |
 | ND-10 | Web audience: CLAUDE.md "Web is a console (admin / owner / shipper)" vs PRD §3 / doc 04 "admin-only; owner/shipper → Coming soon" | CLAUDE.md rule 8 vs PRD | Admin-only in Phase 1 (PRD wins); fix the CLAUDE.md wording. |
 | ND-11 | `SENTRY_DSN` is listed as server-only, but the RN/web app needs it in the bundle. `SENTRY_AUTH_TOKEN` (source maps) is not listed. | `.env.example` vs doc 13 P13 | Add `EXPO_PUBLIC_SENTRY_DSN`; add `SENTRY_AUTH_TOKEN` as an EAS secret. |
@@ -329,21 +329,49 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 **Prerequisite decisions:** ND-6 (stationary heartbeat) and ND-8 (poison batch) must be resolved first.
 
 **Tasks**
-- [ ] `config.ts`: `TRACKING_OPTIONS` from TRD §4.2 (adjusted per ND-6)
-- [ ] `db.ts` / `queue.ts`: `trip_state {trip_id, state, next_seq, started_at, ended_at, end_lat, end_lng, end_accuracy}` + `point_queue` (TRD §4.3); seq persisted and never reused
-- [ ] `task.ts`: `TaskManager.defineTask` at module top level, imported first in `app/_layout.tsx`; maps LocationObject → rows (incl. `mocked`); fast, never throws
-- [ ] `uploader.ts`: every 30 s + NetInfo reconnect + app foreground; ≤ 200 rows; upsert `onConflict: 'trip_id,seq', ignoreDuplicates`; mark uploaded; exponential backoff with jitter; single-flight; ND-8 handling
-- [ ] `stateMachine.ts`: pure reducer IDLE → TRACKING → ENDING → ENDED / ENDED_PENDING_SYNC; side effects:
+- [x] `config.ts`: `TRACKING_OPTIONS` from TRD §4.2 (adjusted per ND-6). *Exactly as the TRD. ND-6 is still open, so there's no stationary heartbeat.*
+- [x] `db.ts` / `queue.ts`: `trip_state {trip_id, state, next_seq, started_at, ended_at, end_lat, end_lng, end_accuracy}` + `point_queue` (TRD §4.3); seq persisted and never reused.
+  - Seq allocation and the row inserts commit in one exclusive transaction behind an in-process lock, so seq is never reused and never skipped.
+  - On open, `migrate()` also repairs `next_seq` if it ever falls at or below a queued seq.
+  - Extra columns: `trip_state.last_seq / server_status / last_error / updated_at`, and `point_queue.reject_reason` (ND-8).
+- [x] `task.ts`: `TaskManager.defineTask` at module top level, imported first in `app/_layout.tsx`; maps LocationObject → rows (incl. `mocked`); fast, never throws.
+  - `taskHandler.ts` / `mapping.ts`: iOS −1 sentinels become null.
+  - Dropped: exact duplicate fixes, and fixes more than 1 min before the server's `started_at` (RLS would refuse them).
+  - Out-of-order timestamps are kept.
+- [x] `uploader.ts`: every 30 s + NetInfo reconnect + app foreground; ≤ 200 rows; upsert `onConflict: 'trip_id,seq', ignoreDuplicates`; mark uploaded; exponential backoff with jitter; single-flight; ND-8 handling.
+  - Scheduling lives in `runtime.ts`.
+  - Backoff: 5 s doubling to a 5 min cap, equal jitter.
+  - ND-8: a batch refused permanently (42501/23514/…) is bisected and the refused rows are set aside with the reason (`uploaded = 2`, kept). Only while a session exists, so a signed-out upload can't quarantine good points.
+- [x] `stateMachine.ts`: pure reducer IDLE → TRACKING → ENDING → ENDED / ENDED_PENDING_SYNC; side effects:
   - `startTrip(tripId)`: fresh fix → `start_trip` → persist → `startLocationUpdatesAsync`; never start if the RPC fails
+    - Checks permissions and GPS first, with a 20 s fix timeout.
+    - The start fix is queued as seq 1.
+    - Recovers a lost `start_trip` response (TRIP_NOT_STARTABLE while the server shows `in_progress`).
   - `endTrip()`: stop → persist ENDING → flush → `end_trip`; offline → ENDED_PENDING_SYNC
+    - ENDING stores `ended_at` (tap time), the end position and `last_seq`.
+    - TRIP_NOT_ACTIVE counts as success. TRIP_NOT_FOUND/unknown → ENDED with `last_error`, no endless retry.
   - `resumeOnLaunch()`
-- [ ] `errors.ts`: typed RPC errors (`OUTSIDE_PICKUP:<m>` parsed to metres, etc.)
-- [ ] Delete uploaded rows once the trip is final (TRD §4.3)
-- [ ] `/dev/tracking`: queue counts, state, last point, simulate points on web
-- [ ] Wire the real resume check into S1 Splash (replaces the M5 stub)
-- [ ] Unit tests: reducer transitions, seq persistence, idempotent upload, backoff, error parsing, offline end → later sync, resume after kill
+    - Restarts updates for TRACKING (if background permission is still granted), retries a pending end, and cleans up finished trips.
+    - Stops tracking only if the server *definitely* shows the trip no longer `in_progress`. Offline or signed out never stops it.
+  - `syncPendingEnd()`, `cleanupFinished()`
+  - All engine operations are serialised.
+- [x] `errors.ts`: typed RPC errors (`OUTSIDE_PICKUP:<m>` parsed to metres, etc.)
+  - `TripError` covers all docs/06 codes plus client codes (NETWORK, PERMISSION_REQUIRED, GPS_TIMEOUT, …).
+  - Also: `isPermanentRowError`, and driver-facing text.
+- [x] Delete uploaded rows once the trip is final (TRD §4.3). *`cleanupFinished`: nothing pending and the server status is verified / needs_review / rejected / cancelled.*
+- [x] `/dev/tracking`: queue counts, state, last point, simulate points on web
+  - Web uses a simulated location source and expo-sqlite web (wasm; `metro.config.js` sets COOP/COEP for the dev server).
+  - `__DEV__` only.
+- [x] Wire the real resume check into S1 Splash (replaces the M5 stub)
+  - `localState.ts` reads SQLite; Splash resumes a TRACKING trip.
+  - The root layout starts the sync loop on native.
+  - Sign-out is now also blocked while trip data is unsynced.
+- [x] Unit tests: reducer transitions, seq persistence, idempotent upload, backoff, error parsing, offline end → later sync, resume after kill
+  - 84 tests in `src/tracking/**`.
+  - The queue and engine tests run the real SQL on node:sqlite files; "kill" = close and reopen the file, including a crash mid-transaction.
+  - A fake backend mirrors the `start_trip`/`end_trip` rules and the `trip_points` RLS window.
 
-**Files expected:** `src/tracking/{config,db,queue,task,uploader,stateMachine,errors,permissions}.ts` + `__tests__/`, `app/dev/tracking.tsx`.
+**Files expected:** `src/tracking/{config,db,queue,task,uploader,stateMachine,errors,permissions}.ts` + `__tests__/`, `app/dev/tracking.tsx`. *Also: `mapping.ts`, `taskHandler.ts`, `runtime.ts`, `localState.ts`, `simulatedLocation.ts`, `testing/{nodeSqlite,fakes}.ts`, `metro.config.js`; `app.config.ts` gains the expo-location plugin (doc 09 §3 permission strings, background + foreground service) and expo-sqlite.*
 
 **Acceptance (PRD P0-6, P0-7, P0-9 core)**
 - Points every ~10 s / 25 m while in progress (or per ND-6)
@@ -712,3 +740,25 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
   - The real Mappls map and live autosuggest / route / distance calls: no `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY` or `MAPPLS_REST_KEY`, and Mappls is unreachable from this sandbox. The e2e mocks the proxy.
   - The "admin creates a load in < 2 min" acceptance needs a human with the real map.
 - **Left:** 🧍 set both Mappls keys, check the map renders on C3/C4, drag a pin, and confirm the dashed planned route; decide ND-26, ND-28 and ND-29.
+
+### 2026-09-26 · M8 (Prompt 9): tracking engine
+- **Changed:**
+  - `src/tracking/`: config, db, queue, mapping, task, taskHandler, uploader, stateMachine, errors, runtime, localState, simulatedLocation.
+  - `/dev/tracking` dev screen.
+  - Root layout imports the task first and starts the sync loop on native.
+  - Splash/sign-out use real local state.
+  - `app.config.ts` gains the expo-location plugin (doc 09 §3 strings, iOS/Android background, Android foreground service) and expo-sqlite.
+  - Installed expo-location, expo-task-manager, expo-sqlite, NetInfo, expo-device, expo-application (SDK-matched, exact).
+  - `metro.config.js`: wasm asset and COOP/COEP headers on the dev server, so expo-sqlite web works for the dev screen.
+- **Verified:**
+  - Checks: Jest 279 (84 tracking), typecheck, lint, format; `expo export -p web` builds.
+  - **Real backend** (local Supabase, driver session, `/dev/tracking` on web with simulated GPS, Playwright):
+    - start_trip 231 km away → `OUTSIDE_PICKUP` parsed to metres; nothing persisted, no task, server still `assigned`
+    - start at the pickup → server `in_progress`, start fix uploaded as seq 1
+    - 20 points uploaded through the real RLS (seq 1–21, no duplicates, `trip_live` updated)
+    - browser offline → uploads fail as network errors, 5 more points queue (pending=5, next_seq=27)
+    - End offline → `ENDED_PENDING_SYNC`, server still `in_progress`
+    - back online → one sync uploads the 5 points, `end_trip(expected=26)`, server verifies (`needs_review`: END_OUTSIDE_DROP, GPS_JUMPS, DISTANCE_TOO_SHORT, expected for a simulated path) → local rows deleted, state IDLE
+  - M5 auth (12), M6 console (15) and the M7 e2e spec still pass.
+- **Not verified (needs a device):** the background task on Android/iOS (screen off, OS kills, reboot), the foreground-service notification, real GPS quality, and NetInfo/AppState triggers on a phone. This sandbox has no emulator. It's the M9 🧍 checkpoint.
+- **Decisions:** ND-8 client-side quarantine (needs approval); ND-6 unchanged (TRD as written).

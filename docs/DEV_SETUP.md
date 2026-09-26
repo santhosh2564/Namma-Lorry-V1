@@ -118,7 +118,17 @@ npm run e2e                                    # starts `expo start --web` if it
 distance) and assigns it. `mappls-proxy` is mocked in the browser, so no Mappls key is needed. Set
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to use a specific Chromium binary.
 
-## 8. Run the app
+## 8. Tracking engine dev screen
+`/dev/tracking` (dev builds only) shows the local trip state, queue counts, the last point and the
+uploader's backoff. It has buttons to start or end a trip by ID, flush, resume, and clean up.
+- **Web:** GPS is simulated. Set the position (e.g. the seeded pickup `12.9563, 79.9422`), start
+  the seeded trip `f0000000-0000-4000-8000-000000000001` signed in as driver `9000000011`, then
+  "Simulate 20", "Flush now", "End trip". Toggling the browser offline exercises
+  `ENDED_PENDING_SYNC`. expo-sqlite web needs cross-origin isolation, which `metro.config.js`
+  provides on the dev server.
+- **Native:** real GPS via the background task. Needs an EAS development build (M3/M9).
+
+## 9. Run the app
 ```bash
 npm install
 npm run web          # console + auth screens in the browser (http://localhost:8081)
