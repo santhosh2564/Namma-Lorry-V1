@@ -26,6 +26,8 @@ Phase 1 goal in one line: **prove, from the phone's GPS, that a trip for a speci
 | 09 | `docs/09-security-privacy-compliance.md` | DPDP Act, store policies, threat model | Client, store submission |
 | 10 | `docs/10-test-plan.md` | Unit, RLS, field-test matrix, acceptance | QA, agents |
 | 11 | `docs/11-build-prompts.md` | Copy-paste prompts per milestone | You → Claude Code / Antigravity |
+| 12 | `docs/12-screens-and-stitch-prompts.md` + `stitch/DESIGN.md` | Final 21 screens, use cases, Google Stitch prompts | You → Stitch, designer |
+| 13 | `docs/13-claude-code-prompts.md` | Step-by-step Claude Code prompts, Prompt 0 → release (supersedes 11) | You → Claude Code |
 | — | `.env.example` | Every env variable the app needs | Developers |
 
 ### Documents that still need to come from you / the client
