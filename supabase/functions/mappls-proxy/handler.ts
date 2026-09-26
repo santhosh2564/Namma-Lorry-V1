@@ -1,7 +1,7 @@
 // mappls-proxy (docs/06 §4): admin-only proxy to Mappls REST with server-held credentials.
 import { z } from 'zod';
 
-import { requireAdmin, type UserClientFactory } from '../_shared/auth.ts';
+import { type ContextFactory, requireAdmin } from '../_shared/auth.ts';
 import { handle, HttpError, json, readJson } from '../_shared/http.ts';
 import type { RateLimiter } from '../_shared/rateLimit.ts';
 import * as mappls from './mappls.ts';
@@ -24,7 +24,7 @@ export const requestSchema = z.discriminatedUnion('action', [
 ]);
 
 export interface ProxyDeps {
-  makeUserClient: UserClientFactory;
+  makeContext: ContextFactory<unknown>;
   rateLimiter: RateLimiter;
   fetch: typeof fetch;
   getEnv: (name: string) => string | undefined;
@@ -33,7 +33,7 @@ export interface ProxyDeps {
 export function createHandler(deps: ProxyDeps) {
   return (req: Request) =>
     handle(req, async () => {
-      const caller = await requireAdmin(req, deps.makeUserClient);
+      const caller = await requireAdmin(req, deps.makeContext);
 
       const retryAfter = deps.rateLimiter.hit(caller.userId);
       if (retryAfter > 0) {

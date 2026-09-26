@@ -1,13 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { env, supabaseUserClient } from '../_shared/auth.ts';
+import { supabaseContext } from '../_shared/auth.ts';
 import { type AdminApi, createHandler, type DriverProfile } from './handler.ts';
 
-function serviceAdmin(): AdminApi {
-  // Service role key: provided to Edge Functions by Supabase, never sent to the app.
-  const sb = createClient(env('SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+/** Privileged operations on ctx.supabaseAdmin (secret key; never sent to the app). */
+function adminApi(sb: SupabaseClient): AdminApi {
   return {
     async createUser(phone) {
       const { data, error } = await sb.auth.admin.createUser({ phone, phone_confirm: true });
@@ -34,4 +31,4 @@ function serviceAdmin(): AdminApi {
   };
 }
 
-Deno.serve(createHandler({ makeUserClient: supabaseUserClient, admin: serviceAdmin }));
+export default { fetch: createHandler({ makeContext: supabaseContext(adminApi) }) };

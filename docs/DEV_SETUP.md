@@ -10,7 +10,7 @@
 npx supabase start        # first run downloads the images
 npx supabase db reset     # re-applies migrations/ + seed.sql
 ```
-`supabase start` prints `API_URL` (http://127.0.0.1:54321) and `ANON_KEY`.
+`supabase start` prints `API_URL` (http://127.0.0.1:54321) and `PUBLISHABLE_KEY` (`sb_publishable_…`).
 
 If your network blocks the default image registry (`public.ecr.aws`), pull from Docker Hub:
 ```bash
@@ -27,9 +27,13 @@ npx prettier --write src/lib/database.types.ts   # keep the header comment line
 ```bash
 cp .env.example .env
 # EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-# EXPO_PUBLIC_SUPABASE_ANON_KEY=<ANON_KEY from `supabase start`>
+# EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<PUBLISHABLE_KEY from `supabase start`>
 ```
 `src/lib/config.ts` validates these at startup and throws if they are missing or malformed.
+To point the app at the hosted project instead, use its URL (`https://<ref>.supabase.co`) and the
+**publishable** key (`sb_publishable_…`) from Dashboard → Project Settings → API Keys. The secret key
+(`sb_secret_…`) is server-only and must never go into `.env` for the app; `config.ts` rejects
+anything that isn't a publishable key.
 On a physical phone, `127.0.0.1` is the phone itself. Use your computer's LAN IP instead
 (e.g. `http://192.168.1.20:54321`).
 
@@ -76,7 +80,7 @@ update profiles set role = 'owner'   where phone = '919000000013';   -- coming s
 | Function | Purpose | Secrets |
 |---|---|---|
 | `mappls-proxy` | Admin-only Mappls autosuggest / geocode / reverse / distance | `MAPPLS_REST_KEY`, optional `MAPPLS_ROUTE_PROFILE` |
-| `admin-create-driver` | Admin-only: creates the driver's auth user + profile with the service role | none extra (`SUPABASE_SERVICE_ROLE_KEY` is provided by Supabase) |
+| `admin-create-driver` | Admin-only: creates the driver's auth user + profile with the admin client | none extra (`SUPABASE_SECRET_KEYS` is injected by Supabase) |
 
 ```bash
 # local
@@ -89,6 +93,13 @@ npx supabase secrets set MAPPLS_REST_KEY=<key>
 npx supabase functions deploy mappls-proxy
 npx supabase functions deploy admin-create-driver
 ```
+Both functions use [`@supabase/server`](https://github.com/supabase/server) (`createSupabaseContext`,
+`auth: 'user'`). It verifies the caller's JWT against the project JWKS and provides an RLS-scoped
+client plus an admin client on the secret key. `SUPABASE_URL`, the publishable/secret keys and the
+JWKS are injected by Supabase (hosted and `functions serve`). To run a function outside Supabase,
+export `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY`. The JWKS URL is
+derived from `SUPABASE_URL`, or you can set `SUPABASE_JWKS_URL`.
+The package's agent skill is vendored at `.claude/skills/supabase-server/` (`npx skills add supabase/server`).
 Mappls auth and endpoints are documented in `supabase/functions/mappls-proxy/README.md`.
 
 ## 6. Run the app

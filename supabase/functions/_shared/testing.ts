@@ -1,27 +1,25 @@
 // Test doubles shared by Edge Function tests.
-import type { UserClientFactory } from './auth.ts';
+import type { CallerContext, ContextFactory } from './auth.ts';
+import { HttpError } from './http.ts';
 
-/** Tokens: "admin-token" → admin, "driver-token" → non-admin, anything else → invalid. */
-export const fakeUserClients: UserClientFactory = (header) => {
-  const jwt = header.replace(/^Bearer\s+/i, '');
+/**
+ * Fake caller resolution keyed by bearer token:
+ * "admin-token" / "admin-2-token" → admins, "driver-token" → non-admin, anything else → 401.
+ */
+export function fakeContext<Admin>(admin: Admin): ContextFactory<Admin> {
   const users: Record<string, { id: string; admin: boolean }> = {
     'admin-token': { id: 'admin-1', admin: true },
     'admin-2-token': { id: 'admin-2', admin: true },
     'driver-token': { id: 'driver-1', admin: false },
   };
-  const u = users[jwt];
-  return {
-    auth: {
-      getUser: () =>
-        Promise.resolve(
-          u
-            ? { data: { user: { id: u.id } }, error: null }
-            : { data: { user: null }, error: new Error('bad jwt') },
-        ),
-    },
-    rpc: () => Promise.resolve({ data: u?.admin ?? false, error: null }),
+  return (req) => {
+    const jwt = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+    const u = users[jwt];
+    if (!u) return Promise.reject(new HttpError(401, 'UNAUTHENTICATED'));
+    const ctx: CallerContext<Admin> = { userId: u.id, isAdmin: () => Promise.resolve(u.admin), admin };
+    return Promise.resolve(ctx);
   };
-};
+}
 
 export function post(body: unknown, token?: string, method = 'POST'): Request {
   return new Request('http://localhost/fn', {

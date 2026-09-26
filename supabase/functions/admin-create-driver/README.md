@@ -10,8 +10,9 @@ Creates a driver login. Admins are the only way drivers get onto the platform (P
 - `preferredLanguage`: `en` (default), `ta`, `kn` or `hi`.
 
 Steps:
-1. Verify the JWT with GoTrue and call `is_admin()` as the caller (anon key + caller's token, RLS applies).
-2. With the **service role** (`SUPABASE_SERVICE_ROLE_KEY`, supplied to Edge Functions by Supabase):
+1. `@supabase/server` (`createSupabaseContext`, `auth: 'user'`) verifies the JWT against the project JWKS.
+   `is_admin()` then runs on the RLS-scoped client (caller's JWT + publishable key).
+2. With `ctx.supabaseAdmin` (the **secret key**, injected into Edge Functions by Supabase):
    `auth.admin.createUser({ phone: '91XXXXXXXXXX', phone_confirm: true })`. The `handle_new_user`
    trigger inserts the profile.
 3. Update that profile: `full_name`, `preferred_language`, `role = 'driver'`, `is_active = true`.

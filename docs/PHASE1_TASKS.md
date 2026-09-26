@@ -643,7 +643,27 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
   - Functions inside `supabase functions serve`: the edge-runtime container doesn't trust this sandbox's HTTPS proxy CA, so it can't download npm modules.
   - A hosted deploy.
 - **Known issues:**
-  - The functions pin `@supabase/supabase-js@2.117.1`, one patch behind the app's 2.117.2, because Deno refuses packages published in the last 24 h.
+  - ~~The functions pin `@supabase/supabase-js@2.117.1`~~ (aligned to 2.117.2 in the follow-up below).
   - `deno.lock` is disabled (`"lock": false`). Deno 2.9 writes lockfile v5, but the edge runtime is Deno 2.1.
   - The driver/vehicle "last trip" and "on trip" columns read up to 5,000 recent trips client-side. Move this to a view if volumes grow.
 - **Left:** 🧍 set `MAPPLS_REST_KEY` in Supabase secrets, deploy both functions, try autosuggest (and confirm ND-26 against your Mappls plan); decide ND-26 and ND-27.
+
+### 2026-09-26 · M6 follow-up: `@supabase/server` + new API keys
+- **Changed:**
+  - Both Edge Functions now authenticate with `@supabase/server@1.8.0` (`createSupabaseContext`, `auth: 'user'`).
+    - The JWT is verified against the project JWKS; ES256 is confirmed for local, and the hosted project publishes one too.
+    - `is_admin()` runs on the RLS-scoped `ctx.supabase`.
+    - `admin-create-driver` now uses `ctx.supabaseAdmin` (secret key) instead of a hand-built `SUPABASE_SERVICE_ROLE_KEY` client.
+    - Error bodies keep the `{ error: CODE }` shape the app expects.
+    - Entry points are `export default { fetch }`.
+  - The app now uses the **publishable key**: `EXPO_PUBLIC_SUPABASE_ANON_KEY` became `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. `config.ts` rejects anything that isn't `sb_publishable_…`, so a legacy anon JWT or a secret key can't end up in the bundle.
+  - Functions and app both use supabase-js 2.117.2.
+  - Vendored the package's agent skill at `.claude/skills/supabase-server/` (`skills-lock.json`); it is identical to the copy in the npm package.
+- **Verified:**
+  - Checks: app typecheck, lint, format and 160 Jest tests pass. `deno task check` and 29 Deno tests pass; the new `_shared/auth_test.ts` runs the real `createSupabaseContext` against a locally generated ES256 JWKS (no JWT, malformed, wrong key, expired → 401; valid → caller id with `is_admin()` sent as the caller; non-admin → 403; JWKS unreachable → 500).
+  - Real functions (`deno serve`) against local Supabase with the local `sb_publishable_`/`sb_secret_` keys:
+    - `admin-create-driver`: no JWT or legacy anon JWT → 401, driver → 403, admin → 201, duplicate → 409.
+    - `mappls-proxy`: 403 / 500 `CONFIG_MISSING` / 400.
+  - Playwright on web with the publishable key: M5 auth flows (12 checks) and M6 console (15 checks) pass.
+- **Not verified:** hosted deploy (needs your Supabase access token).
+- **Hosted project:** the app only needs its URL + publishable key in `.env`. `SUPABASE_SECRET_KEY` is injected into Edge Functions automatically and must not be put in the app.

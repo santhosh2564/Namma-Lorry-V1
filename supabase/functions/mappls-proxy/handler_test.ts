@@ -1,7 +1,7 @@
 import { assert, assertEquals } from '@std/assert';
 
 import { createRateLimiter } from '../_shared/rateLimit.ts';
-import { fakeUserClients, post } from '../_shared/testing.ts';
+import { fakeContext, post } from '../_shared/testing.ts';
 import { createHandler } from './handler.ts';
 
 // ---- Mocked Mappls responses (shapes from developer.mappls.com, Sep 2026) ----
@@ -75,7 +75,7 @@ function setup(
 ) {
   const m = mockFetch(routes);
   const handler = createHandler({
-    makeUserClient: fakeUserClients,
+    makeContext: fakeContext(null),
     rateLimiter: createRateLimiter(limit, 60_000),
     fetch: m.fetch,
     getEnv: (n) => ({ MAPPLS_REST_KEY: 'test-rest-key', ...env })[n],
@@ -269,7 +269,7 @@ Deno.test('network failure → 504 MAPPLS_UNAVAILABLE; missing key → 500 CONFI
   const res = await handler(post({ action: 'reverse', lat: 1, lng: 2 }, 'admin-token'));
   assertEquals(res.status, 504);
   const noKey = createHandler({
-    makeUserClient: fakeUserClients,
+    makeContext: fakeContext(null),
     rateLimiter: createRateLimiter(3, 60_000),
     fetch: (() => Promise.reject(new Error('should not be called'))) as typeof fetch,
     getEnv: () => undefined,

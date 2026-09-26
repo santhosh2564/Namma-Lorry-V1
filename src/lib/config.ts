@@ -4,7 +4,8 @@ import { z } from 'zod';
 // static `process.env.EXPO_PUBLIC_X` property access (no destructuring).
 const schema = z.object({
   EXPO_PUBLIC_SUPABASE_URL: z.url(),
-  EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().min(20),
+  // Publishable key (sb_publishable_…). The legacy anon JWT is no longer used.
+  EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().startsWith('sb_publishable_'),
   EXPO_PUBLIC_APP_ENV: z.enum(['development', 'staging', 'production']).default('development'),
   // Store listing links for S4 "use the mobile app"; buttons are hidden until set (M12c).
   EXPO_PUBLIC_PLAY_STORE_URL: z.url().optional(),
@@ -25,7 +26,7 @@ export function parseConfig(env: Record<string, string | undefined>): AppConfig 
 
 export const config = parseConfig({
   EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
-  EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   EXPO_PUBLIC_APP_ENV: process.env.EXPO_PUBLIC_APP_ENV,
   EXPO_PUBLIC_PLAY_STORE_URL: process.env.EXPO_PUBLIC_PLAY_STORE_URL || undefined,
   EXPO_PUBLIC_APP_STORE_URL: process.env.EXPO_PUBLIC_APP_STORE_URL || undefined,

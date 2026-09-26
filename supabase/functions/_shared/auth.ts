@@ -1,50 +1,68 @@
-// Caller verification shared by admin-only functions.
-// The JWT is verified by GoTrue (`auth.getUser`), then `is_admin()` runs as that
-// user under RLS, so a forged or non-admin token never reaches Mappls or the
-// service-role client.
-import { createClient } from '@supabase/supabase-js';
+// Caller verification shared by admin-only functions, built on @supabase/server.
+//
+// createSupabaseContext verifies the user's JWT against the project JWKS and
+// returns two clients: `supabase` (the caller's JWT + publishable key, so RLS
+// applies) and `supabaseAdmin` (secret key, bypasses RLS). is_admin() runs on
+// the RLS-scoped client, so a deactivated or non-admin caller never reaches
+// Mappls or the admin client.
+import { createSupabaseContext, type SupabaseEnv } from '@supabase/server';
+import type { SupabaseClient, SupabaseClientOptions } from '@supabase/supabase-js';
 
 import { HttpError } from './http.ts';
 
-export interface Caller {
+export interface CallerContext<Admin> {
   userId: string;
+  /** `is_admin()` evaluated as the caller (active admin profile). */
+  isAdmin(): Promise<boolean>;
+  /** Privileged operations; only touched after `requireAdmin` passes. */
+  admin: Admin;
 }
 
-/** Minimal surface used from the per-request user client (mockable in tests). */
-export interface UserClient {
-  auth: { getUser(jwt: string): Promise<{ data: { user: { id: string } | null }; error: unknown }> };
-  rpc(fn: 'is_admin'): PromiseLike<{ data: unknown; error: unknown }>;
+/** Resolves the caller or throws HttpError 401 / 500. Swapped for a fake in tests. */
+export type ContextFactory<Admin> = (req: Request) => Promise<CallerContext<Admin>>;
+
+export async function requireAdmin<Admin>(
+  req: Request,
+  makeContext: ContextFactory<Admin>,
+): Promise<CallerContext<Admin>> {
+  const ctx = await makeContext(req);
+  if (!(await ctx.isAdmin())) throw new HttpError(403, 'FORBIDDEN');
+  return ctx;
 }
 
-export type UserClientFactory = (authHeader: string) => UserClient;
-
-export function bearer(req: Request): { header: string; jwt: string } {
-  const header = req.headers.get('Authorization') ?? '';
-  const m = /^Bearer\s+(.+)$/i.exec(header);
-  if (!m) throw new HttpError(401, 'UNAUTHENTICATED');
-  return { header, jwt: m[1]! };
+export interface ContextOptions {
+  /** Overrides for tests; on Supabase every value is injected automatically. */
+  env?: Partial<SupabaseEnv>;
+  supabaseOptions?: SupabaseClientOptions<string>;
 }
 
-export async function requireAdmin(req: Request, makeClient: UserClientFactory): Promise<Caller> {
-  const { header, jwt } = bearer(req);
-  const client = makeClient(header);
-  const { data, error } = await client.auth.getUser(jwt);
-  if (error || !data.user) throw new HttpError(401, 'UNAUTHENTICATED');
-  const admin = await client.rpc('is_admin');
-  if (admin.error) throw new HttpError(500, 'AUTH_CHECK_FAILED');
-  if (admin.data !== true) throw new HttpError(403, 'FORBIDDEN');
-  return { userId: data.user.id };
+/** Real factory: `auth: 'user'` via @supabase/server. */
+export function supabaseContext<Admin>(
+  toAdmin: (supabaseAdmin: SupabaseClient) => Admin,
+  options: ContextOptions = {},
+): ContextFactory<Admin> {
+  return async (req) => {
+    const { data: ctx, error } = await createSupabaseContext(req, {
+      auth: 'user',
+      env: options.env,
+      supabaseOptions: options.supabaseOptions,
+    });
+    if (error) {
+      // 401: missing / invalid / expired JWT. 500: misconfiguration (no JWKS, missing keys).
+      if (error.status === 401) throw new HttpError(401, 'UNAUTHENTICATED');
+      console.error(error.code, error.message);
+      throw new HttpError(500, 'AUTH_CONFIG');
+    }
+    const userId = ctx.userClaims?.id;
+    if (!userId) throw new HttpError(401, 'UNAUTHENTICATED');
+    return {
+      userId,
+      isAdmin: async () => {
+        const { data, error: rpcError } = await ctx.supabase.rpc('is_admin');
+        if (rpcError) throw new HttpError(500, 'AUTH_CHECK_FAILED');
+        return data === true;
+      },
+      admin: toAdmin(ctx.supabaseAdmin as SupabaseClient),
+    };
+  };
 }
-
-export function env(name: string): string {
-  const v = Deno.env.get(name);
-  if (!v) throw new HttpError(500, 'CONFIG_MISSING', `${name} is not set`);
-  return v;
-}
-
-/** Real factory: anon key + the caller's Authorization header, so RLS applies. */
-export const supabaseUserClient: UserClientFactory = (authHeader) =>
-  createClient(env('SUPABASE_URL'), env('SUPABASE_ANON_KEY'), {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  }) as unknown as UserClient;

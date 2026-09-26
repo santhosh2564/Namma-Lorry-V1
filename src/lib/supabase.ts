@@ -12,7 +12,7 @@ const isWeb = Platform.OS === 'web';
 
 export const supabase = createClient<Database>(
   config.EXPO_PUBLIC_SUPABASE_URL,
-  config.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  config.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   {
     auth: {
       storage: isWeb ? createWebStorage() : createChunkedSecureStorage(SecureStore),

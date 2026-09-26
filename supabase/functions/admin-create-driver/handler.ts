@@ -1,9 +1,9 @@
 // admin-create-driver: the only way drivers are created (PRD P0-1, ND-12).
-// The caller must be an admin; the auth user is then created with the service
-// role, which never leaves this function.
+// The caller must be an admin; the auth user is then created with the admin
+// client (secret key), which never leaves this function.
 import { z } from 'zod';
 
-import { requireAdmin, type UserClientFactory } from '../_shared/auth.ts';
+import { type ContextFactory, requireAdmin } from '../_shared/auth.ts';
 import { handle, HttpError, json, readJson } from '../_shared/http.ts';
 
 export const requestSchema = z.object({
@@ -31,7 +31,7 @@ export interface DriverProfile {
   created_at: string;
 }
 
-/** The service-role operations this function needs (mockable in tests). */
+/** The privileged operations this function needs (mockable in tests). */
 export interface AdminApi {
   createUser(phone: string): Promise<{ id: string } | { errorCode: string; message: string }>;
   deleteUser(id: string): Promise<void>;
@@ -42,14 +42,13 @@ export interface AdminApi {
 }
 
 export interface CreateDriverDeps {
-  makeUserClient: UserClientFactory;
-  admin: () => AdminApi;
+  makeContext: ContextFactory<AdminApi>;
 }
 
 export function createHandler(deps: CreateDriverDeps) {
   return (req: Request) =>
     handle(req, async () => {
-      await requireAdmin(req, deps.makeUserClient);
+      const { admin } = await requireAdmin(req, deps.makeContext);
 
       const parsed = requestSchema.safeParse(await readJson(req));
       if (!parsed.success) {
@@ -60,7 +59,6 @@ export function createHandler(deps: CreateDriverDeps) {
         );
       }
       const { fullName, phone, preferredLanguage } = parsed.data;
-      const admin = deps.admin();
 
       // GoTrue stores phones without "+"; handle_new_user copies it into profiles.phone.
       const created = await admin.createUser(`91${phone}`);

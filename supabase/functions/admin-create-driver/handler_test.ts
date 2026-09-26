@@ -1,6 +1,6 @@
 import { assertEquals } from '@std/assert';
 
-import { fakeUserClients, post } from '../_shared/testing.ts';
+import { fakeContext, post } from '../_shared/testing.ts';
 import { type AdminApi, createHandler, type DriverProfile } from './handler.ts';
 
 function fakeAdmin(opts: { existing?: string[]; failProfile?: boolean } = {}) {
@@ -42,9 +42,9 @@ function fakeAdmin(opts: { existing?: string[]; failProfile?: boolean } = {}) {
 
 const body = { fullName: 'Selvam R', phone: '+91 98400 12345', preferredLanguage: 'ta' };
 
-Deno.test('non-admin (403) and anonymous (401) callers never reach the service role', async () => {
+Deno.test('non-admin (403) and anonymous (401) callers never reach the admin client', async () => {
   const { api, log } = fakeAdmin();
-  const handler = createHandler({ makeUserClient: fakeUserClients, admin: () => api });
+  const handler = createHandler({ makeContext: fakeContext(api) });
   assertEquals((await handler(post(body))).status, 401);
   assertEquals((await handler(post(body, 'forged'))).status, 401);
   const res = await handler(post(body, 'driver-token'));
@@ -55,7 +55,7 @@ Deno.test('non-admin (403) and anonymous (401) callers never reach the service r
 
 Deno.test('admin creates a driver: phone normalised to 91XXXXXXXXXX, profile named', async () => {
   const { api, log } = fakeAdmin();
-  const handler = createHandler({ makeUserClient: fakeUserClients, admin: () => api });
+  const handler = createHandler({ makeContext: fakeContext(api) });
   const res = await handler(post(body, 'admin-token'));
   assertEquals(res.status, 201);
   const { driver } = await res.json();
@@ -67,14 +67,14 @@ Deno.test('admin creates a driver: phone normalised to 91XXXXXXXXXX, profile nam
 
 Deno.test('language defaults to en', async () => {
   const { api, log } = fakeAdmin();
-  const handler = createHandler({ makeUserClient: fakeUserClients, admin: () => api });
+  const handler = createHandler({ makeContext: fakeContext(api) });
   await handler(post({ fullName: 'Arun', phone: '9840012346' }, 'admin-token'));
   assertEquals(log[1], 'profile user-919840012346 Arun en');
 });
 
 Deno.test('duplicate phone → 409 PHONE_EXISTS', async () => {
   const { api } = fakeAdmin({ existing: ['919840012345'] });
-  const handler = createHandler({ makeUserClient: fakeUserClients, admin: () => api });
+  const handler = createHandler({ makeContext: fakeContext(api) });
   const res = await handler(post(body, 'admin-token'));
   assertEquals(res.status, 409);
   assertEquals((await res.json()).error, 'PHONE_EXISTS');
@@ -82,7 +82,7 @@ Deno.test('duplicate phone → 409 PHONE_EXISTS', async () => {
 
 Deno.test('invalid input → 400 and nothing is created', async () => {
   const { api, log } = fakeAdmin();
-  const handler = createHandler({ makeUserClient: fakeUserClients, admin: () => api });
+  const handler = createHandler({ makeContext: fakeContext(api) });
   for (
     const b of [
       { ...body, phone: '12345' },
@@ -100,7 +100,7 @@ Deno.test('invalid input → 400 and nothing is created', async () => {
 
 Deno.test('profile update failure rolls back the auth user', async () => {
   const { api, log } = fakeAdmin({ failProfile: true });
-  const handler = createHandler({ makeUserClient: fakeUserClients, admin: () => api });
+  const handler = createHandler({ makeContext: fakeContext(api) });
   const res = await handler(post(body, 'admin-token'));
   assertEquals(res.status, 500);
   assertEquals((await res.json()).error, 'PROFILE_UPDATE_FAILED');
