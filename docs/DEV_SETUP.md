@@ -16,6 +16,8 @@ If your network blocks the default image registry (`public.ecr.aws`), pull from 
 ```bash
 SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io npx supabase start
 ```
+If you start with `-x` to skip services, keep **realtime** running: D6 Trip Summary subscribes to its
+trip row (migration 0004) and C1 to `trip_live`. Without it D6 still updates, by polling every 10 s.
 
 Regenerate the DB types after any migration:
 ```bash
@@ -135,6 +137,12 @@ simulated position from `/dev/tracking` (kept in sessionStorage). Sign in as `90
 three permissions, skip D2, open the seeded trip; set the position to `12.9570, 79.9425` on
 `/dev/tracking` and reopen the trip to get "You're at the pickup" and an enabled START. Without the
 variable (and in every production build) drivers on web get S4 as before.
+
+### Active trip and summary in the preview (M10)
+After START, open `/dev/tracking` and tap "Simulate 20" to record points (the position is kept for the
+preview), then reopen `/driver/trips/<id>/live`: D5 draws them from the local queue. Toggle the
+browser offline (DevTools → Network → Offline), END, and D6 shows "Ended offline"; go back online and
+it switches to the verification result within about 30 s (the next sync), pushed by realtime.
 
 ## 8a. Driver onboarding on a phone (M9)
 - D1 asks for precise location → "Allow all the time" → notifications, one at a time, after the

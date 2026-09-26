@@ -87,6 +87,7 @@ function DevTrackingInner() {
       inserted += await handleLocationUpdate(async () => db, [sim.step(150, mocked)], Date.now);
       await new Promise((r) => setTimeout(r, 5)); // distinct timestamps
     }
+    setSimulatedPosition(sim.position); // keep the truck here across reloads (driver preview)
     return { inserted };
   }
 

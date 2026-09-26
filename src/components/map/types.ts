@@ -35,6 +35,8 @@ export interface AppMapProps {
   /** Extension to TRD §5: fired when a draggable marker is dropped. */
   onMarkerDragEnd?: (id: string, p: LatLng) => void;
   fitToContent?: boolean;
+  /** Extension to TRD §5 (D5): keep the map centred on this point as it moves. */
+  follow?: LatLng | null;
   /** Height of the map area in px (default 360). */
   height?: number;
   testID?: string;

@@ -6,7 +6,7 @@ import { colors, radius, sizes, space } from '@/theme/tokens';
 
 import { Text } from './Text';
 
-type Variant = 'primary' | 'danger' | 'success' | 'outline' | 'text';
+type Variant = 'primary' | 'danger' | 'dangerOutline' | 'success' | 'outline' | 'text';
 
 export interface ButtonProps {
   label: string;
@@ -26,6 +26,7 @@ const palette: Record<Variant, { bg: string; fg: string; border: string }> = {
   danger: { bg: colors.danger, fg: colors.onPrimary, border: colors.danger },
   success: { bg: colors.verified, fg: colors.onPrimary, border: colors.verified },
   outline: { bg: colors.surface, fg: colors.primary, border: colors.primary },
+  dangerOutline: { bg: colors.surface, fg: colors.danger, border: colors.danger },
   text: { bg: 'transparent', fg: colors.primary, border: 'transparent' },
 };
 
@@ -42,7 +43,7 @@ export function Button({
 }: ButtonProps) {
   const inactive = disabled || loading;
   const p = palette[variant];
-  const filled = variant !== 'outline' && variant !== 'text';
+  const filled = variant !== 'outline' && variant !== 'dangerOutline' && variant !== 'text';
   const bg = inactive && filled ? colors.disabled : p.bg;
   const border = inactive && filled ? colors.disabled : inactive ? colors.border : p.border;
   const fg = inactive && !filled ? colors.textSecondary : p.fg;

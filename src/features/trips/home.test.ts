@@ -28,6 +28,14 @@ describe('D3 homeSections', () => {
   });
 });
 
+describe('homeSections after an offline end', () => {
+  it('does not pin a trip that ended on this phone and waits for sync', () => {
+    const s = homeSections([trip('x', 'in_progress'), trip('y', 'assigned')], null, 'x');
+    expect(s.live).toBeNull();
+    expect(s.assigned.map((t) => t.id)).toEqual(['y']);
+  });
+});
+
 describe('firstName', () => {
   it('takes the first word', () => {
     expect(firstName('Murugan S')).toBe('Murugan');

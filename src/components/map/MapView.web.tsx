@@ -64,6 +64,7 @@ function MapplsMap({
   onPress,
   onMarkerDragEnd,
   fitToContent,
+  follow,
   height = 360,
   testID,
   ready,
@@ -168,6 +169,18 @@ function MapplsMap({
       }
     }
   }
+
+  // D5: pan to the truck whenever it moves (zoom in the first time).
+  const followed = useRef(false);
+  const fLat = follow?.lat;
+  const fLng = follow?.lng;
+  useEffect(() => {
+    const m = map.current;
+    if (fLat === undefined || fLng === undefined || !m || !loaded.current) return;
+    m.setCenter({ lat: fLat, lng: fLng });
+    if (!followed.current) m.setZoom(15);
+    followed.current = true;
+  }, [fLat, fLng]);
 
   // Redraw overlays when they change.
   const signature = JSON.stringify({ markers, polylines, circles });

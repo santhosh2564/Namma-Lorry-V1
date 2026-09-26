@@ -1,4 +1,12 @@
 // English strings (CLAUDE.md rule 10). M12a moves these to i18next JSON with ta/kn/hi.
+
+/** 420 → "420 m", 1830 → "1.8 km", 396_400 → "396 km" */
+const fmtKm = (m: number) => {
+  if (m < 1000) return `${Math.round(m)} m`;
+  const tenths = Math.round(m / 100) / 10;
+  return `${tenths >= 10 ? Math.round(m / 1000) : tenths.toFixed(1)} km`;
+};
+
 export const en = {
   common: {
     appName: 'Namma Lorry',
@@ -163,6 +171,89 @@ export const en = {
     outsideSheetOk: 'OK',
     notFound: "This trip isn't available.",
     routeUnavailable: 'Straight line shown; road route is added when the trip is planned.',
+  },
+  activeTrip: {
+    live: 'Live',
+    to: (place: string) => `To ${place}`,
+    time: 'Time',
+    distance: 'Distance',
+    approx: 'approx.',
+    toDrop: 'To drop',
+    synced: 'All trip data synced',
+    waiting: (n: number) => `${n} ${n === 1 ? 'point' : 'points'} waiting to upload`,
+    offline: (n: number) =>
+      n > 0
+        ? `Offline · ${n} ${n === 1 ? 'point' : 'points'} saved on phone, will upload automatically`
+        : 'Offline · trip keeps recording on your phone',
+    gpsGood: (m: number | null) => (m === null ? 'GPS good' : `GPS good · ±${m} m`),
+    gpsWeak: (m: number) => `Weak GPS · ±${m} m`,
+    gpsWaiting: 'Waiting for the first GPS point…',
+    gpsStopped: 'Stopped · recording resumes when you move',
+    problem: {
+      permission: 'Location permission was turned off. The trip is not being recorded.',
+      'gps-off': "Your phone's location (GPS) is off. The trip is not being recorded.",
+      'not-running': "Trip recording isn't running on this phone. Tap Fix to restart it.",
+      'no-points': (min: number) =>
+        `No GPS point for ${min} min. Keep the app open and check location is on.`,
+    },
+    fix: 'Fix',
+    nearDrop: "You've reached the delivery area",
+    end: 'END TRIP',
+    keepAwake: 'Keep screen on',
+    keepAwakeHint: 'Uses more battery. Tracking works with the screen off.',
+    notTracking: "This trip isn't recording on this phone.",
+    endFailed: "Couldn't end the trip. Please try again.",
+  },
+  endSheet: {
+    title: 'End this trip?',
+    body: 'Make sure you have delivered the load.',
+    outside: (d: string) =>
+      `You're ${d} from the delivery point. You can still end the trip, but Namma Lorry will review it.`,
+    confirm: 'End trip',
+    cancel: 'Keep tracking',
+    ending: 'Ending…',
+  },
+  summary: {
+    verifyingTitle: 'Checking your trip…',
+    verifyingBody: 'This usually takes a few seconds.',
+    offlineTitle: 'Trip ended',
+    offlineBody: "Ended offline — will verify when you're online.",
+    offlinePending: (n: number) => `${n} ${n === 1 ? 'point' : 'points'} still on this phone`,
+    verifiedTitle: 'Trip verified',
+    verifiedBody: 'Added to your verified experience',
+    reviewTitle: 'Trip under review',
+    reviewBody: "Namma Lorry will check this. You don't need to do anything.",
+    rejectedTitle: 'Trip not verified',
+    rejectedBody: "Namma Lorry reviewed this trip and couldn't verify it.",
+    cancelledTitle: 'Trip cancelled',
+    cancelledBody: 'This trip was cancelled by Namma Lorry.',
+    unknownTitle: "Couldn't load this trip",
+    kmVerified: 'km verified',
+    duration: 'Time',
+    total: (trips: number, km: string) =>
+      `Your total: ${trips} verified ${trips === 1 ? 'trip' : 'trips'} · ${km}`,
+    reviewNote: (note: string) => `Note from Namma Lorry: ${note}`,
+    back: 'Back to My Trips',
+    retrySync: 'Try uploading now',
+  },
+  // Driver-facing text per verify_trip reason code (docs/08 §3). `v` is the metric, when known.
+  reasons: {
+    START_OUTSIDE_PICKUP: (v: number | null) =>
+      `Trip didn't start at the pickup location${v !== null ? ` (${fmtKm(v)} away)` : ''}`,
+    END_OUTSIDE_DROP: (v: number | null) =>
+      `Trip didn't end at the delivery location${v !== null ? ` (${fmtKm(v)} away)` : ''}`,
+    MOCK_LOCATION: () => 'Fake GPS app detected',
+    TRACKING_GAP: (v: number | null) => `Tracking stopped for a long time${v !== null ? ` (${v} min)` : ''}`,
+    LOW_COVERAGE: () => 'Not enough GPS data was recorded',
+    MISSING_POINTS: () => 'Some trip data never uploaded',
+    SPEED_IMPLAUSIBLE: (v: number | null) =>
+      `Trip speed looks unusual${v !== null ? ` (${v} km/h average)` : ''}`,
+    GPS_JUMPS: (v: number | null) => `GPS signal jumped around${v !== null ? ` (${v} times)` : ''}`,
+    DISTANCE_TOO_SHORT: (v: number | null) =>
+      `Distance is much shorter than the route${v !== null ? ` (${v}% of the planned km)` : ''}`,
+    DISTANCE_TOO_LONG: (v: number | null) =>
+      `Distance is much longer than the route${v !== null ? ` (${v}% of the planned km)` : ''}`,
+    OTHER: () => 'Another check needs a look',
   },
   console: {
     nav: {

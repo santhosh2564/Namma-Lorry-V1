@@ -11,12 +11,15 @@ export interface HomeSections {
 export function homeSections(
   trips: DriverTrip[] | undefined,
   localActiveTripId: string | null,
+  /** Ended on this phone but not synced: the server still says in_progress, but it isn't live. */
+  unsyncedTripId: string | null = null,
 ): HomeSections {
   const list = trips ?? [];
-  const liveId = localActiveTripId ?? list.find((t) => t.status === 'in_progress')?.id ?? null;
+  const liveId =
+    localActiveTripId ?? list.find((t) => t.status === 'in_progress' && t.id !== unsyncedTripId)?.id ?? null;
   const live = liveId ? { id: liveId, trip: list.find((t) => t.id === liveId) ?? null } : null;
   // Only one trip runs at a time (unique index), so any other in_progress row is stale; hide it.
-  const assigned = list.filter((t) => t.status === 'assigned' && t.id !== liveId);
+  const assigned = list.filter((t) => t.status === 'assigned' && t.id !== liveId && t.id !== unsyncedTripId);
   return { live, assigned, empty: !live && assigned.length === 0 };
 }
 

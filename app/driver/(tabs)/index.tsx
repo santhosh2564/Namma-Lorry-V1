@@ -30,7 +30,8 @@ export default function MyTrips() {
   const now = useNow();
   const [refreshing, setRefreshing] = useState(false);
 
-  const sections = homeSections(trips.data, local.data?.activeTripId ?? null);
+  const unsyncedTripId = local.data?.unsyncedTripId ?? null;
+  const sections = homeSections(trips.data, local.data?.activeTripId ?? null, unsyncedTripId);
   const vehicle = (sections.live?.trip ?? sections.assigned[0])?.vehicle?.registration_no;
 
   async function onRefresh() {
@@ -67,6 +68,18 @@ export default function MyTrips() {
 
       {offline ? <Banner tone="warn" message={s.offline} testID="d3-offline" /> : null}
       {trips.isError && !offline ? <Banner tone="error" message={s.loadFailed} testID="d3-error" /> : null}
+
+      {unsyncedTripId ? (
+        <View style={styles.section} testID="d3-unsynced">
+          <Banner tone="info" message={t.summary.offlineBody} />
+          <Button
+            label={t.summary.offlineTitle}
+            variant="outline"
+            icon="chevron-right"
+            onPress={() => router.push(`/driver/trips/${unsyncedTripId}/summary`)}
+          />
+        </View>
+      ) : null}
 
       {sections.live ? (
         <LiveCard

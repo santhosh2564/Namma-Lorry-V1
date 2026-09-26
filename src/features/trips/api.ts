@@ -59,3 +59,37 @@ export function cargoText(load: { material: string | null; weight_kg: number | n
 export function shortPlace(address: string): string {
   return address.split(',')[0]!.trim();
 }
+
+const SUMMARY_SELECT =
+  'id, status, started_at, ended_at, tracked_distance_m, verification_reasons, verification_metrics, review_note, load:loads(load_code, pickup_address, drop_address)';
+
+export const summaryKeys = {
+  trip: (id: string) => ['driver', 'summary', id] as const,
+  stats: (userId: string | undefined) => ['driver', 'stats', userId] as const,
+};
+
+export async function fetchTripSummary(id: string) {
+  const { data, error } = await supabase.from('trips').select(SUMMARY_SELECT).eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export type TripSummaryRow = NonNullable<Awaited<ReturnType<typeof fetchTripSummary>>>;
+
+/** D6 totals: the driver's verified experience (RLS `stats_self`). Written only by verify_trip. */
+export function useDriverStats(enabled: boolean) {
+  const userId = useAuthStore((s) => s.session?.user.id);
+  return useQuery({
+    queryKey: summaryKeys.stats(userId),
+    enabled: enabled && !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('driver_stats')
+        .select('verified_trips, verified_distance_m')
+        .eq('driver_id', userId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+}

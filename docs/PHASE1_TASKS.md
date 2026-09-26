@@ -100,7 +100,7 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-11 | `SENTRY_DSN` is listed as server-only, but the RN/web app needs it in the bundle. `SENTRY_AUTH_TOKEN` (source maps) is not listed. | `.env.example` vs doc 13 P13 | Add `EXPO_PUBLIC_SENTRY_DSN`; add `SENTRY_AUTH_TOKEN` as an EAS secret. |
 | ND-12 | Unregistered numbers: the PRD says refuse them, but `handle_new_user` auto-creates a driver profile for **any** OTP sign-in. | PRD P0-1 vs 0001 | `signInWithOtp({ shouldCreateUser: false })` + `admin-create-driver`; depends on ND-5. *M5: the client half is done (`shouldCreateUser: false`). M6: `admin-create-driver` is done. What's left: turn off "Allow new users to sign up" on hosted (docs/DEV_SETUP.md §4 step 5). Local config keeps it on because the CLI needs it to enable the phone provider.* |
 | ND-13 | Admin bypass: hard rule 2 says status changes only via RPCs, but RLS `trips_admin` is `for all`, so an admin client can set `status`/`tracked_distance_m` directly with no audit or stats. No `cancel_trip` RPC exists, so `cancelled` is otherwise unreachable. | CLAUDE.md rule 2 vs 0001 | New migration: admin `select/insert` only on trips + a `cancel_trip` RPC. |
-| ND-14 | D6 needs realtime on the `trips` row, but only `trip_live` is in the `supabase_realtime` publication. | doc 13 P11 vs 0001 | Add `trips` to the publication in a migration, or poll (doc 13 allows a polling fallback). |
+| ND-14 | D6 needs realtime on the `trips` row, but only `trip_live` is in the `supabase_realtime` publication. | doc 13 P11 vs 0001 | *Implemented in M10:* migration `0004_trips_realtime.sql` adds `trips` (RLS applies to realtime), and D6 also polls every 10 s until the result is final. |
 | ND-15 | Live delay target: doc 01 W4 exit says "~30 s"; PRD goal 4 and doc 10 scenario 11 say "≤ 60 s". | doc 01 vs PRD | Use ≤ 60 s as acceptance, ~30 s as the target. |
 | ND-16 | Icons: DESIGN.md / doc 13 P3 say Material Symbols **Rounded**; the Stitch exports use **Outlined**. | stitch/DESIGN.md vs SCREENS | Rounded (docs win). |
 | ND-17 | Two token palettes. The brief: primary #0F2A44, accent #F5A300, bg #F6F7F9, error #D93025. Stitch `SCREENS/namma_lorry/DESIGN.md`: primary #00152a, secondary #825500 / #feaa11, bg #f8f9ff, error #ba1a1a. | stitch/DESIGN.md vs Stitch export | Brief (`stitch/DESIGN.md`) wins; the Stitch token file is reference only. |
@@ -116,6 +116,7 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-28 | **Planned route line.** C3/C4 designs show a dashed planned route, but doc 06 §4 only has `distance` (no geometry). | doc 12 C3/C4 vs doc 06 §4 | *Implemented in M7 (needs approval):* new `route` action in `mappls-proxy` (Mappls `route_adv`, trucking profile) returns `{distanceM, durationS, path}`, for display only. `planned_distance_m` still comes from `distance` on save, as doc 06 specifies. It costs one extra Mappls call per C3 preview / C4 view (cached per session). Add to doc 06. |
 | ND-30 | **Notifications on D1.** The D1 design keeps Continue disabled "until all are allowed". Tracking works without notification permission (the Android foreground service still runs; iOS uses the location indicator), and a driver who refuses it would be stuck. | doc 12 D1 | *Implemented in M9 (needs approval):* notifications must be **asked** once, but may be refused; D1 then explains what the driver misses and offers Settings. Precise + "all the time" location stay mandatory. |
 | ND-31 | **Planned route on D4.** The D4 design shows a dashed road route, but the `route` action (ND-28) is admin-only and loads store no route geometry, so drivers can't get one. | doc 12 D4 vs doc 06 §4 | *Implemented in M9 (needs approval):* a straight dashed pickup → drop line and the planned km. Road geometry for drivers needs either a stored `loads.planned_path` saved from C3, or a driver-scoped `route` action. |
+| ND-32 | **"No point for > 2 min" vs a parked truck.** TRACKING_OPTIONS use a 25 m distance filter, so a truck standing still (loading, traffic, rest) records nothing, and a plain 2-minute rule would show the problem banner at every stop. | doc 13 P11 vs TRD §4.1 (ND-6) | *Implemented in M10 (needs approval):* while D5 is open it also watches foreground GPS; if a fresh fix is within 50 m of the last recorded point the row says "Stopped" and no banner shows. Moving with nothing recorded, no fresh fix, or the task not running still raises the banner. |
 | ND-29 | **Date range filter on C2/C5** is presets (All / Today / 7 / 30 days, IST), not a free date picker. C5 filters on the trip's created (assigned) date. CSV export on C5 is not built (ND-19, optional). | doc 12 C2/C5 | Confirm presets are enough for Phase 1. |
 | ND-24 | The doc 13 prerequisite "put the pack in the repo root and design PNGs in `design/` named by screen ID" is not done, and there is **no git repo** although doc 13 requires a commit per prompt. | doc 13 vs folder state | Pre-flight tasks, gated on ND-1. |
 
@@ -205,7 +206,7 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 **Tasks**
 - [x] `supabase init` / `start` (Docker, ND-4); apply `0001` **unchanged**. If it fails on this Supabase version, add a follow-up migration and explain. *(Verified in M5: 0001 + 0002 + seed apply cleanly on CLI 2.118.0 / Postgres 17.6.1.011; no fix migration needed.)*
 - [x] `0002_consent.sql`: `profiles.consent_version`, `profiles.consent_at`, SECURITY DEFINER `record_consent(p_version text)` for the current user only
-- [ ] *(Pending ND-21)* `0003_phase1_fixes.sql`: ND-8 point-upload handling, ND-12 registration, ND-13 admin trip writes + `cancel_trip`, ND-14 trips realtime, `GPS_JUMPS` threshold into `app_settings`, `admin_review_trip` not-found, `setting()` search_path
+- [ ] *(Pending ND-21)* `0003_phase1_fixes.sql`: ND-8 point-upload handling, ND-12 registration, ND-13 admin trip writes + `cancel_trip`, ND-14 trips realtime *(done in M10 as `0004_trips_realtime.sql`)*, `GPS_JUMPS` threshold into `app_settings`, `admin_review_trip` not-found, `setting()` search_path
 - [ ] *(Pending ND-6)* Verification change for stationary gaps, if chosen server-side
 - [ ] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql`:
   - every RLS policy
@@ -418,19 +419,22 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M10 — Active trip, end trip, summary (Prompt 11)
 **Tasks**
-- [ ] D5 Active Trip:
-  - follows the truck; route drawn from the **local queue**
-  - elapsed time, approx km (client haversine, labelled "approx."), km to drop
-  - sync status (synced / N waiting / offline), GPS status
-  - tracking-problem banner (no point > 2 min, subject to ND-6, or permission revoked)
-  - near drop → banner + solid END
-  - Android back does not stop tracking
-- [ ] End Trip confirmation sheet; warning outside the drop radius; never blocks ending
-- [ ] D6 Trip Summary: realtime on the trip row (ND-14) or polling fallback; Verifying → Verified / Needs review with plain-language reasons (i18n key per doc 08 §3 code) → totals from `driver_stats`; offline-ended variant
-- [ ] Optional keep-awake setting (expo-keep-awake), off by default
-- [ ] Component tests: D5 sync/GPS states, D6 status variants
+- [x] D5 Active Trip (`app/driver/trips/[id]/live.tsx`, rules in `src/features/trips/liveModel.ts`):
+  - follows the truck (new `follow` map prop); route drawn from the **local queue** (`queue.routePoints`, polled every 5 s), never the server
+  - elapsed time, approx km (client haversine over points ≤ 50 m accuracy, labelled "approx."), km to drop (straight line, "approx.")
+  - sync status (synced / N waiting / offline with N saved), GPS status (good / weak / waiting / stopped)
+  - tracking-problem banner with a Fix action: no point for > 2 min, permission revoked (→ D1), GPS off (→ location settings), location task not running (→ restart). A parked truck records nothing (25 m distance filter, ND-6), so "no point" is not flagged while a fresh foreground fix is within 50 m of the last point (ND-32).
+  - near drop (inside drop radius + accuracy, the verify_trip rule) → banner + solid red END; otherwise an outlined END
+  - Android back → My Trips; tracking keeps running (only End stops it)
+- [x] End Trip confirmation sheet: "End this trip?"; outside the drop radius it warns with the distance but never blocks; `tracking.endTrip()` → D6 (online or `ENDED_PENDING_SYNC`)
+- [x] D6 Trip Summary (`app/driver/trips/[id]/summary.tsx`, `summaryModel.ts`):
+  - realtime on the trip row: migration `0004_trips_realtime.sql` adds `trips` to `supabase_realtime` (ND-14; RLS limits a driver to their own rows), plus 10 s polling while the result can change
+  - Verifying → Verified (km, time, totals from `driver_stats`) / Needs review (reasons) / Rejected (reasons + admin note) / Cancelled; offline-ended variant with points still on the phone and "Try uploading now"
+  - a text per docs/08 §3 reason code (`t.reasons.*`), with details from `verification_metrics` (e.g. "(1.8 km away)", "(25 min)"); unknown codes fall back to a generic line
+- [x] Optional keep-awake ("Keep screen on" switch on D5, expo-keep-awake), off by default, remembered per phone
+- [x] Component tests: D5 sync/GPS/problem/near-drop states, End flow and Android back (15); D6 variants and realtime update (11)
 
-**Files expected:** `app/(driver)/trips/[id]/live.tsx`, `app/(driver)/trips/[id]/summary.tsx`, `src/features/trips/{EndTripSheet,SyncStatus,GpsStatus,ReasonList}.tsx`, `src/i18n/en.json` reason keys, tests.
+**Files expected:** `app/(driver)/trips/[id]/live.tsx`, `app/(driver)/trips/[id]/summary.tsx`, `src/features/trips/{EndTripSheet,SyncStatus,GpsStatus,ReasonList}.tsx`, `src/i18n/en.json` reason keys, tests. *Built at `app/driver/trips/[id]/{live,summary}.tsx` (ND-25) with the sheet and status rows inside the screens; rules in `src/features/trips/{liveModel,summaryModel}.ts`; local reads in `src/tracking/liveTrip.ts`; reason texts in `src/i18n/en.ts` (`en.json` is M12a); tests in `src/screens-tests/{activeTrip,tripSummary}.test.tsx`.*
 
 **Acceptance (PRD P0-9, P0-12 partial)**
 - The driver can always end; a warning shows if not near the drop
@@ -534,8 +538,8 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | D2 | Battery Setup | Android | `app/(onboarding)/battery.tsx` | M9 | `4._battery_setup` | ☑ |
 | D3 | My Trips | Android + iOS | `app/(driver)/index.tsx` → `app/driver/(tabs)/index.tsx` | M9 | `5._my_trips_home` | ☑ |
 | D4 | Trip Detail & Start | Android + iOS | `app/(driver)/trips/[id].tsx` → `app/driver/trips/[id]/index.tsx` | M9 | `6._trip_detail_start` | ☑ |
-| D5 | Active Trip | Android + iOS | `app/(driver)/trips/[id]/live.tsx` | M10 | `7._active_trip` | ☐ |
-| D6 | Trip Summary | Android + iOS | `app/(driver)/trips/[id]/summary.tsx` | M10 | `8._trip_summary` (verified only) | ☐ |
+| D5 | Active Trip | Android + iOS | `app/(driver)/trips/[id]/live.tsx` → `app/driver/trips/[id]/live.tsx` | M10 | `7._active_trip` | ☑ |
+| D6 | Trip Summary | Android + iOS | `app/(driver)/trips/[id]/summary.tsx` → `app/driver/trips/[id]/summary.tsx` | M10 | `8._trip_summary` (verified only) | ☑ |
 | D7 | Trip History | Android + iOS | `app/(driver)/history.tsx` | M11 | `9._trip_history_tab` | ☐ |
 | D8 | My Profile | Android + iOS | `app/(driver)/profile.tsx` | M11 | `10._my_profile_tab` | ☐ |
 | C1 | Live Dashboard | web | `app/(console)/index.tsx` | M11 | — | ☐ |
@@ -550,9 +554,9 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 
 | Overlay | Used on | Milestone | Built |
 |---|---|---|---|
-| End Trip confirmation sheet | D5 | M10 | ☐ |
+| End Trip confirmation sheet | D5 | M10 | ☑ |
 | "Outside pickup" sheet | D4 | M9 | ☑ |
-| Tracking-problem banner (GPS off / permission revoked) | D5 (+ D3/D4 permission loss) | M10 (permission re-check M9) | ☐ |
+| Tracking-problem banner (GPS off / permission revoked) | D5 (+ D3/D4 permission loss) | M10 (permission re-check M9) | ☑ |
 | Add Driver modal/drawer | C8 | M6 | ☑ |
 | Add Vehicle modal | C9 | M6 | ☑ |
 | Language picker sheet | D8 (and the S2 "Change language" link) | M11 (S2 link M5) | ☐ |
@@ -787,3 +791,23 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Not verified (needs a device):** real permission dialogs (Android 11+ "Allow all the time" settings page, iOS "Change to Always Allow"), OEM battery settings pages, AppState foreground re-check on a phone, and the native map (still the M3 placeholder on native). This sandbox has no emulator.
 - **Decisions:** ND-30 (notifications optional), ND-31 (straight planned line on D4), both need approval. D1 copy on retention points to the privacy policy until the retention period is decided (PRD open question).
 - **Left:** 🧍 the M9 device checkpoint below (also covers M8's background task); set `EXPO_PUBLIC_PRIVACY_POLICY_URL`; decide ND-30 and ND-31.
+
+### 2026-09-26 · M10 (Prompt 11): active trip, end trip, summary
+- **Changed:**
+  - D5 Active Trip: map following the truck, route and approx km from the local queue, km to drop, sync and GPS rows, tracking-problem banner with Fix, near-drop banner and solid END, Android back → My Trips, "Keep screen on" (expo-keep-awake 57.0.2, off by default).
+  - End Trip sheet: warns with the distance outside the drop radius, never blocks; calls `tracking.endTrip()`.
+  - D6 Trip Summary: realtime on the trip row (new migration `0004_trips_realtime.sql` + pgTAP `realtime.test.sql`) with a polling fallback; Verifying / Verified (+ `driver_stats` totals) / Needs review / Rejected / Cancelled / Ended offline; a text per docs/08 §3 reason code with metric details.
+  - D3: a trip ended offline is no longer pinned as live; a note links to its D6.
+  - Tracking: `queue.routePoints`, `runtime.isTripTaskRunning`, `liveTrip.ts` (local snapshot, restart, sync now). Map: `follow` prop. UI: `dangerOutline` button. `lib/dates.ts` formats IST dates by hand (ICU builds differ: "Sep" vs "Sept").
+  - Fixed: distances just under 10 km showed as "10.0 km" on D4/D5 (now "10 km").
+- **Verified:**
+  - Checks: Jest 409 (+60: live and summary models, reason texts for every code, IST dates, 15 RNTL D5 tests, 11 RNTL D6 tests), typecheck, lint, format; `supabase test db` 11; M7 e2e passes.
+  - **Real backend** (local Supabase with realtime, driver preview in Chromium, Playwright):
+    - start at the pickup → D5 "All trip data synced", "GPS good · ±8 m"
+    - 20 simulated points → D5 shows 4.2 km approx. from the local queue and 397 km to drop
+    - browser offline → "Offline · 19 points saved on phone…"; END → sheet warns "You're 397 km from the delivery point…" → confirm → D6 "Ended offline — will verify when you're online."
+    - back online → the runtime syncs the end (`end_trip`, 21/21 points), realtime delivers the trip UPDATE, D6 shows "Trip under review" with END_OUTSIDE_DROP (396 km away), GPS_JUMPS and DISTANCE_TOO_SHORT (expected for a simulated path); no console errors
+  - Two D6 bugs found in that run and fixed, each with a regression test: (1) once the sync cleaned up the local copy, a stale `in_progress` row bounced D6 back to D5; (2) a final server result stopped the local poll, so a stale "ended offline" state stayed on screen. A final server status now always wins, and the local poll runs until the local copy is gone.
+- **Not verified (needs a device):** the real background task and foreground-service notification during a trip, keep-awake on a phone, Android hardware back, and the airplane-mode real trip below. In this sandbox the local realtime service hadn't been running in earlier milestones (Supabase was started with services excluded); it was started for this check, and DEV_SETUP now says D6 needs it.
+- **Decisions:** ND-14 done (0004); ND-32 (stopped vs broken) needs approval.
+- **Left:** 🧍 the M10 real-trip checkpoint (airplane mode mid-trip, end offline, reconnect → verified with zero missing points); decide ND-32.

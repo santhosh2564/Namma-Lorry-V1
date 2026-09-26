@@ -71,6 +71,7 @@ describe('formatShortDistance', () => {
     [994, '990 m'],
     [999, '1.0 km'],
     [3240, '3.2 km'],
+    [9_990, '10 km'],
     [41_000, '41 km'],
   ])('%d → %s', (m, text) => expect(formatShortDistance(m)).toBe(text));
 });

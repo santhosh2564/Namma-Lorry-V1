@@ -10,7 +10,7 @@ import { AppState, Platform } from 'react-native';
 import { devSessionGet, devSessionSet } from '@/lib/devDriverWeb';
 import { supabase } from '@/lib/supabase';
 
-import { SQLITE_DB_NAME, UPLOAD_INTERVAL_MS } from './config';
+import { SQLITE_DB_NAME, TRIP_LOCATION_TASK, UPLOAD_INTERVAL_MS } from './config';
 import { fromExpoSqlite, migrate, type SqlDb } from './db';
 import { counts, getActiveTrip } from './queue';
 import { createSimulatedLocation, type SimulatedLocation } from './simulatedLocation';
@@ -174,6 +174,12 @@ export function startTrackingRuntime(): () => void {
     appState.remove();
     unsubscribeNet();
   };
+}
+
+/** Background location task running (D5 tracking-problem banner). */
+export async function isTripTaskRunning(): Promise<boolean> {
+  const location = isWeb ? getSimulatedLocation() : nativeLocation;
+  return location.hasStartedLocationUpdatesAsync(TRIP_LOCATION_TASK);
 }
 
 /** Local data that must reach the server before the driver may sign out. */

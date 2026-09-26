@@ -254,3 +254,20 @@ describe('mapping (LocationObject → row)', () => {
     expect(mapped.map((p) => p.recorded_at)).toEqual([iso(T0 + 40_000), iso(T0 + 50_000), iso(T0 + 200_000)]);
   });
 });
+
+describe('routePoints (D5 route from the local queue)', () => {
+  it('returns every point of the trip in seq order, uploaded or not, and no other trip', async () => {
+    const db = await fresh();
+    await q.insertTracking(db, 't1', NOW, NOW);
+    await q.appendPoints(db, pts(1, 4), NOW);
+    await q.markUploaded(db, [
+      { trip_id: 't1', seq: 1 },
+      { trip_id: 't1', seq: 2 },
+    ]);
+    const route = await q.routePoints(db, 't1');
+    expect(route.map((p) => p.seq)).toEqual([1, 2, 3, 4]);
+    expect(route[0]!.lat).toBeCloseTo(12.951, 9);
+    expect(route[0]).toMatchObject({ lng: 79.94, accuracy_m: 8, heading: 90 });
+    expect(await q.routePoints(db, 'other')).toEqual([]);
+  });
+});

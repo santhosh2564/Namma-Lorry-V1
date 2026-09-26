@@ -236,6 +236,16 @@ export async function markRejected(
   );
 }
 
+/** D5: the trip's route as recorded on this phone (uploaded or not), oldest first. */
+export type RoutePoint = Pick<PointRow, 'seq' | 'recorded_at' | 'lat' | 'lng' | 'accuracy_m' | 'heading'>;
+
+export async function routePoints(db: SqlExec, tripId: string): Promise<RoutePoint[]> {
+  return db.getAllAsync<RoutePoint>(
+    'select seq, recorded_at, lat, lng, accuracy_m, heading from point_queue where trip_id = ? order by seq',
+    tripId,
+  );
+}
+
 export interface QueueCounts {
   pending: number;
   uploaded: number;

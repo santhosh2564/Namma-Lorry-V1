@@ -60,6 +60,6 @@ export const canStart = (s: StartState): boolean => s.kind === 'ready';
 export function formatShortDistance(m: number): string {
   const tens = Math.max(10, Math.round(m / 10) * 10);
   if (tens < 1000) return `${tens} m`;
-  const km = m / 1000;
-  return `${km >= 10 ? Math.round(km) : km.toFixed(1)} km`;
+  const tenths = Math.round(m / 100) / 10; // 9_990 m → "10 km", not "10.0 km"
+  return `${tenths >= 10 ? Math.round(m / 1000) : tenths.toFixed(1)} km`;
 }
