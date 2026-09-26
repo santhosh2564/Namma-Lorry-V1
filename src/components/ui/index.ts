@@ -6,3 +6,6 @@ export { OtpInput } from './OtpInput';
 export { PhoneInput } from './PhoneInput';
 export { Screen } from './Screen';
 export { Text } from './Text';
+export { ChoiceChips } from './ChoiceChips';
+export { Chip, type ChipTone } from './Chip';
+export { TextField } from './TextField';

@@ -62,7 +62,10 @@ export default function Verify() {
   async function resend() {
     setResending(true);
     setMessage(null);
-    const { error } = await supabase.auth.signInWithOtp({ phone: e164, options: { shouldCreateUser: false } });
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: e164,
+      options: { shouldCreateUser: false },
+    });
     setResending(false);
     if (error) {
       const kind: SendOtpError = mapSendOtpError(error);
@@ -119,7 +122,13 @@ export default function Verify() {
             <Text tone="secondary">{t.verify.resendIn(formatMmSs(resendIn))}</Text>
           </>
         ) : (
-          <Button label={t.verify.resend} variant="text" icon="refresh" loading={resending} onPress={resend} />
+          <Button
+            label={t.verify.resend}
+            variant="text"
+            icon="refresh"
+            loading={resending}
+            onPress={resend}
+          />
         )}
       </View>
 
@@ -149,5 +158,11 @@ const styles = StyleSheet.create({
   header: { gap: space.xs },
   sentRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   edit: { color: colors.primary, textDecorationLine: 'underline' },
-  resendRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm, minHeight: 48 },
+  resendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+    minHeight: 48,
+  },
 });

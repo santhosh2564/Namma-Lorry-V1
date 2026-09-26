@@ -75,7 +75,12 @@ export function PhoneInput({
         ) : null}
       </View>
       {error ? (
-        <Text variant="caption" tone="danger" accessibilityRole="alert" testID={testID ? `${testID}-error` : undefined}>
+        <Text
+          variant="caption"
+          tone="danger"
+          accessibilityRole="alert"
+          testID={testID ? `${testID}-error` : undefined}
+        >
           {error}
         </Text>
       ) : null}

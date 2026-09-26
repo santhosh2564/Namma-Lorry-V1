@@ -38,8 +38,16 @@ function AccessNotice() {
   const stores =
     variant === 'driver-web'
       ? [
-          { label: t.notice['driver-web'].playStore, url: config.EXPO_PUBLIC_PLAY_STORE_URL, icon: 'android' as const },
-          { label: t.notice['driver-web'].appStore, url: config.EXPO_PUBLIC_APP_STORE_URL, icon: 'phone-iphone' as const },
+          {
+            label: t.notice['driver-web'].playStore,
+            url: config.EXPO_PUBLIC_PLAY_STORE_URL,
+            icon: 'android' as const,
+          },
+          {
+            label: t.notice['driver-web'].appStore,
+            url: config.EXPO_PUBLIC_APP_STORE_URL,
+            icon: 'phone-iphone' as const,
+          },
         ].filter((s) => !!s.url)
       : [];
 

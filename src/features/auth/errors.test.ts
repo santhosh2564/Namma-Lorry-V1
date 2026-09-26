@@ -7,7 +7,10 @@ describe('mapSendOtpError', () => {
     [{ code: 'user_not_found', status: 404 }, 'unregistered'],
     [{ code: 'over_sms_send_rate_limit', status: 429 }, 'rate_limited'],
     [{ code: 'over_request_rate_limit', status: 429 }, 'rate_limited'],
-    [{ status: 429, message: 'For security purposes, you can only request this after 5 seconds.' }, 'rate_limited'],
+    [
+      { status: 429, message: 'For security purposes, you can only request this after 5 seconds.' },
+      'rate_limited',
+    ],
     [{ code: 'sms_send_failed', status: 500 }, 'sms_failed'],
     [{ name: 'AuthRetryableFetchError', status: 0, message: 'Failed to fetch' }, 'network'],
     [{ status: 500, message: 'boom' }, 'unknown'],

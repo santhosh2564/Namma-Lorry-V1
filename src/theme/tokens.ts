@@ -14,6 +14,8 @@ export const colors = {
   danger: '#D93025',
   dangerSoft: '#FCE8E6',
   live: '#1A73E8',
+  liveSoft: '#E8F0FE',
+  verifiedSoft: '#E6F4EA',
   background: '#F6F7F9',
   surface: '#FFFFFF',
   surfaceMuted: '#EEF1F5',
@@ -21,6 +23,8 @@ export const colors = {
   text: '#1B1F24',
   textSecondary: '#5F6B7A',
   disabled: '#B8C0CA',
+  scrim: 'rgba(15,42,68,0.45)',
+  sidebarActive: 'rgba(255,255,255,0.12)',
 } as const;
 
 export const fonts = {
@@ -52,14 +56,12 @@ export const sizes = {
   buttonDriverPrimary: 64,
   otpBox: 56,
   maxContentWidth: 480,
+  sidebar: 240,
+  sidebarCollapsed: 72,
+  topBar: 64,
+  drawer: 440,
 } as const;
 
 export const shadow = {
-  card: {
-    shadowColor: '#0F2A44',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
+  card: { boxShadow: '0px 2px 8px rgba(15, 42, 68, 0.06)' },
 } as const;

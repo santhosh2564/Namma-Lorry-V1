@@ -17,3 +17,4 @@ npm-debug.*
 # generated native folders (EAS / prebuild)
 /ios
 /android
+supabase/functions/.sandbox-ca.pem

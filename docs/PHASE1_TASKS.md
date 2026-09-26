@@ -98,7 +98,7 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-9 | Folder layout differs. CLAUDE.md: `src/features/tracking` + `src/tracking/`, `config.ts` and `db.ts` in `src/lib/`. TRD: `src/tracking/config.ts`, adds `lib/geo.ts`, `lib/sentry.ts`. Doc 13 P9: `db.ts` in `src/tracking/`. Doc 12/13 add `src/theme/`, `plugins/`, `/dev/*` routes. | CLAUDE.md, TRD §3, doc 13 | Adopt the §1.3 layout and update CLAUDE.md/TRD to match in M1. |
 | ND-10 | Web audience: CLAUDE.md "Web is a console (admin / owner / shipper)" vs PRD §3 / doc 04 "admin-only; owner/shipper → Coming soon" | CLAUDE.md rule 8 vs PRD | Admin-only in Phase 1 (PRD wins); fix the CLAUDE.md wording. |
 | ND-11 | `SENTRY_DSN` is listed as server-only, but the RN/web app needs it in the bundle. `SENTRY_AUTH_TOKEN` (source maps) is not listed. | `.env.example` vs doc 13 P13 | Add `EXPO_PUBLIC_SENTRY_DSN`; add `SENTRY_AUTH_TOKEN` as an EAS secret. |
-| ND-12 | Unregistered numbers: the PRD says refuse them, but `handle_new_user` auto-creates a driver profile for **any** OTP sign-in. | PRD P0-1 vs 0001 | `signInWithOtp({ shouldCreateUser: false })` + `admin-create-driver`; depends on ND-5. *M5: the client half is done (`shouldCreateUser: false`). A direct GoTrue call with signups enabled can still create a user, so a server-side guard is still needed (0003 or disable signups on hosted).* |
+| ND-12 | Unregistered numbers: the PRD says refuse them, but `handle_new_user` auto-creates a driver profile for **any** OTP sign-in. | PRD P0-1 vs 0001 | `signInWithOtp({ shouldCreateUser: false })` + `admin-create-driver`; depends on ND-5. *M5: the client half is done (`shouldCreateUser: false`). M6: `admin-create-driver` is done. What's left: turn off "Allow new users to sign up" on hosted (docs/DEV_SETUP.md §4 step 5). Local config keeps it on because the CLI needs it to enable the phone provider.* |
 | ND-13 | Admin bypass: hard rule 2 says status changes only via RPCs, but RLS `trips_admin` is `for all`, so an admin client can set `status`/`tracked_distance_m` directly with no audit or stats. No `cancel_trip` RPC exists, so `cancelled` is otherwise unreachable. | CLAUDE.md rule 2 vs 0001 | New migration: admin `select/insert` only on trips + a `cancel_trip` RPC. |
 | ND-14 | D6 needs realtime on the `trips` row, but only `trip_live` is in the `supabase_realtime` publication. | doc 13 P11 vs 0001 | Add `trips` to the publication in a migration, or poll (doc 13 allows a polling fallback). |
 | ND-15 | Live delay target: doc 01 W4 exit says "~30 s"; PRD goal 4 and doc 10 scenario 11 say "≤ 60 s". | doc 01 vs PRD | Use ≤ 60 s as acceptance, ~30 s as the target. |
@@ -111,6 +111,8 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-22 | Replay slider (C6) and multi-language files are **P1** in the PRD but are built in M11 / M12a per doc 13. | PRD §6 P1 vs doc 13 | Keep them as doc 13 says (no conflict in intent). Confirm they're not release blockers. |
 | ND-23 | S1 Splash and S4 Access Notice have **no route** in the doc 04 route tree. | doc 12 vs doc 04 | `app/index.tsx` (S1) and `app/access-notice.tsx` (S4). |
 | ND-25 | **Route URL clash.** Doc 04 puts `app/index.tsx` (S1), `app/(driver)/index.tsx` (D3) and `app/(console)/index.tsx` (C1) all at `/`. Expo Router rejects duplicate routes. | doc 04 §1 vs Expo Router | *Implemented in M5 (needs approval):* `app/driver/…` (`/driver`) and `app/console/…` (`/console`) as real path segments; `(auth)` and `(onboarding)` stay groups; D4 is `app/driver/trips/[id]/index.tsx`. Update doc 04's route tree when the pack is promoted. |
+| ND-26 | **Mappls coordinates are premium.** Doc 06 §4 has `autosuggest` → `[{label, address, lat, lng, eLoc?}]` and `geocode` → `{lat, lng, …}`. The current Mappls Autosuggest and Geocoding APIs return only an `eLoc`; coordinates for an eLoc are a premium "Location Coordinates" field (Place Details, OAuth). | doc 06 §4 vs developer.mappls.com (Sep 2026) | *Implemented in M6 (needs approval):* `lat`/`lng` are `number \| null`, passed through whenever Mappls includes them; `eLoc` is always returned. In C3 (M7) the admin confirms the pin on the map (Mappls web SDK can centre on an eLoc), and the stored lat/lng come from the pin. Alternative: buy the Place Details coordinates add-on. Update doc 06 once decided. |
+| ND-27 | `mappls-proxy` rate limit is in-memory per isolate (60/min/admin), not global. | doc 06 §4 "rate-limit per user" | Fine for a handful of admins. A table-backed limiter is possible if abuse appears. |
 | ND-24 | The doc 13 prerequisite "put the pack in the repo root and design PNGs in `design/` named by screen ID" is not done, and there is **no git repo** although doc 13 requires a commit per prompt. | doc 13 vs folder state | Pre-flight tasks, gated on ND-1. |
 
 ---
@@ -154,7 +156,7 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 **Tasks**
 - [~] *(M5 subset: colours, Noto Sans, type scale, spacing, radii, card shadow; status colours still to add)* `src/theme/tokens.ts`: colours (ND-17: brief palette), Noto Sans via expo-font, type scale, 8 px spacing, radii, shadows, status colours
 - [~] *(M5 subset: Button [primary/danger/success/outline/text, driver 64 px, loading/disabled], Card, Banner, Text, Screen, PhoneInput, OtpInput, Logo)* `src/components/ui/`: Button (primary, secondary, danger, success, outline, text; sizes incl. 64 px driver primary; loading/disabled), Card, Chip/StatusChip (6 statuses: text + colour + icon), TextField, PhoneInput (+91), OtpInput (6), ListRow, Banner (info/warn/error/offline), BottomSheet, ConfirmSheet, EmptyState, StatBlock, Screen, SectionHeader
-- [ ] Console primitives (web): Sidebar, TopBar, DataTable (sortable, sticky header, pagination), Drawer, Modal
+- [x] Console primitives (web): Sidebar, TopBar, DataTable (sortable, sticky header, pagination), Drawer, Modal *(M6; plus TextField, ChoiceChips, Chip in `src/components/ui/`. DataTable pages client-side; M7 needs server-side paging for C2/C5)*
 - [ ] Icons: Material Symbols Rounded (ND-16) or the closest maintained RN package
 - [ ] `/dev/kitchen-sink` route (dev only)
 - [ ] Unit tests: StatusChip mapping (doc 06 §5 labels), Button states
@@ -247,18 +249,30 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M6 — Console shell, drivers, vehicles, Mappls proxy (Prompt 7)
 **Tasks**
-- [ ] Console layout (web): sidebar (Live, Loads, Trips, Review + count badge, Drivers, Vehicles), top bar with search + avatar menu, admin-only guard
-- [ ] C8 Drivers: table (name, phone, verified trips, verified km, last trip, status) + Add Driver drawer via Edge Function `admin-create-driver` (service role server-side, caller must be admin); ND-19 items excluded unless approved
-- [ ] C9 Vehicles: table + Add Vehicle modal (Indian registration validation, vehicle type select: 407 / 14 / 17 / 19 / 20 / 22 / 24 ft / multi-axle; owner per ND-19)
-- [ ] Edge Function `mappls-proxy` per doc 06 §4:
+- [x] Console layout (web): sidebar (Live, Loads, Trips, Review + count badge, Drivers, Vehicles), top bar with search + avatar menu, admin-only guard.
+  - The sidebar collapses to an icon rail below 1024 px.
+  - The review badge counts `needs_review` trips (refreshed every 60 s).
+  - Global search routes by pattern: a Load ID goes to Loads, a registration plate to Vehicles, anything else to Drivers (with `?q=`).
+  - The guard is the M5 `AreaGuard`.
+- [x] C8 Drivers: table (name, phone, verified trips, verified km, last trip, status) + Add Driver drawer via Edge Function `admin-create-driver` (service role server-side, caller must be admin).
+  - Status is derived: On trip / Available / Inactive.
+  - Verified trips and km come from `driver_stats` only.
+  - ND-19 items are left out: no permission-health dot, no "Send invite SMS" toggle.
+- [x] C9 Vehicles: table + Add Vehicle modal.
+  - Indian registration validation, including BH series; the value is normalised to "TN 23 BK 4521".
+  - Vehicle type chips: 407 / 14 / 17 / 19 / 20 / 22 / 24 ft / multi-axle.
+  - Owner shown read-only, with no owner select (ND-19).
+  - A duplicate plate gives a field error.
+- [x] Edge Function `mappls-proxy` per doc 06 §4:
   - verify JWT and `is_admin()`
   - actions `autosuggest`, `geocode`, `reverse`, `distance`
   - normalised shapes, per-user rate limit, secrets from `supabase secrets`
   - research the current Mappls REST auth and note it in the function README
-- [ ] `src/lib/mappls.ts` typed client
-- [ ] Deno tests for both functions with mocked Mappls responses
+  - Findings: a static REST key sent as the `access_token` query parameter; OAuth is now legacy. `distance` uses the `trucking` profile. Autosuggest and geocode coordinates are a premium field (ND-26).
+- [x] `src/lib/mappls.ts` typed client, built on `src/lib/functions.ts` (`FunctionError` carries the proxy's error code)
+- [x] Deno tests for both functions with mocked Mappls responses (`npm run test:functions`, 24 tests)
 
-**Files expected:** `app/(console)/_layout.tsx`, `app/(console)/drivers/index.tsx`, `app/(console)/vehicles/index.tsx`, `supabase/functions/mappls-proxy/{index.ts,README.md,*_test.ts}`, `supabase/functions/admin-create-driver/{index.ts,*_test.ts}`, `src/lib/mappls.ts`, `src/features/{drivers,vehicles}/*`.
+**Files expected:** `app/(console)/_layout.tsx`, `app/(console)/drivers/index.tsx`, `app/(console)/vehicles/index.tsx`, `supabase/functions/mappls-proxy/{index.ts,README.md,*_test.ts}`, `supabase/functions/admin-create-driver/{index.ts,*_test.ts}`, `src/lib/mappls.ts`, `src/features/{drivers,vehicles}/*`. *Built at `app/console/…` (ND-25). Each function is a testable `handler.ts` + a thin `index.ts`; shared code is in `supabase/functions/_shared/`.*
 
 **Acceptance**
 - A non-admin JWT gets 403 from both functions
@@ -485,16 +499,16 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | C5 | Trips | web | `app/(console)/trips/index.tsx` | M7 | — | ☐ |
 | C6 | Trip Detail & Review | web | `app/(console)/trips/[id].tsx` | M11 | — | ☐ |
 | C7 | Review Queue | web | `app/(console)/review/index.tsx` | M11 | — | ☐ |
-| C8 | Drivers | web | `app/(console)/drivers/index.tsx` | M6 | — | ☐ |
-| C9 | Vehicles | web | `app/(console)/vehicles/index.tsx` | M6 | — | ☐ |
+| C8 | Drivers | web | `app/(console)/drivers/index.tsx` | M6 | — | ☑ |
+| C9 | Vehicles | web | `app/(console)/vehicles/index.tsx` | M6 | — | ☑ |
 
 | Overlay | Used on | Milestone | Built |
 |---|---|---|---|
 | End Trip confirmation sheet | D5 | M10 | ☐ |
 | "Outside pickup" sheet | D4 | M9 | ☐ |
 | Tracking-problem banner (GPS off / permission revoked) | D5 (+ D3/D4 permission loss) | M10 (permission re-check M9) | ☐ |
-| Add Driver modal/drawer | C8 | M6 | ☐ |
-| Add Vehicle modal | C9 | M6 | ☐ |
+| Add Driver modal/drawer | C8 | M6 | ☑ |
+| Add Vehicle modal | C9 | M6 | ☑ |
 | Language picker sheet | D8 (and the S2 "Change language" link) | M11 (S2 link M5) | ☐ |
 
 Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-sink` (M2), `/dev/map` (M3), `/dev/tracking` (M8).
@@ -594,3 +608,42 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
   - ND-12 still needs a server-side guard
   - "Change language" only shows a "coming soon" note until the M11 language sheet
   - store buttons on S4 stay hidden until `EXPO_PUBLIC_PLAY_STORE_URL` / `EXPO_PUBLIC_APP_STORE_URL` are set
+
+### 2026-09-26 · M6 (Prompt 7): console shell, drivers, vehicles, Mappls proxy
+- **Changed:**
+  - Console shell: sidebar with review badge, top bar with global search and avatar menu, and the M5 `AreaGuard` for admin-only access.
+  - C8 Drivers with the Add Driver drawer; C9 Vehicles with the Add Vehicle modal.
+  - Console primitives: DataTable, Drawer, Modal, Sidebar, TopBar, TextField, ChoiceChips, Chip.
+  - Edge Functions `mappls-proxy` and `admin-create-driver`, both with READMEs. Shared JWT + `is_admin()` check, CORS, error mapping and rate limiter.
+  - `src/lib/mappls.ts` and `src/lib/functions.ts`.
+  - A `format` script; the whole codebase is Prettier-formatted.
+- **Mappls research (developer.mappls.com, 26 Sep 2026):**
+  - Auth is a static key as the `access_token` query parameter; OAuth client-credentials is marked Legacy.
+  - Endpoints:
+    - `search.mappls.com/search/places/autosuggest/json`
+    - `/search/address/geocode`
+    - `/search/address/rev-geocode`
+    - `route.mappls.com/route/dm/distance_matrix/{trucking|driving}/lng,lat;lng,lat`
+  - Coordinates from autosuggest and geocode are premium (ND-26).
+- **Verified:**
+  - Checks: `npm run typecheck`, `lint`, `format:check`, and `npm test` (157 tests) pass. `deno task check` (type-check, lint, fmt) and `deno task test` (24 tests, mocked Mappls) pass.
+  - Real functions against local Supabase (run with Deno, see known issues):
+    - `admin-create-driver`: no JWT 401, anon key 401, driver 403, admin 201 (profile gets the name and language; the new number then counts as registered for OTP), duplicate 409, bad input 400.
+    - `mappls-proxy`: driver 403, missing key 500 `CONFIG_MISSING`, bad body 400.
+  - Playwright on web against local Supabase, 15 checks:
+    - sidebar and review badge
+    - drivers table contents and sorting
+    - drawer validation, adding a driver through the function, duplicate-phone error
+    - global search to drivers and to vehicles
+    - plate validation, normalised preview, add vehicle, duplicate plate
+    - avatar-menu sign-out
+  - A production `expo export -p web` bundle contains no service-role or Mappls secret.
+- **Not verified:**
+  - Live Mappls responses: the sandbox can't reach Mappls, so the normalisers are tested against the documented shapes.
+  - Functions inside `supabase functions serve`: the edge-runtime container doesn't trust this sandbox's HTTPS proxy CA, so it can't download npm modules.
+  - A hosted deploy.
+- **Known issues:**
+  - The functions pin `@supabase/supabase-js@2.117.1`, one patch behind the app's 2.117.2, because Deno refuses packages published in the last 24 h.
+  - `deno.lock` is disabled (`"lock": false`). Deno 2.9 writes lockfile v5, but the edge runtime is Deno 2.1.
+  - The driver/vehicle "last trip" and "on trip" columns read up to 5,000 recent trips client-side. Move this to a view if volumes grow.
+- **Left:** 🧍 set `MAPPLS_REST_KEY` in Supabase secrets, deploy both functions, try autosuggest (and confirm ND-26 against your Mappls plan); decide ND-26 and ND-27.

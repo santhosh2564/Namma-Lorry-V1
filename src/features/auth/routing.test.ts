@@ -1,6 +1,14 @@
-import { areaOf, decideRoute, hrefFor, type Destination, type Platform, type Role, type RoutingInput } from './routing';
+import {
+  areaOf,
+  decideRoute,
+  hrefFor,
+  type Destination,
+  type Platform,
+  type Role,
+  type RoutingInput,
+} from './routing';
 
-const ready = <T,>(value: T) => ({ status: 'ready' as const, value });
+const ready = <T>(value: T) => ({ status: 'ready' as const, value });
 const loading = { status: 'loading' as const };
 const error = { status: 'error' as const };
 
@@ -104,7 +112,9 @@ describe('decideRoute: local active trip (S1 checks tracking state first)', () =
 
 describe('decideRoute: session and profile states', () => {
   it.each<Platform>(['android', 'ios', 'web'])('signed out on %s → sign in', (platform) => {
-    expect(decideRoute(input({ platform, auth: 'signed-out', profile: loading }))).toEqual({ kind: 'sign-in' });
+    expect(decideRoute(input({ platform, auth: 'signed-out', profile: loading }))).toEqual({
+      kind: 'sign-in',
+    });
   });
 
   it.each<Platform>(['android', 'ios', 'web'])('auth still loading on %s → loading', (platform) => {
@@ -132,9 +142,9 @@ describe('decideRoute: session and profile states', () => {
   });
 
   it('admin never waits for permissions', () => {
-    expect(decideRoute(input({ profile: ready({ role: 'admin', isActive: true }), permissions: loading }))).toEqual(
-      CONSOLE,
-    );
+    expect(
+      decideRoute(input({ profile: ready({ role: 'admin', isActive: true }), permissions: loading })),
+    ).toEqual(CONSOLE);
   });
 });
 

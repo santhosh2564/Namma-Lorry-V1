@@ -10,14 +10,18 @@ import { createChunkedSecureStorage, createWebStorage } from './sessionStorage';
 
 const isWeb = Platform.OS === 'web';
 
-export const supabase = createClient<Database>(config.EXPO_PUBLIC_SUPABASE_URL, config.EXPO_PUBLIC_SUPABASE_ANON_KEY, {
-  auth: {
-    storage: isWeb ? createWebStorage() : createChunkedSecureStorage(SecureStore),
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false, // phone OTP only, no redirect-based flows
+export const supabase = createClient<Database>(
+  config.EXPO_PUBLIC_SUPABASE_URL,
+  config.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+  {
+    auth: {
+      storage: isWeb ? createWebStorage() : createChunkedSecureStorage(SecureStore),
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false, // phone OTP only, no redirect-based flows
+    },
   },
-});
+);
 
 // On native, refresh tokens only while the app is in the foreground
 // (https://supabase.com/docs/reference/javascript/auth-startautorefresh).

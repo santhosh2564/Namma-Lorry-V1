@@ -64,11 +64,34 @@ update profiles set role = 'owner'   where phone = '919000000013';   -- coming s
    (no `+`). No SMS is sent for these. Remove them before production.
 3. **SMS OTP Expiry** defaults to 60 s. The app assumes 60 s (`OTP_EXPIRY_SECONDS` in
    `src/features/auth/errors.ts`) to tell an expired code from a wrong one, so keep the two in sync.
-4. Never run `seed.sql` on hosted. Create users with the admin-only `admin-create-driver`
-   Edge Function (M6), or for the first admin: Dashboard → Authentication → Add user (phone),
-   then `update profiles set role = 'admin', full_name = '…' where phone = '91…';`.
+4. Never run `seed.sql` on hosted. Drivers are created from the console (C8 → Add driver), which
+   calls the admin-only `admin-create-driver` Edge Function. For the first admin: Dashboard →
+   Authentication → Add user (phone), then
+   `update profiles set role = 'admin', full_name = '…' where phone = '91…';`.
+5. With drivers created only by admins, turn **off** "Allow new users to sign up" (Authentication →
+   Sign In / Providers). Nobody can then create a login by calling Supabase Auth directly (ND-12).
+   Admin-created users are not affected.
 
-## 5. Run the app
+## 5. Edge Functions (`supabase/functions/`)
+| Function | Purpose | Secrets |
+|---|---|---|
+| `mappls-proxy` | Admin-only Mappls autosuggest / geocode / reverse / distance | `MAPPLS_REST_KEY`, optional `MAPPLS_ROUTE_PROFILE` |
+| `admin-create-driver` | Admin-only: creates the driver's auth user + profile with the service role | none extra (`SUPABASE_SERVICE_ROLE_KEY` is provided by Supabase) |
+
+```bash
+# local
+printf 'MAPPLS_REST_KEY=<key>\n' > supabase/functions/.env      # gitignored
+npx supabase functions serve --env-file supabase/functions/.env
+# tests (Deno 2.x; `npm i -g deno` works if Deno isn't installed)
+npm run test:functions
+# hosted
+npx supabase secrets set MAPPLS_REST_KEY=<key>
+npx supabase functions deploy mappls-proxy
+npx supabase functions deploy admin-create-driver
+```
+Mappls auth and endpoints are documented in `supabase/functions/mappls-proxy/README.md`.
+
+## 6. Run the app
 ```bash
 npm install
 npm run web          # console + auth screens in the browser (http://localhost:8081)

@@ -61,7 +61,12 @@ export function Button({
         {
           backgroundColor: bg,
           borderColor: border,
-          minHeight: size === 'driver' ? sizes.buttonDriverPrimary : variant === 'text' ? sizes.touchMin : sizes.button,
+          minHeight:
+            size === 'driver'
+              ? sizes.buttonDriverPrimary
+              : variant === 'text'
+                ? sizes.touchMin
+                : sizes.button,
           opacity: pressed ? 0.85 : 1,
         },
       ]}

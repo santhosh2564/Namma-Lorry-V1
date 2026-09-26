@@ -1,16 +1,24 @@
 import { maskPhone, nationalPhoneSchema, otpSchema, toE164 } from './schemas';
 
 describe('nationalPhoneSchema (+91)', () => {
-  it.each(['9840234521', '98402 34521', '98402-34521', '+91 98402 34521', '919840234521', '09840234521', '6000000000'])(
-    'accepts %s',
+  it.each([
+    '9840234521',
+    '98402 34521',
+    '98402-34521',
+    '+91 98402 34521',
+    '919840234521',
+    '09840234521',
+    '6000000000',
+  ])('accepts %s', (raw) => {
+    expect(nationalPhoneSchema.safeParse(raw).success).toBe(true);
+  });
+
+  it.each(['', '12345', '984023452', '98402345211', '5840234521', '0840234521', 'abcdefghij'])(
+    'rejects %s',
     (raw) => {
-      expect(nationalPhoneSchema.safeParse(raw).success).toBe(true);
+      expect(nationalPhoneSchema.safeParse(raw).success).toBe(false);
     },
   );
-
-  it.each(['', '12345', '984023452', '98402345211', '5840234521', '0840234521', 'abcdefghij'])('rejects %s', (raw) => {
-    expect(nationalPhoneSchema.safeParse(raw).success).toBe(false);
-  });
 
   it('normalises to 10 digits and E.164', () => {
     expect(nationalPhoneSchema.parse('+91 98402 34521')).toBe('9840234521');

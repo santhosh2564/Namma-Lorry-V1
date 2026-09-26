@@ -1,4 +1,9 @@
-import { createChunkedSecureStorage, createMemoryStorage, safeKey, type SecureStoreLike } from './sessionStorage';
+import {
+  createChunkedSecureStorage,
+  createMemoryStorage,
+  safeKey,
+  type SecureStoreLike,
+} from './sessionStorage';
 
 function fakeSecureStore() {
   const map = new Map<string, string>();

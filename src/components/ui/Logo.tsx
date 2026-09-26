@@ -17,7 +17,10 @@ export function Logo({ size = 'md', onDark = false }: { size?: 'md' | 'lg'; onDa
     >
       <MaterialCommunityIcons name="truck" size={icon} color={colors.accent} />
       <Text
-        style={[size === 'lg' ? type.display : type.title, { color: onDark ? colors.onPrimary : colors.primary }]}
+        style={[
+          size === 'lg' ? type.display : type.title,
+          { color: onDark ? colors.onPrimary : colors.primary },
+        ]}
       >
         Namma Lorry
       </Text>

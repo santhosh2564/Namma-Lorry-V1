@@ -32,7 +32,10 @@ export default function SignIn() {
     setSendError(null);
     const e164 = toE164(phone);
     // shouldCreateUser: false — only numbers an admin registered may sign in (PRD P0-1, ND-12).
-    const { error } = await supabase.auth.signInWithOtp({ phone: e164, options: { shouldCreateUser: false } });
+    const { error } = await supabase.auth.signInWithOtp({
+      phone: e164,
+      options: { shouldCreateUser: false },
+    });
     if (error) {
       setSendError(mapSendOtpError(error));
       return;
