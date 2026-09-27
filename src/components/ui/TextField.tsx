@@ -26,6 +26,8 @@ export type TextFieldProps = {
   style?: StyleProp<ViewStyle>;
   testID?: string;
   onBlur?: () => void;
+  /** Fires alongside the internal focus state, e.g. to open a suggestion list. */
+  onFocus?: () => void;
 };
 
 /** Labelled text input with focus, disabled and error states. */
@@ -47,6 +49,7 @@ export function TextField({
   style,
   testID,
   onBlur,
+  onFocus,
 }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
   const invalid = Boolean(errorText);
@@ -79,7 +82,10 @@ export function TextField({
             onBlur?.();
           }}
           onChangeText={onChangeText}
-          onFocus={() => setFocused(true)}
+          onFocus={() => {
+            setFocused(true);
+            onFocus?.();
+          }}
           placeholder={placeholder}
           placeholderTextColor={colors.textDisabled}
           secureTextEntry={secureTextEntry}
