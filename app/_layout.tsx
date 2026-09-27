@@ -7,12 +7,14 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import "@/i18n";
 
+import { useAuthBootstrap } from "@/features/auth/useAuthBootstrap";
 import { useAppFonts } from "@/theme/fonts";
 import { colors } from "@/theme/tokens";
 
 /**
- * Root layout (M1): providers only. The tracking task import (CLAUDE.md hard
- * rule 4) and the real session/role gate arrive in M8/M5.
+ * Root layout: providers, fonts, and the auth bootstrap that resolves the
+ * session and the local tracking state. `app/index.tsx` (S1) then runs the
+ * routing gate. The tracking task import (CLAUDE.md hard rule 4) arrives in M8.
  */
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +29,8 @@ export default function RootLayout() {
   // Noto Sans + Material Symbols (M2). Keep the app hidden until fonts are
   // ready, but never block forever if a font fails to load.
   const [fontsLoaded, fontError] = useAppFonts();
+  useAuthBootstrap();
+
   if (!fontsLoaded && !fontError) {
     return null;
   }

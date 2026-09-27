@@ -223,25 +223,27 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 ---
 
 ### M5 — Auth, roles and routing (Prompt 6)
-**Tasks**
-- [ ] S1 Splash, S2 Sign in, S3 Verify OTP, S4 Access Notice (variants: driver-on-web, owner/shipper coming soon, deactivated)
-- [ ] Phone OTP via Supabase; +91 zod validation; 30 s resend timer; error states: unregistered, wrong code, expired, rate-limited (ND-12)
-- [ ] Zustand auth store + TanStack Query profile; role gate per doc 04 §2
-- [ ] Splash checks local tracking state (stub until M8); sign-out blocked while a trip is active (stub flag)
-- [ ] Routing decision as a **pure function** + unit tests for every role × platform × state combination
-- [ ] Screens match `design/` S2/S3 via the UI kit
+**Status:** code complete; the 🧍 sign-in check is pending (it needs the Supabase keys in Settings → Environment).
 
-**Files expected:** `app/index.tsx`, `app/(auth)/{_layout,sign-in,verify}.tsx`, `app/access-notice.tsx`, `src/features/auth/{store.ts,useProfile.ts,routing.ts,routing.test.ts,schemas.ts}`.
+**Tasks**
+- [x] S1 Splash, S2 Sign in, S3 Verify OTP, S4 Access Notice (variants: driver-on-web, owner/shipper coming soon, deactivated, plus a fourth "not set up" for a session with no profile row)
+- [x] Phone OTP via Supabase; +91 zod validation; 30 s resend timer; error states: unregistered, wrong code, expired, rate-limited (ND-12, `shouldCreateUser: false`)
+- [x] Zustand auth store + TanStack Query profile; role gate per doc 04 §2
+- [x] Splash checks local tracking state (stub until M8, `src/tracking/localState.ts`); sign-out blocked while a trip is active (`signOutBlockReason`)
+- [x] Routing decision as a **pure function** + unit tests for every role × platform × state combination
+- [x] Screens match `design/` S2/S3 via the UI kit (Stitch-only extras from ND-18 — cab keypad, trust badge, fake safety claims — left out)
+
+**Files expected:** `app/index.tsx`, `app/(auth)/{_layout,sign-in,verify}.tsx`, `app/access-notice.tsx`, `src/features/auth/{store.ts,useProfile.ts,routing.ts,routing.test.ts,schemas.ts}`. *(Added: `api.ts`, `errors.ts` + test, `schemas.test.ts`, `platform.ts`, `useAuthBootstrap.ts`, `src/tracking/localState.ts`, `app/index.test.tsx`.)*
 
 **Acceptance (PRD P0-1)**
-- A registered driver who enters the OTP lands on driver home (D3, or D1 if permissions are missing)
-- An admin lands on C1
-- Unknown numbers see "Contact Namma Lorry to register"
-- Driver on web → S4 "use the mobile app"; owner/shipper → S4 "coming soon"; inactive → S4 deactivated
-- Session in secure-store on native
-- Routing unit tests pass
+- [x] A registered driver who enters the OTP lands on driver home (D3, or D1 if permissions are missing) — the decision is covered by `routing.test.ts` and the navigation by `app/index.test.tsx`; the live sign-in is the 🧍 step
+- [x] An admin lands on C1
+- [x] Unknown numbers see "Contact Namma Lorry to register"
+- [x] Driver on web → S4 "use the mobile app"; owner/shipper → S4 "coming soon"; inactive → S4 deactivated
+- [x] Session in secure-store on native (unchanged from M4; M5 keeps using the same client)
+- [x] Routing unit tests pass
 
-**Human checkpoints:** 🧍 Log in as the seeded admin and driver on web and on the phone.
+**Human checkpoints:** 🧍 Log in as the seeded admin and driver on web and on the phone (see `docs/DEV_SETUP.md` §3 for the numbers and OTPs). Needs `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` in Settings → Environment.
 
 ---
 
@@ -466,10 +468,10 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 
 | ID | Screen | Platform | Route | Milestone | Design ref | Built |
 |---|---|---|---|---|---|---|
-| S1 | Splash | mobile + web | `app/index.tsx` *(ND-23)* | M5 (resume logic M8) | — | ☐ |
-| S2 | Sign in | mobile + web | `app/(auth)/sign-in.tsx` | M5 | `1._sign_in` | ☐ |
-| S3 | Verify OTP | mobile + web | `app/(auth)/verify.tsx` | M5 | `2._verify_otp` | ☐ |
-| S4 | Access Notice (3 variants) | mobile + web | `app/access-notice.tsx` *(ND-23)* | M5 | — | ☐ |
+| S1 | Splash | mobile + web | `app/index.tsx` *(ND-23)* | M5 (resume logic M8) | — | ☑ |
+| S2 | Sign in | mobile + web | `app/(auth)/sign-in.tsx` | M5 | `1._sign_in` | ☑ |
+| S3 | Verify OTP | mobile + web | `app/(auth)/verify.tsx` | M5 | `2._verify_otp` | ☑ |
+| S4 | Access Notice (3 variants) | mobile + web | `app/access-notice.tsx` *(ND-23)* | M5 | — | ☑ |
 | D1 | Location Permission | Android + iOS | `app/(onboarding)/permissions.tsx` | M9 | `3._location_permission` | ☐ |
 | D2 | Battery Setup | Android | `app/(onboarding)/battery.tsx` | M9 | `4._battery_setup` | ☐ |
 | D3 | My Trips | Android + iOS | `app/(driver)/index.tsx` | M9 | `5._my_trips_home` | ☐ |
@@ -584,3 +586,12 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Verified:** migrations + seed re-applied from a dropped database, then **135/135** pgTAP cases green. `tsc --noEmit`, `eslint --max-warnings=0`, `prettier --check` clean; **37/37** Jest tests pass (6 new for the storage adapters). The storage unit test caught a real bug while it was being written — the first version guarded only *access* to `localStorage`, not the `setItem` call, which throws on quota and would have crashed the web console.
 - **Left:** `0003_phase1_fixes.sql` (ND-21: ND-8, ND-12, ND-13, ND-14, `GPS_JUMPS` into `app_settings`, `admin_review_trip` not-found, `setting()` search_path) and the ND-6 stationary-gap decision — both still blocked on approval. The secret key for the hosted project was supplied redacted, so nothing was verified against the hosted project; the client is written against env vars only. The publishable key still needs to go into Settings → Environment.
 - **Known issues:** (1) **This sandbox has no Docker and no `supabase` CLI**, so `supabase db reset && supabase test db` could not be run verbatim. The suite was executed against a locally provisioned Postgres 14 + PostGIS + pg_cron + pgTAP driven by `pg_prove`, with a throwaway shim supplying the roles, `auth` schema and `supabase_realtime` publication that a real Supabase project provides. The migrations and seed are unchanged and standard, but **the exact `supabase test db` invocation is still unverified** and should be run once on a machine with Docker. (2) Consequently `.github/workflows/ci.yml` still runs only install/typecheck/lint/format/test — adding `supabase test db` needs a Docker-enabled runner, and that is a gap to close rather than a decision. (3) `pg_prove` silently reports `NOTESTS` for a directory argument in this setup; the four test paths are listed explicitly. (4) `env.example` still carries the M1 note (the sandbox blocks the leading-dot name).
+
+### 2026-09-27 · M5 (Prompt 6) — auth, roles and routing
+- **Changed (the gate):** `src/features/auth/routing.ts` is the whole of docs/04 §2 as one pure function — `decideRoute({ session, platform, profile, profileSettled, activeTripId })` returning a `RouteDecision`, plus `routePath`, `parseAccessNoticeVariant` and `signOutBlockReason`. It imports no react-native, no Supabase and no router, so `routing.test.ts` covers all 12 role × platform combinations, both account states, the three session states and the active-trip branch without a renderer. `app/index.tsx` (S1) consumes it and `app/index.test.tsx` proves the screen actually navigates on the decision (7 cases, mocked router). Two states the doc-04 flowchart does not draw are handled and documented: a deactivated account is refused before the role is read, and a session with no profile row gets the S4 "not set up" notice instead of a screen reading a null role.
+- **Changed (auth):** `signInWithOtp({ shouldCreateUser: false })` implements the ND-12 registration gate, so an unknown number comes back as the "Contact Namma Lorry to register" state. `src/features/auth/errors.ts` maps every Supabase failure onto one of eight codes (unregistered, wrong code, expired, rate-limited, network, invalid, not configured, unknown) and the screens only ever branch on a code. `store.ts` (zustand) owns the session, the pending OTP, the 30 s resend deadline and the attempts counter (3, mirroring what Supabase accepts); `useProfile.ts` owns the profile as a TanStack Query; `useAuthBootstrap.ts` runs once from the root layout and resolves the session plus the local tracking state. `src/tracking/localState.ts` is the M5 stub for the local trip flag S1 checks first — M8 replaces one function body with the real SQLite reader. New `EXPO_PUBLIC_{ANDROID,IOS}_STORE_URL` config drives the two store buttons on S4; they stay hidden (behind an "ask your transport manager" note) until the app is published.
+- **Changed (screens):** S2, S3 and S4 are real screens built from the UI kit (no raw hex, 48–64 px targets, doc 12's copy and layout). Out-of-scope Stitch extras were left out per ND-18: the cab keypad, the "Protected by Namma Fleet Safety Network" badge, the fake AIS-140 / 24-7 footer and the dispatch phone number. S2 also carries the M5 half of the language overlay (globe row → bottom sheet over en/ta/kn/hi). All new copy lives in `src/i18n/` with `TODO:` stubs in ta/kn/hi.
+- **Notable decisions:** (a) `src/lib/supabase.ts` no longer **throws** at import when the keys are missing — it logs loudly instead. M4 threw, which was harmless while nothing imported the module, but the splash now does, and a throw there is the white screen that file's own comment says it is trying to avoid. A missing backend now means "nobody is signed in" plus a clear message on S2. (b) The resend countdown is derived during render from a deadline rather than mirrored into state, so a fresh resend shows immediately instead of after the next tick. (c) An admin is routed to the console on every platform: doc 04 §2 has no platform branch for admin, and ND-10 keeps the console admin-only. (d) Only the splash and the `(auth)` group are guarded — a signed-in driver can still type a console URL, but those screens are M1 placeholders, RLS blocks the data, and the console guard belongs in M6.
+- **Verified:** `tsc --noEmit`, `eslint --max-warnings=0` and `prettier --check` clean; **97/97** Jest tests pass (60 new across `routing.test.ts`, `schemas.test.ts`, `errors.test.ts` and `app/index.test.tsx`). The web and Android Metro bundles both compile (HTTP 200) with the new screens. Two of the new tests caught real bugs while being written: `phoneSchema` used `z.string().trim()`, which in zod 4 validates *before* trimming, and the error map missed Supabase's "Unable to validate phone number" wording.
+- **Left:** the 🧍 sign-in step — nothing in the environment has `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`, so no OTP could actually be sent. The `shouldCreateUser: false` gate also needs a real `auth.users` row to prove "unknown number refused" end to end. M6 still owes the admin-only console guard and `admin-create-driver`, which is now the only way to add a driver.
+- **Known issues:** (1) **Android SMS auto-read is not built** (doc 04 §4 A2, "auto-read on Android if available"): it needs the SMS Retriever API, which has no Expo module in this dependency set, so S3 is manual entry only. (2) The local tracking stub is a flag in session storage, so "resume the trip" can only be exercised from a test or the M8 dev screen; the routing for it is already in place. (3) The hosted Supabase OTP path has never been exercised — see the M4 note about the redacted secret key. (4) `env.example` still carries the M1 note. (5) `docs/PHASE1_TASKS.md` is now larger than the file editor's ~50 KB read window, so its progress log has to be appended from the shell.

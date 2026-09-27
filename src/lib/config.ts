@@ -20,6 +20,10 @@ const publicEnvSchema = z.object({
   EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().default(""),
   // Required before M3 (maps).
   EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY: z.string().default(""),
+  // Store links for the S4 "use the mobile app" notice. Empty until the app is
+  // published (M12c); the notice hides the store buttons while they are unset.
+  EXPO_PUBLIC_ANDROID_STORE_URL: z.string().default(""),
+  EXPO_PUBLIC_IOS_STORE_URL: z.string().default(""),
   // Required before M12a (observability).
   EXPO_PUBLIC_SENTRY_DSN: z.string().default(""),
 });
@@ -31,6 +35,8 @@ export type AppConfig = {
   supabaseUrl: string;
   supabaseAnonKey: string;
   mapplsMapSdkKey: string;
+  androidStoreUrl: string;
+  iosStoreUrl: string;
   sentryDsn: string;
 };
 
@@ -52,6 +58,8 @@ function loadConfig(): AppConfig {
       supabaseUrl: "",
       supabaseAnonKey: "",
       mapplsMapSdkKey: "",
+      androidStoreUrl: "",
+      iosStoreUrl: "",
       sentryDsn: "",
     };
   }
@@ -62,6 +70,8 @@ function loadConfig(): AppConfig {
     supabaseUrl: env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     mapplsMapSdkKey: env.EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY,
+    androidStoreUrl: env.EXPO_PUBLIC_ANDROID_STORE_URL,
+    iosStoreUrl: env.EXPO_PUBLIC_IOS_STORE_URL,
     sentryDsn: env.EXPO_PUBLIC_SENTRY_DSN,
   };
 }

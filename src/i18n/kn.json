@@ -5,5 +5,65 @@
     "offline": "TODO: You're offline — trip data is saved on your phone.",
     "retry": "TODO: Retry",
     "cancel": "TODO: Cancel"
+  },
+  "splash": {
+    "restoringTrip": "TODO: Restoring your trip…",
+    "checkingSession": "TODO: Checking your sign-in…",
+    "gateFailed": "TODO: Can't reach Namma Lorry. Check your connection and try again."
+  },
+  "auth": {
+    "signInTitle": "TODO: Sign in with your mobile number",
+    "signInSubtitle": "TODO: We'll send a 6-digit code by SMS.",
+    "phoneLabel": "TODO: Driver mobile number",
+    "sendOtp": "TODO: Send OTP",
+    "changeLanguage": "TODO: Change language: {{language}}",
+    "languageSheetTitle": "TODO: Select language",
+    "newDriver": "TODO: New driver? Contact Namma Lorry to get registered.",
+    "verifyTitle": "TODO: Enter the code",
+    "verifySentTo": "TODO: Sent to {{phone}}",
+    "editNumber": "TODO: Edit",
+    "resendIn": "TODO: Resend code in {{time}}",
+    "resendNow": "TODO: Resend code now",
+    "resendSent": "TODO: A new code is on its way.",
+    "verifyContinue": "TODO: Verify & continue",
+    "back": "TODO: Back",
+    "invalidPhone": "TODO: Enter a 10-digit mobile number.",
+    "invalidCode": "TODO: Enter the 6-digit code we sent you.",
+    "unregistered": "TODO: This number isn't registered with Namma Lorry.",
+    "wrongCode": "TODO: Wrong code. {{attempts}} attempts left.",
+    "expiredCode": "TODO: This code has expired. Send a new one.",
+    "rateLimited": "TODO: Too many attempts. Please wait a minute and try again.",
+    "networkError": "TODO: Can't reach Namma Lorry. Check your connection and try again.",
+    "notConfigured": "TODO: Sign-in is not available in this build yet.",
+    "unknownError": "TODO: Something went wrong. Please try again."
+  },
+  "accessNotice": {
+    "signOut": "TODO: Sign out",
+    "tripActive": "TODO: End the trip before signing out.",
+    "notOnStores": "TODO: Namma Lorry is not on the stores yet. Ask your transport manager for the install link.",
+    "driverOnWeb": {
+      "title": "TODO: Trips run on the mobile app",
+      "body": "TODO: To start and record trips, install Namma Lorry on your Android or iPhone. This web page is for the operations team.",
+      "play": "TODO: Get it on Google Play",
+      "appStore": "TODO: Download on the App Store"
+    },
+    "comingSoon": {
+      "title": "TODO: Coming soon for owners and shippers",
+      "body": "TODO: Live tracking for your vehicles and loads is coming in the next release."
+    },
+    "deactivated": {
+      "title": "TODO: Your account is not active",
+      "body": "TODO: This account has been deactivated. Contact Namma Lorry operations to have it reactivated."
+    },
+    "noProfile": {
+      "title": "TODO: Your account isn't set up yet",
+      "body": "TODO: We couldn't find your profile for this number. Contact Namma Lorry to finish setting up your account."
+    }
+  },
+  "language": {
+    "en": "TODO: English",
+    "ta": "TODO: தமிழ் (Tamil)",
+    "kn": "TODO: ಕನ್ನಡ (Kannada)",
+    "hi": "TODO: हिन्दी (Hindi)"
   }
 }

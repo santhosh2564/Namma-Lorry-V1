@@ -93,15 +93,14 @@ function credentials(): { url: string; key: string } {
     return { url: config.supabaseUrl, key: config.supabaseAnonKey };
   }
 
-  const message =
+  // Loud in development, but not fatal: the auth bootstrap treats a missing
+  // backend as "nobody is signed in" and S2 says sign-in is unavailable, which
+  // is a far better failure than throwing while the module is being imported
+  // and blanking the splash (M5).
+  console.error(
     "Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and " +
-    "EXPO_PUBLIC_SUPABASE_ANON_KEY in .env — see docs/DEV_SETUP.md.";
-
-  if (process.env.NODE_ENV !== "production" && process.env.JEST_WORKER_ID === undefined) {
-    // Fail loudly in dev, the same way src/lib/config.ts does.
-    throw new Error(message);
-  }
-  console.warn(message);
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY in .env — see docs/DEV_SETUP.md.",
+  );
   return { url: PLACEHOLDER_URL, key: PLACEHOLDER_KEY };
 }
 

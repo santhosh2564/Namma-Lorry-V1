@@ -5,5 +5,65 @@
     "offline": "You're offline — trip data is saved on your phone.",
     "retry": "Retry",
     "cancel": "Cancel"
+  },
+  "splash": {
+    "restoringTrip": "Restoring your trip…",
+    "checkingSession": "Checking your sign-in…",
+    "gateFailed": "Can't reach Namma Lorry. Check your connection and try again."
+  },
+  "auth": {
+    "signInTitle": "Sign in with your mobile number",
+    "signInSubtitle": "We'll send a 6-digit code by SMS.",
+    "phoneLabel": "Driver mobile number",
+    "sendOtp": "Send OTP",
+    "changeLanguage": "Change language: {{language}}",
+    "languageSheetTitle": "Select language",
+    "newDriver": "New driver? Contact Namma Lorry to get registered.",
+    "verifyTitle": "Enter the code",
+    "verifySentTo": "Sent to {{phone}}",
+    "editNumber": "Edit",
+    "resendIn": "Resend code in {{time}}",
+    "resendNow": "Resend code now",
+    "resendSent": "A new code is on its way.",
+    "verifyContinue": "Verify & continue",
+    "back": "Back",
+    "invalidPhone": "Enter a 10-digit mobile number.",
+    "invalidCode": "Enter the 6-digit code we sent you.",
+    "unregistered": "This number isn't registered with Namma Lorry.",
+    "wrongCode": "Wrong code. {{attempts}} attempts left.",
+    "expiredCode": "This code has expired. Send a new one.",
+    "rateLimited": "Too many attempts. Please wait a minute and try again.",
+    "networkError": "Can't reach Namma Lorry. Check your connection and try again.",
+    "notConfigured": "Sign-in is not available in this build yet.",
+    "unknownError": "Something went wrong. Please try again."
+  },
+  "accessNotice": {
+    "signOut": "Sign out",
+    "tripActive": "End the trip before signing out.",
+    "notOnStores": "Namma Lorry is not on the stores yet. Ask your transport manager for the install link.",
+    "driverOnWeb": {
+      "title": "Trips run on the mobile app",
+      "body": "To start and record trips, install Namma Lorry on your Android or iPhone. This web page is for the operations team.",
+      "play": "Get it on Google Play",
+      "appStore": "Download on the App Store"
+    },
+    "comingSoon": {
+      "title": "Coming soon for owners and shippers",
+      "body": "Live tracking for your vehicles and loads is coming in the next release."
+    },
+    "deactivated": {
+      "title": "Your account is not active",
+      "body": "This account has been deactivated. Contact Namma Lorry operations to have it reactivated."
+    },
+    "noProfile": {
+      "title": "Your account isn't set up yet",
+      "body": "We couldn't find your profile for this number. Contact Namma Lorry to finish setting up your account."
+    }
+  },
+  "language": {
+    "en": "English",
+    "ta": "தமிழ் (Tamil)",
+    "kn": "ಕನ್ನಡ (Kannada)",
+    "hi": "हिन्दी (Hindi)"
   }
 }
