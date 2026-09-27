@@ -1,0 +1,20 @@
+{
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.2",
+    "zod": "npm:zod@4.6.5",
+    "@std/assert": "jsr:@std/assert@1",
+    "@supabase/server": "npm:@supabase/server@1.8.0"
+  },
+  "tasks": {
+    "test": "deno test --allow-env --allow-net=127.0.0.1 .",
+    "check": "deno check */index.ts && deno lint && deno fmt --check"
+  },
+  "fmt": {
+    "lineWidth": 110,
+    "singleQuote": true,
+    "exclude": [
+      "**/*.md"
+    ]
+  },
+  "lock": false
+}

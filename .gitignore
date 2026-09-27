@@ -4,3 +4,20 @@
 
 supabase/.branches/
 supabase/.temp/
+# Expo / Node
+node_modules/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+*.tsbuildinfo
+.metro-health-check*
+npm-debug.*
+.DS_Store
+# generated native folders (EAS / prebuild)
+/ios
+/android
+supabase/functions/.sandbox-ca.pem
+# Playwright
+/test-results/
+/playwright-report/

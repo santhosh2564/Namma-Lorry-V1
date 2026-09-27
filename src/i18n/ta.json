@@ -1,0 +1,787 @@
+{
+  "common": {
+    "appName": "TODO: Namma Lorry",
+    "signOut": "TODO: Sign out",
+    "retry": "TODO: Try again",
+    "back": "TODO: Back",
+    "loading": "TODO: Loading",
+    "close": "TODO: Close",
+    "ok": "TODO: OK",
+    "cancel": "TODO: Cancel",
+    "noMatches": "TODO: No matches.",
+    "phonePlaceholder": "TODO: 98xxx xxxxx",
+    "offline": "TODO: You're offline. Check your connection and try again.",
+    "loadFailed": "TODO: Couldn't load this. Check your connection and try again.",
+    "months": [
+      "TODO: Jan",
+      "TODO: Feb",
+      "TODO: Mar",
+      "TODO: Apr",
+      "TODO: May",
+      "TODO: Jun",
+      "TODO: Jul",
+      "TODO: Aug",
+      "TODO: Sep",
+      "TODO: Oct",
+      "TODO: Nov",
+      "TODO: Dec"
+    ],
+    "monthsLong": [
+      "TODO: January",
+      "TODO: February",
+      "TODO: March",
+      "TODO: April",
+      "TODO: May",
+      "TODO: June",
+      "TODO: July",
+      "TODO: August",
+      "TODO: September",
+      "TODO: October",
+      "TODO: November",
+      "TODO: December"
+    ]
+  },
+  "splash": {
+    "tagline": "TODO: Your work, verified.",
+    "restoring": "TODO: Restoring your trip…",
+    "error": "TODO: Couldn't load your account. Check your connection."
+  },
+  "signIn": {
+    "title": "TODO: Sign in with your mobile number",
+    "subtitle": "TODO: We'll send a 6-digit code by SMS.",
+    "phoneLabel": "TODO: Mobile number",
+    "clear": "TODO: Clear number",
+    "sendOtp": "TODO: Send OTP",
+    "newDriver": "TODO: New driver? Contact Namma Lorry to get registered.",
+    "errors": {
+      "invalid_phone": "TODO: Enter a valid 10-digit mobile number.",
+      "unregistered": "TODO: This number isn't registered with Namma Lorry. Contact Namma Lorry to register.",
+      "rate_limited": "TODO: Too many attempts. Please wait a few minutes and try again.",
+      "network": "TODO: You're offline. Check your connection and try again.",
+      "sms_failed": "TODO: We couldn't send the SMS. Please try again.",
+      "unknown": "TODO: Something went wrong. Please try again."
+    }
+  },
+  "verify": {
+    "title": "TODO: Enter the code",
+    "edit": "TODO: Edit",
+    "codeLabel": "TODO: 6-digit code",
+    "resend": "TODO: Resend code",
+    "resent": "TODO: A new code has been sent.",
+    "submit": "TODO: Verify & continue",
+    "errors": {
+      "wrong_code": "TODO: Wrong code. Check the SMS and try again.",
+      "expired": "TODO: This code has expired. Tap \"Resend code\" for a new one.",
+      "rate_limited": "TODO: Too many attempts. Please wait a few minutes and try again.",
+      "network": "TODO: You're offline. Check your connection and try again.",
+      "unknown": "TODO: Something went wrong. Please try again."
+    },
+    "sentTo": "TODO: Sent to {{phone}}",
+    "resendIn": "TODO: Resend code in {{time}}"
+  },
+  "notice": {
+    "driver-web": {
+      "title": "TODO: Trips run on the mobile app",
+      "body": "TODO: To start and record trips, install Namma Lorry on your Android or iPhone. This web page is for the operations team.",
+      "playStore": "TODO: Get it on Google Play",
+      "appStore": "TODO: Download on the App Store"
+    },
+    "coming-soon": {
+      "title": "TODO: Coming soon for owners and shippers",
+      "body": "TODO: Live tracking for your vehicles and loads is coming in the next release."
+    },
+    "deactivated": {
+      "title": "TODO: Your account is deactivated",
+      "body": "TODO: Contact Namma Lorry if you think this is a mistake."
+    },
+    "no-profile": {
+      "title": "TODO: This number isn't registered",
+      "body": "TODO: Contact Namma Lorry to register."
+    },
+    "signOutBlocked": "TODO: You have a trip in progress. End the trip before signing out.",
+    "signOutUnsynced": "TODO: Trip data is still uploading. Connect to the internet and try again in a moment."
+  },
+  "permissions": {
+    "step": "TODO: Step 1 of 2",
+    "stepIos": "TODO: Setup",
+    "title": "TODO: Allow location for your trips",
+    "disclosure": [
+      {
+        "title": "TODO: Only during trips",
+        "body": "TODO: Tracking starts when you tap Start trip and stops when you tap End trip. While a trip is running, Namma Lorry records your location in the background, even when the app is closed or the phone is locked, and shows a notification."
+      },
+      {
+        "title": "TODO: Builds your verified experience",
+        "body": "TODO: Kilometres and trips count only from real GPS. Namma Lorry operations also see where the load is during the trip."
+      },
+      {
+        "title": "TODO: Shared with Namma Lorry operations for this load",
+        "body": "TODO: Later, the owner and shipper of that load may see it too. It is kept as your trip record; how long is set out in the privacy policy. No contacts, photos or calls are collected."
+      }
+    ],
+    "checklist": "TODO: Permissions",
+    "rows": {
+      "location": {
+        "title": "TODO: Precise location",
+        "hint": "TODO: Choose \"While using the app\" and keep Precise on."
+      },
+      "background": {
+        "title": "TODO: Allow all the time",
+        "hint": "TODO: Needed to record the trip while the phone is locked."
+      },
+      "notifications": {
+        "title": "TODO: Notifications",
+        "hint": "TODO: Shows that a trip is being recorded."
+      }
+    },
+    "status": {
+      "allowed": "TODO: Allowed",
+      "waiting": "TODO: Pending",
+      "allow": "TODO: Allow",
+      "settings": "TODO: Open settings",
+      "off": "TODO: Off"
+    },
+    "blocked": {
+      "location": "TODO: Location is required to record trips. Open Settings → Location → Allow, with Precise location on.",
+      "precise": "TODO: Precise location is off. Open Settings → Location and turn on Precise location.",
+      "background": "TODO: Background location is required to record trips. Open Settings → Location → Allow all the time."
+    },
+    "notificationsOff": "TODO: Notifications are off. Trips still record, but you won't see the tracking notification. You can turn them on in Settings.",
+    "gpsOff": "TODO: Your phone's location (GPS) is turned off. Turn it on to start trips.",
+    "turnOnGps": "TODO: Turn on location",
+    "privacyPolicy": "TODO: Read privacy policy",
+    "agree": "TODO: By tapping Continue you agree to Namma Lorry using your location as described above.",
+    "continue": "TODO: Continue",
+    "consentFailed": "TODO: Couldn't save your consent. Check your connection and try again.",
+    "readyCount": "TODO: {{n}} of 3 ready"
+  },
+  "battery": {
+    "step": "TODO: Step 2 of 2",
+    "title": "TODO: Keep tracking running",
+    "body": "TODO: Some phones stop apps in the background to save battery. This can break your trip record.",
+    "stepsTitle": "TODO: Do this once",
+    "openSettings": "TODO: Open settings",
+    "done": "TODO: I've done this",
+    "skip": "TODO: Skip for now",
+    "openFailed": "TODO: Couldn't open settings. Open Settings → Apps → Namma Lorry → Battery yourself.",
+    "detected": "TODO: {{brand}} detected",
+    "guide": {
+      "open": "TODO: Tap Open settings (it opens Namma Lorry’s App info).",
+      "xiaomi": [
+        "TODO: Tap Battery saver and choose No restrictions.",
+        "TODO: Go back and turn on Autostart for Namma Lorry."
+      ],
+      "vivo": [
+        "TODO: Tap Battery, then Background power consumption, and choose Allow (or turn on Allow high background power consumption).",
+        "TODO: Turn on Autostart (in i Manager → App manager → Autostart manager on older phones)."
+      ],
+      "oppo": [
+        "TODO: Tap Battery usage and turn on Allow background activity.",
+        "TODO: Turn on Allow auto launch (Auto launch on some models)."
+      ],
+      "samsung": [
+        "TODO: Tap Battery and choose Unrestricted.",
+        "TODO: In Settings → Battery → Background usage limits, make sure Namma Lorry is not in Sleeping or Deep sleeping apps."
+      ],
+      "generic": [
+        "TODO: Tap Battery and choose Unrestricted (or Don’t optimise).",
+        "TODO: If you see Autostart or Auto launch, turn it on."
+      ]
+    }
+  },
+  "trips": {
+    "title": "TODO: My Trips",
+    "live": "TODO: Live",
+    "tripInProgress": "TODO: Trip in progress",
+    "resume": "TODO: Resume trip",
+    "assigned": "TODO: Assigned to you",
+    "readyToStart": "TODO: Ready to start",
+    "viewDetails": "TODO: View details & Start",
+    "emptyTitle": "TODO: No trips assigned yet",
+    "emptyBody": "TODO: New trips appear here when Namma Lorry assigns them to you.",
+    "offline": "TODO: You're offline — trip data is saved on your phone.",
+    "loadFailed": "TODO: Couldn't load your trips. Pull down to try again.",
+    "tabs": {
+      "trips": "TODO: Trips",
+      "history": "TODO: History",
+      "profile": "TODO: Profile"
+    },
+    "greeting": "TODO: Vanakkam, {{name}}",
+    "elapsed": "TODO: {{duration}} so far",
+    "pendingPoints_one": "TODO: {{count}} point waiting to upload",
+    "pendingPoints_other": "TODO: {{count}} points waiting to upload"
+  },
+  "tripDetail": {
+    "material": "TODO: Material",
+    "vehicle": "TODO: Vehicle",
+    "planned": "TODO: Planned",
+    "start": "TODO: START TRIP",
+    "starting": "TODO: Starting…",
+    "caption": "TODO: Tracking starts now and stops when you end the trip.",
+    "waitingGps": "TODO: Waiting for GPS…",
+    "notStartable": "TODO: This trip can no longer be started.",
+    "permissionMissing": "TODO: Location permission is off. Allow it to start trips.",
+    "fixPermissions": "TODO: Fix permissions",
+    "outsideSheetTitle": "TODO: Not at the pickup yet",
+    "outsideSheetOk": "TODO: OK",
+    "notFound": "TODO: This trip isn't available.",
+    "routeUnavailable": "TODO: Straight line shown; road route is added when the trip is planned.",
+    "weakGps": "TODO: Weak GPS (±{{m}} m). Move to open sky and wait a moment.",
+    "outside": "TODO: You're {{distance}} from the pickup. Move inside the circle to start.",
+    "ready": "TODO: You're at the pickup · GPS accuracy {{m}} m",
+    "offlineStart": "TODO: You're offline. Connect to the internet to start the trip."
+  },
+  "activeTrip": {
+    "live": "TODO: Live",
+    "time": "TODO: Time",
+    "distance": "TODO: Distance",
+    "approx": "TODO: approx.",
+    "toDrop": "TODO: To drop",
+    "synced": "TODO: All trip data synced",
+    "gpsWaiting": "TODO: Waiting for the first GPS point…",
+    "gpsStopped": "TODO: Stopped · recording resumes when you move",
+    "problem": {
+      "permission": "TODO: Location permission was turned off. The trip is not being recorded.",
+      "gps-off": "TODO: Your phone's location (GPS) is off. The trip is not being recorded.",
+      "not-running": "TODO: Trip recording isn't running on this phone. Tap Fix to restart it.",
+      "no-points": "TODO: No GPS point for {{min}} min. Keep the app open and check location is on."
+    },
+    "fix": "TODO: Fix",
+    "nearDrop": "TODO: You've reached the delivery area",
+    "end": "TODO: END TRIP",
+    "keepAwake": "TODO: Keep screen on",
+    "keepAwakeHint": "TODO: Uses more battery. Tracking works with the screen off.",
+    "notTracking": "TODO: This trip isn't recording on this phone.",
+    "endFailed": "TODO: Couldn't end the trip. Please try again.",
+    "to": "TODO: To {{place}}",
+    "waiting_one": "TODO: {{count}} point waiting to upload",
+    "waiting_other": "TODO: {{count}} points waiting to upload",
+    "offline_one": "TODO: Offline · {{count}} point saved on phone, will upload automatically",
+    "offline_other": "TODO: Offline · {{count}} points saved on phone, will upload automatically",
+    "offlineNoPoints": "TODO: Offline · trip keeps recording on your phone",
+    "gpsGood": "TODO: GPS good",
+    "gpsGoodAccuracy": "TODO: GPS good · ±{{m}} m",
+    "gpsWeak": "TODO: Weak GPS · ±{{m}} m"
+  },
+  "endSheet": {
+    "title": "TODO: End this trip?",
+    "body": "TODO: Make sure you have delivered the load.",
+    "confirm": "TODO: End trip",
+    "cancel": "TODO: Keep tracking",
+    "ending": "TODO: Ending…",
+    "outside": "TODO: You're {{distance}} from the delivery point. You can still end the trip, but Namma Lorry will review it."
+  },
+  "summary": {
+    "verifyingTitle": "TODO: Checking your trip…",
+    "verifyingBody": "TODO: This usually takes a few seconds.",
+    "offlineTitle": "TODO: Trip ended",
+    "offlineBody": "TODO: Ended offline — will verify when you're online.",
+    "verifiedTitle": "TODO: Trip verified",
+    "verifiedBody": "TODO: Added to your verified experience",
+    "reviewTitle": "TODO: Trip under review",
+    "reviewBody": "TODO: Namma Lorry will check this. You don't need to do anything.",
+    "rejectedTitle": "TODO: Trip not verified",
+    "rejectedBody": "TODO: Namma Lorry reviewed this trip and couldn't verify it.",
+    "cancelledTitle": "TODO: Trip cancelled",
+    "cancelledBody": "TODO: This trip was cancelled by Namma Lorry.",
+    "unknownTitle": "TODO: Couldn't load this trip",
+    "kmVerified": "TODO: km verified",
+    "duration": "TODO: Time",
+    "back": "TODO: Back to My Trips",
+    "retrySync": "TODO: Try uploading now",
+    "offlinePending_one": "TODO: {{count}} point still on this phone",
+    "offlinePending_other": "TODO: {{count}} points still on this phone",
+    "total_one": "TODO: Your total: {{count}} verified trip · {{km}}",
+    "total_other": "TODO: Your total: {{count}} verified trips · {{km}}",
+    "reviewNote": "TODO: Note from Namma Lorry: {{note}}"
+  },
+  "reasons": {
+    "START_OUTSIDE_PICKUP": "TODO: Trip didn't start at the pickup location",
+    "START_OUTSIDE_PICKUP_value": "TODO: Trip didn't start at the pickup location ({{distance}} away)",
+    "END_OUTSIDE_DROP": "TODO: Trip didn't end at the delivery location",
+    "END_OUTSIDE_DROP_value": "TODO: Trip didn't end at the delivery location ({{distance}} away)",
+    "MOCK_LOCATION": "TODO: Fake GPS app detected",
+    "TRACKING_GAP": "TODO: Tracking stopped for a long time",
+    "TRACKING_GAP_value": "TODO: Tracking stopped for a long time ({{min}} min)",
+    "LOW_COVERAGE": "TODO: Not enough GPS data was recorded",
+    "MISSING_POINTS": "TODO: Some trip data never uploaded",
+    "SPEED_IMPLAUSIBLE": "TODO: Trip speed looks unusual",
+    "SPEED_IMPLAUSIBLE_value": "TODO: Trip speed looks unusual ({{kmh}} km/h average)",
+    "GPS_JUMPS": "TODO: GPS signal jumped around",
+    "GPS_JUMPS_value": "TODO: GPS signal jumped around ({{n}} times)",
+    "DISTANCE_TOO_SHORT": "TODO: Distance is much shorter than the route",
+    "DISTANCE_TOO_SHORT_value": "TODO: Distance is much shorter than the route ({{pct}}% of the planned km)",
+    "DISTANCE_TOO_LONG": "TODO: Distance is much longer than the route",
+    "DISTANCE_TOO_LONG_value": "TODO: Distance is much longer than the route ({{pct}}% of the planned km)",
+    "OTHER": "TODO: Another check needs a look"
+  },
+  "history": {
+    "title": "TODO: Trip history",
+    "filters": {
+      "all": "TODO: All",
+      "verified": "TODO: Verified",
+      "review": "TODO: Under review",
+      "rejected": "TODO: Not verified"
+    },
+    "status": {
+      "verified": "TODO: Verified",
+      "review": "TODO: Under review",
+      "rejected": "TODO: Not verified",
+      "verifying": "TODO: Checking",
+      "cancelled": "TODO: Cancelled"
+    },
+    "emptyTitle": "TODO: No trips yet",
+    "emptyBody": "TODO: Finished trips appear here.",
+    "emptyFilter": "TODO: No trips with this status.",
+    "loadFailed": "TODO: Couldn't load your trips. Pull down to try again.",
+    "summary": "TODO: {{verified}} verified · {{review}} under review",
+    "monthCount_one": "TODO: {{count}} trip",
+    "monthCount_other": "TODO: {{count}} trips"
+  },
+  "profile": {
+    "title": "TODO: My Profile",
+    "verifiedTitle": "TODO: Verified experience",
+    "verifiedCaption": "TODO: Calculated by Namma Lorry from GPS — can't be edited",
+    "trips": "TODO: Trips",
+    "km": "TODO: Verified km",
+    "lastTrip": "TODO: Last trip",
+    "language": "TODO: Language",
+    "languageHint": "TODO: App language",
+    "health": "TODO: Location & battery check",
+    "healthHint": "TODO: GPS tracking & power saver",
+    "healthGood": "TODO: All good",
+    "healthFix": "TODO: Needs attention",
+    "privacy": "TODO: Privacy policy",
+    "privacyHint": "TODO: How your trip data is used",
+    "close": "TODO: Close",
+    "since": "TODO: Driver since {{month}} on Namma Lorry",
+    "version": "TODO: Namma Lorry v{{version}}"
+  },
+  "console": {
+    "nav": {
+      "live": "TODO: Live",
+      "loads": "TODO: Loads",
+      "trips": "TODO: Trips",
+      "review": "TODO: Review",
+      "drivers": "TODO: Drivers",
+      "vehicles": "TODO: Vehicles"
+    },
+    "titles": {
+      "/console": "TODO: Live",
+      "/console/loads": "TODO: Loads",
+      "/console/loads/new": "TODO: Create load",
+      "/console/trips": "TODO: Trips",
+      "/console/review": "TODO: Review",
+      "/console/drivers": "TODO: Drivers",
+      "/console/vehicles": "TODO: Vehicles",
+      "load": "TODO: Load",
+      "trip": "TODO: Trip",
+      "console": "TODO: Console"
+    },
+    "live": {
+      "search": "TODO: Search vehicle, driver or load",
+      "kpiLive": "TODO: live",
+      "kpiStale": "TODO: stale",
+      "kpiAssigned": "TODO: assigned today",
+      "kpiReview": "TODO: need review",
+      "noRecentData": "TODO: No recent data",
+      "empty": "TODO: No trips are running right now.",
+      "noMatch": "TODO: No active trip matches your search.",
+      "realtimeRetrying": "TODO: Live updates paused — reconnecting…",
+      "open": "TODO: Open trip",
+      "activeTrips": "TODO: Active trips ({{count}})"
+    },
+    "tripDetail": {
+      "notFound": "TODO: This trip doesn't exist or you can't see it.",
+      "back": "TODO: Back to trips",
+      "driver": "TODO: Driver",
+      "vehicle": "TODO: Vehicle",
+      "started": "TODO: Started",
+      "ended": "TODO: Ended",
+      "replay": "TODO: Replay",
+      "play": "TODO: Play replay",
+      "pause": "TODO: Pause replay",
+      "noPoints": "TODO: No GPS points uploaded yet.",
+      "pointsLoading": "TODO: Loading route…",
+      "verification": "TODO: Verification",
+      "noReasons": "TODO: All checks passed.",
+      "notVerifiedYet": "TODO: Not verified yet.",
+      "timeline": "TODO: Timeline",
+      "noEvents": "TODO: No events yet.",
+      "review": "TODO: Review decision",
+      "reviewHint": "TODO: A note is required. It is shown to the driver on a rejection and kept in the audit log.",
+      "note": "TODO: Note",
+      "notePlaceholder": "TODO: What did you check?",
+      "noteRequired": "TODO: Write a note before deciding.",
+      "approve": "TODO: Approve & verify",
+      "reject": "TODO: Reject",
+      "errors": {
+        "TRIP_NOT_IN_REVIEW": "TODO: This trip was already decided. The page now shows the latest status.",
+        "NOTE_REQUIRED": "TODO: Write a note before deciding.",
+        "FORBIDDEN": "TODO: Only admins can review trips.",
+        "TRIP_NOT_FOUND": "TODO: This trip doesn't exist.",
+        "NETWORK": "TODO: You're offline. Nothing was saved; try again.",
+        "UNKNOWN": "TODO: Couldn't save the decision. Nothing was changed; try again."
+      },
+      "lastUpdate": "TODO: Last update {{age}}",
+      "replayAt": "TODO: {{time}} · point {{i}} of {{n}}",
+      "verifiedBySystem": "TODO: Verified by system · {{km}}",
+      "approvedBy": "TODO: Approved by {{who}}: {{note}}",
+      "rejectedBy": "TODO: Rejected by {{who}}: {{note}}"
+    },
+    "reviewQueue": {
+      "oldestFirst": "TODO: Oldest first",
+      "open": "TODO: Open & review",
+      "emptyTitle": "TODO: All caught up",
+      "emptyBody": "TODO: Trips that need a decision appear here.",
+      "title": "TODO: Trips to review ({{count}})",
+      "ended": "TODO: Ended {{age}}"
+    },
+    "clearSearch": "TODO: Clear search",
+    "loadError": "TODO: Couldn't load this list. Check your connection.",
+    "cancel": "TODO: Cancel",
+    "status": {
+      "on_trip": "TODO: On trip",
+      "available": "TODO: Available",
+      "inactive": "TODO: Inactive"
+    },
+    "drivers": {
+      "add": "TODO: Add driver",
+      "empty": "TODO: No drivers yet. Add your first driver.",
+      "noMatch": "TODO: No drivers match your search.",
+      "cols": {
+        "name": "TODO: Name",
+        "phone": "TODO: Phone",
+        "trips": "TODO: Verified trips",
+        "km": "TODO: Verified km",
+        "last": "TODO: Last trip",
+        "status": "TODO: Status"
+      },
+      "form": {
+        "name": "TODO: Full name",
+        "phone": "TODO: Mobile number",
+        "language": "TODO: Preferred language",
+        "note": "TODO: The driver signs in with this number using an SMS code. No invite SMS is sent.",
+        "submit": "TODO: Add driver",
+        "errors": {
+          "name_required": "TODO: Enter the driver's name.",
+          "name_too_long": "TODO: Name is too long.",
+          "invalid_phone": "TODO: Enter a valid 10-digit mobile number.",
+          "PHONE_EXISTS": "TODO: This number is already registered.",
+          "FORBIDDEN": "TODO: Only admins can add drivers.",
+          "NETWORK": "TODO: You're offline. Check your connection and try again.",
+          "unknown": "TODO: Couldn't add the driver. Please try again."
+        },
+        "namePlaceholder": "TODO: Murugan S"
+      },
+      "added": "TODO: {{name}} added. They can now sign in with {{phone}}."
+    },
+    "loads": {
+      "create": "TODO: Create load",
+      "empty": "TODO: No loads yet. Create your first load.",
+      "noMatch": "TODO: No loads match these filters.",
+      "searchPlaceholder": "TODO: Search Load ID, pickup or drop",
+      "cols": {
+        "code": "TODO: Load ID",
+        "pickup": "TODO: Pickup",
+        "drop": "TODO: Drop",
+        "planned": "TODO: Planned",
+        "material": "TODO: Material",
+        "created": "TODO: Created",
+        "status": "TODO: Status",
+        "driver": "TODO: Assigned driver"
+      },
+      "status": {
+        "all": "TODO: All",
+        "unassigned": "TODO: Unassigned",
+        "assigned": "TODO: Assigned",
+        "in_trip": "TODO: In trip",
+        "done": "TODO: Done"
+      },
+      "ranges": {
+        "all": "TODO: All time",
+        "today": "TODO: Today",
+        "7d": "TODO: Last 7 days",
+        "30d": "TODO: Last 30 days"
+      }
+    },
+    "createLoad": {
+      "pickup": "TODO: Pickup",
+      "drop": "TODO: Drop",
+      "details": "TODO: Load details",
+      "material": "TODO: Material",
+      "weight": "TODO: Weight (tonnes)",
+      "shipper": "TODO: Shipper",
+      "noShippers": "TODO: No shipper accounts yet (optional).",
+      "notes": "TODO: Notes",
+      "codeNote": "TODO: Load ID is generated automatically.",
+      "plannedPending": "TODO: Planned distance appears once both locations are set.",
+      "plannedUnavailable": "TODO: Route preview unavailable. The planned distance is fetched again when you save.",
+      "mapHint": "TODO: Tap the map to drop a missing pin; drag pins to refine.",
+      "submit": "TODO: Create load",
+      "cancel": "TODO: Cancel",
+      "distanceFailed": "TODO: Couldn't fetch the planned distance from Mappls.",
+      "saveWithout": "TODO: Save without planned distance",
+      "saveFailed": "TODO: Couldn't save the load. Please try again.",
+      "errors": {
+        "address_required": "TODO: Enter the address.",
+        "address_too_long": "TODO: Address is too long.",
+        "location_required": "TODO: Set the location: pick a suggestion, drop the pin or enter coordinates.",
+        "radius_range": "TODO: Radius must be between 100 m and 2 km.",
+        "weight_range": "TODO: Enter a weight between 0 and 100 tonnes.",
+        "same_as_pickup": "TODO: Drop must be a different place from pickup.",
+        "too_long": "TODO: Too long."
+      },
+      "planned": "TODO: Planned distance {{km}} · {{eta}}",
+      "materialPlaceholder": "TODO: Auto parts"
+    },
+    "loadDetail": {
+      "notFound": "TODO: Load not found.",
+      "back": "TODO: Back to loads",
+      "route": "TODO: Route",
+      "planned": "TODO: Planned",
+      "material": "TODO: Material",
+      "weight": "TODO: Weight",
+      "shipper": "TODO: Shipper",
+      "createdBy": "TODO: Created by",
+      "notes": "TODO: Notes",
+      "assignTitle": "TODO: Assign trip",
+      "driver": "TODO: Driver",
+      "vehicle": "TODO: Vehicle",
+      "searchDriver": "TODO: Search drivers",
+      "searchVehicle": "TODO: Search vehicles",
+      "busyDriver": "TODO: Currently on another trip",
+      "busyVehicle": "TODO: Currently on another trip",
+      "inactive": "TODO: Inactive",
+      "assign": "TODO: Assign",
+      "assignNote": "TODO: The driver sees this trip in their app immediately.",
+      "alreadyOpen": "TODO: This load already has an open trip.",
+      "assignFailed": "TODO: Couldn't assign the trip. Please try again.",
+      "tripTitle": "TODO: Trip",
+      "trips": "TODO: Trips for this load",
+      "started": "TODO: Started",
+      "ended": "TODO: Ended",
+      "verifiedKm": "TODO: Verified km",
+      "errors": {
+        "driver_required": "TODO: Choose a driver.",
+        "vehicle_required": "TODO: Choose a vehicle."
+      },
+      "verifiedStats": "TODO: {{trips}} verified trips · {{km}} km",
+      "busyWarning": "TODO: {{name}} is on another trip right now. You can still assign; they can only start this one after ending the current trip.",
+      "assigned": "TODO: Assigned {{when}}"
+    },
+    "trips": {
+      "empty": "TODO: No trips yet. Assign a load to create one.",
+      "noMatch": "TODO: No trips match these filters.",
+      "searchPlaceholder": "TODO: Search Load ID",
+      "allDrivers": "TODO: All drivers",
+      "allVehicles": "TODO: All vehicles",
+      "cols": {
+        "code": "TODO: Load ID",
+        "driver": "TODO: Driver",
+        "vehicle": "TODO: Vehicle",
+        "started": "TODO: Started",
+        "ended": "TODO: Ended",
+        "duration": "TODO: Duration",
+        "km": "TODO: Verified km",
+        "status": "TODO: Status",
+        "reasons": "TODO: Reasons"
+      }
+    },
+    "vehicles": {
+      "add": "TODO: Add vehicle",
+      "empty": "TODO: No vehicles yet. Add your first vehicle.",
+      "noMatch": "TODO: No vehicles match your search.",
+      "cols": {
+        "reg": "TODO: Registration no.",
+        "type": "TODO: Type",
+        "owner": "TODO: Owner",
+        "trips": "TODO: Trips",
+        "last": "TODO: Last used",
+        "status": "TODO: Status"
+      },
+      "form": {
+        "reg": "TODO: Registration number",
+        "regHint": "TODO: e.g. TN 23 BK 4521 or 22 BH 1234 AA",
+        "type": "TODO: Vehicle type",
+        "submit": "TODO: Save vehicle",
+        "errors": {
+          "invalid_registration": "TODO: Enter a valid Indian registration number, e.g. TN 23 BK 4521.",
+          "type_required": "TODO: Choose the vehicle type.",
+          "duplicate": "TODO: This vehicle is already registered.",
+          "unknown": "TODO: Couldn't save the vehicle. Please try again."
+        },
+        "regPreview": "TODO: Will be saved as {{reg}}",
+        "regPlaceholder": "TODO: TN 23 BK 4521"
+      },
+      "added": "TODO: {{reg}} added."
+    },
+    "searchResults": "TODO: Showing results for \"{{query}}\"",
+    "brand": "TODO: Namma Lorry Ops",
+    "adminRole": "TODO: Admin",
+    "topSearch": "TODO: Search Load ID, vehicle or driver",
+    "pager": {
+      "range": "TODO: {{from}}–{{to}} of {{total}}",
+      "page": "TODO: Page {{page}} of {{count}}"
+    },
+    "filters": {
+      "status": "TODO: Status",
+      "dateRange": "TODO: Date range",
+      "driver": "TODO: Driver",
+      "vehicle": "TODO: Vehicle"
+    },
+    "tripStatus": {
+      "assigned": "TODO: Assigned",
+      "in_progress": "TODO: Live",
+      "completed": "TODO: Awaiting data",
+      "verified": "TODO: Verified",
+      "needs_review": "TODO: Needs review",
+      "rejected": "TODO: Rejected",
+      "cancelled": "TODO: Cancelled"
+    },
+    "loadStatus": {
+      "unassigned": "TODO: Unassigned",
+      "assigned": "TODO: Assigned",
+      "in_trip": "TODO: In trip",
+      "done": "TODO: Done"
+    },
+    "age": {
+      "none": "TODO: No data yet",
+      "s": "TODO: {{n}} s ago",
+      "min": "TODO: {{n}} min ago",
+      "h": "TODO: {{n}} h ago",
+      "d": "TODO: {{n}} d ago"
+    },
+    "metrics": {
+      "tracked": "TODO: Tracked distance",
+      "points": "TODO: Points",
+      "max_gap": "TODO: Max gap",
+      "avg_kmh": "TODO: Avg speed",
+      "planned_ratio": "TODO: Planned ratio",
+      "jumps": "TODO: GPS jumps",
+      "mocked": "TODO: Mocked points",
+      "start_d": "TODO: Start from pickup",
+      "end_d": "TODO: End from drop"
+    },
+    "events": {
+      "started": "TODO: Started",
+      "ended": "TODO: Ended",
+      "verified": "TODO: Verified by system",
+      "needs_review": "TODO: Flagged for review",
+      "approved": "TODO: Approved",
+      "rejected": "TODO: Rejected",
+      "cancelled": "TODO: Cancelled",
+      "expectedPoints": "TODO: {{count}} points expected"
+    },
+    "place": {
+      "address": "TODO: Address",
+      "searchHint": "TODO: Type at least 3 characters to search Mappls",
+      "noCoords": "TODO: Mappls didn't return coordinates for this place. Drop the pin on the map or enter coordinates.",
+      "needLocation": "TODO: Pick a suggestion, drop the pin on the map, or enter coordinates.",
+      "located": "TODO: Pin at {{lat}}, {{lng}}. Drag it on the map to refine.",
+      "coords": "TODO: Coordinates (lat, lng)",
+      "coordsHint": "TODO: e.g. 12.95630, 79.94220",
+      "coordsInvalid": "TODO: Enter latitude, longitude in decimal degrees.",
+      "manual": "TODO: Enter coordinates",
+      "hideManual": "TODO: Hide coordinates",
+      "pickupRadius": "TODO: Pickup radius",
+      "dropRadius": "TODO: Drop radius",
+      "rateLimited": "TODO: Too many searches. Wait a moment.",
+      "notConfigured": "TODO: Address search is not configured (MAPPLS_REST_KEY). Enter the address and coordinates by hand.",
+      "unavailable": "TODO: Address search isn't available right now. Enter the address and coordinates by hand.",
+      "pickupPlaceholder": "TODO: SIPCOT Industrial Park, Sriperumbudur",
+      "dropPlaceholder": "TODO: Kurichi Industrial Estate, Coimbatore"
+    }
+  },
+  "a11y": {
+    "map": "TODO: Map",
+    "sortBy": "TODO: Sort by {{column}}",
+    "previousPage": "TODO: Previous page",
+    "nextPage": "TODO: Next page",
+    "accountMenu": "TODO: Account menu for {{name}}",
+    "decrease": "TODO: Decrease {{label}}",
+    "increase": "TODO: Increase {{label}}",
+    "offline": "TODO: Offline",
+    "online": "TODO: Online",
+    "navBadge": "TODO: {{label}}, {{count}} waiting"
+  },
+  "language": {
+    "title": "TODO: Choose language",
+    "current": "TODO: Change language: {{language}}",
+    "partial": "TODO: Some text still shows in English until the translation is finished.",
+    "saveFailed": "TODO: Couldn't save your language. It will be used on this phone only for now."
+  },
+  "errorBoundary": {
+    "title": "TODO: Something went wrong",
+    "body": "TODO: The app hit an unexpected problem. Your trip data is safe on this phone.",
+    "retry": "TODO: Try again",
+    "home": "TODO: Go to start"
+  },
+  "errors": {
+    "NETWORK": "TODO: You're offline. Check your connection and try again.",
+    "TIMEOUT": "TODO: The server took too long to answer. Please try again.",
+    "SESSION_EXPIRED": "TODO: Your session has expired. Sign in again.",
+    "UNKNOWN": "TODO: Something went wrong. Please try again.",
+    "TRIP_NOT_FOUND": "TODO: This trip isn't available.",
+    "TRIP_NOT_STARTABLE": "TODO: This trip can no longer be started. Pull to refresh.",
+    "ANOTHER_TRIP_ACTIVE": "TODO: You already have a trip in progress. End it before starting another.",
+    "GPS_ACCURACY_TOO_LOW": "TODO: Waiting for a better GPS signal. Move to open sky and try again.",
+    "OUTSIDE_PICKUP": "TODO: You're {{distance}} from the pickup. Move inside the pickup area to start.",
+    "TRIP_NOT_ACTIVE": "TODO: This trip has already ended.",
+    "FORBIDDEN": "TODO: You don't have permission to do this.",
+    "NOTE_REQUIRED": "TODO: Write a note before deciding.",
+    "TRIP_NOT_IN_REVIEW": "TODO: This trip was already decided.",
+    "PROFILE_NOT_FOUND": "TODO: Your account wasn't found. Contact Namma Lorry.",
+    "VERSION_REQUIRED": "TODO: Couldn't save your consent. Please try again.",
+    "LANGUAGE_NOT_SUPPORTED": "TODO: This language isn't available yet.",
+    "UNAUTHENTICATED": "TODO: Your session has expired. Sign in again.",
+    "AUTH_CHECK_FAILED": "TODO: Couldn't check your sign-in. Please try again.",
+    "AUTH_CONFIG": "TODO: The server is not set up correctly. Contact support.",
+    "RATE_LIMITED": "TODO: Too many requests. Wait a moment and try again.",
+    "CONFIG_MISSING": "TODO: This feature is not set up on the server yet.",
+    "INVALID_REQUEST": "TODO: Some details are missing or invalid. Check the form and try again.",
+    "INVALID_JSON": "TODO: Some details are missing or invalid. Check the form and try again.",
+    "METHOD_NOT_ALLOWED": "TODO: Something went wrong. Please try again.",
+    "NOT_FOUND": "TODO: That place couldn't be found.",
+    "NO_ROUTE": "TODO: Mappls couldn't find a road route between these places.",
+    "MAPPLS_UNAVAILABLE": "TODO: Mappls isn't responding right now. Try again in a moment.",
+    "MAPPLS_AUTH": "TODO: Address search is not set up correctly (Mappls key rejected). Contact support.",
+    "MAPPLS_QUOTA": "TODO: Address search has reached its limit for now. Enter the address and coordinates by hand.",
+    "MAPPLS_BAD_REQUEST": "TODO: Mappls couldn't understand this search. Try different words.",
+    "MAPPLS_BAD_RESPONSE": "TODO: Mappls sent an unexpected answer. Try again in a moment.",
+    "PHONE_EXISTS": "TODO: This number is already registered.",
+    "CREATE_USER_FAILED": "TODO: Couldn't create the account. Please try again.",
+    "PROFILE_UPDATE_FAILED": "TODO: The account was created but its details couldn't be saved. Try again.",
+    "INTERNAL": "TODO: The server hit a problem. Please try again.",
+    "PERMISSION_DENIED": "TODO: You don't have permission to do this.",
+    "DUPLICATE": "TODO: This already exists.",
+    "INVALID_VALUE": "TODO: Some details are invalid. Check them and try again.",
+    "REFERENCE_MISSING": "TODO: Something this depends on no longer exists. Refresh and try again.",
+    "PERMISSION_REQUIRED": "TODO: Allow location \"all the time\" to record trips.",
+    "GPS_TIMEOUT": "TODO: Waiting for a better GPS signal.",
+    "GPS_UNAVAILABLE": "TODO: Location is turned off. Turn it on to start the trip.",
+    "LOCAL_TRIP_ACTIVE": "TODO: You already have a trip in progress.",
+    "NO_ACTIVE_TRIP": "TODO: No trip is running on this phone.",
+    "TRACKING_START_FAILED": "TODO: Trip started but tracking couldn't begin. Keep the app open; it will retry."
+  },
+  "tracking": {
+    "notificationTitle": "TODO: Namma Lorry trip in progress",
+    "notificationBody": "TODO: Recording your trip for verified experience"
+  },
+  "map": {
+    "unavailable": "TODO: Map unavailable",
+    "noKey": "TODO: Set EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY to show the Mappls map.",
+    "loadFailed": "TODO: The Mappls map couldn't load (network or key restriction).",
+    "nativePending": "TODO: The native Mappls map arrives with M3.",
+    "plannedPoints": "TODO: Planned route: {{count}} points",
+    "radius": "TODO: radius {{m}} m",
+    "markers": {
+      "pickup": "TODO: Pickup",
+      "drop": "TODO: Drop",
+      "truck": "TODO: Truck",
+      "me": "TODO: You",
+      "start": "TODO: Start",
+      "end": "TODO: End"
+    }
+  }
+}
