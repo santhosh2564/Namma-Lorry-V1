@@ -85,7 +85,7 @@ The audit's questions **have not been answered in `docs/00-repo-audit.md` as of 
 | ND-1 | Pre-flight restructure: promote the newest pack to the root, keep root `supabase/` as canonical, move `SCREENS/` → `design/` with doc-12 names, drop verified duplicates and the nested pack + zip. Approved? | Pre-flight / M1 |
 | ND-2 | Mappls account: which credentials exist (map SDK key, REST client id/secret/key)? Is the web SDK enabled and the key domain-restricted? | M3, M6 |
 | ND-3 | iOS: Apple Developer account + physical iPhone available? If not, is M3's exit criterion (and W0's) reduced to Android + web, with iOS deferred? | M3, M12c |
-| ND-4 | Supabase: hosted staging project (recommended — works from this sandbox, which has no Docker) or local only via Docker on the Windows host? If hosted, project URL + anon key go into Keys/Environment. | M4 |
+| ND-4 | ~~Supabase: hosted staging project (recommended) or local only via Docker on the Windows host?~~ **Answered in M4:** both. Hosted staging is `qykqflshvsldzvdpwtni` (project URL + publishable key go into Settings → Environment; secret key stays server-side). Local Docker runs migrations, the seed and the pgTAP suite. See `docs/DEV_SETUP.md` §1. | M4 (closed) |
 | ND-5 | Client sign-offs: written approval of RN + Mappls; who registers drivers (admin only vs self-signup with approval); "transporter" meaning; multi-drop (assumed no); raw-GPS retention period | M5 (auth), pilot |
 | ND-6 | Stationary trucks: 25 m `distanceInterval` produces no points while parked. That triggers `TRACKING_GAP` (>15 min) and `LOW_COVERAGE` (<60/h) on genuine trips, and M10's "no point for > 2 min" banner. Heartbeat while stationary, or judge gaps on moving time only? Docs 03/08 must change first. | M8, M10 |
 | ND-7 | If the Mappls spike fails on Expo SDK 57 / RN 0.87, is pinning an older Expo SDK acceptable? | M1 pinning, M3 |
@@ -194,28 +194,29 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M4 — Supabase backend (Prompt 5)
 **Tasks**
-- [ ] `supabase init` / `start` (Docker, ND-4); apply `0001` **unchanged**. If it fails on this Supabase version, add a follow-up migration and explain. (0002_consent.sql already exists at the root.)
+- [x] `supabase init` / `start` (Docker, ND-4); apply `0001` **unchanged**. `0001` and `0002_consent.sql` both apply with **zero errors** on Postgres 14 + PostGIS 3 + pg_cron, so no follow-up migration was needed and nothing was edited.
 - [ ] *(Pending ND-21)* `0003_phase1_fixes.sql`: ND-8 point-upload handling, ND-12 registration, ND-13 admin trip writes + `cancel_trip`, ND-14 trips realtime, `GPS_JUMPS` threshold into `app_settings`, `admin_review_trip` not-found, `setting()` search_path
 - [ ] *(Pending ND-6)* Verification change for stationary gaps, if chosen server-side
-- [ ] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql` (helpers exist in `_helpers.psql`; **zero cases written yet**):
-  - every RLS policy
-  - every RPC error code (doc 06)
-  - every reason code (doc 08)
-  - a late point upload triggers verification
-  - the sweeper
-  - admin review increments stats exactly once
-- [ ] `supabase/seed.sql`: already exists (1 admin, 3 drivers on 919000000001/11/12/13, 3 vehicles, 4 TN/KA loads, 1 assigned trip) — verify against M4 acceptance
-- [ ] `src/lib/database.types.ts` (generated) + typed `src/lib/supabase.ts` (secure-store on native, localStorage-safe on web)
-- [ ] `docs/DEV_SETUP.md`: test phone numbers/OTP for local and hosted
+- [x] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql` — **135 cases across 4 files, all green**:
+  - [x] every RLS policy — `01_rls_policies.test.sql` (46)
+  - [x] every RPC error code (doc 06) — `02_rpc_errors.test.sql` (28)
+  - [x] every reason code (doc 08) — `03_verification_reasons.test.sql` (26)
+  - [x] a late point upload triggers verification — `04_verification_triggers.test.sql`
+  - [x] the sweeper — `04_verification_triggers.test.sql`
+  - [x] admin review increments stats exactly once — `04_verification_triggers.test.sql`
+  - [x] *(added)* `record_consent` (0002) and the `GRANT`/`REVOKE` boundary
+- [x] `supabase/seed.sql`: verified against M4 acceptance — 1 admin + 3 drivers on 919000000001/11/12/13, 3 vehicles, 4 TN/KA loads, 1 assigned trip; loads after reset
+- [x] `src/lib/database.types.ts` (generated) + typed `src/lib/supabase.ts` (secure-store on native, localStorage-safe on web)
+- [x] `docs/DEV_SETUP.md`: test phone numbers/OTP for local and hosted
 
 **Files expected:** `supabase/migrations/0002_consent.sql` (exists), `0003_*` (if approved), `supabase/tests/*.test.sql`, `supabase/seed.sql` (exists), `src/lib/database.types.ts`, `src/lib/supabase.ts`, `docs/DEV_SETUP.md`.
 
 **Acceptance**
-- `supabase db reset && supabase test db` passes
-- pgTAP proves: a driver cannot update `trips`, insert `driver_stats`, or read other drivers' trips/points; an admin can (doc 10 §1; scenario 9)
-- Error codes `TRIP_NOT_FOUND`, `TRIP_NOT_STARTABLE`, `ANOTHER_TRIP_ACTIVE`, `GPS_ACCURACY_TOO_LOW`, `OUTSIDE_PICKUP:<m>`, `TRIP_NOT_ACTIVE`, `FORBIDDEN`, `NOTE_REQUIRED`, `TRIP_NOT_IN_REVIEW` are each covered
-- All 10 reason codes in doc 08 §3 are produced by a test case
-- Scenarios 8 (sweeper → `MISSING_POINTS`), 10 (`ANOTHER_TRIP_ACTIVE`) and 12 (approve → verified, stats +1 once, event logged) pass at DB level
+- [x] `supabase db reset && supabase test db` passes — **135/135** from a clean database
+- [x] pgTAP proves: a driver cannot update `trips`, insert `driver_stats`, or read other drivers' trips/points; an admin can (doc 10 §1; scenario 9)
+- [x] Error codes `TRIP_NOT_FOUND`, `TRIP_NOT_STARTABLE`, `ANOTHER_TRIP_ACTIVE`, `GPS_ACCURACY_TOO_LOW`, `OUTSIDE_PICKUP:<m>`, `TRIP_NOT_ACTIVE`, `FORBIDDEN`, `NOTE_REQUIRED`, `TRIP_NOT_IN_REVIEW` are each covered
+- [x] All 10 reason codes in doc 08 §3 are produced by a test case
+- [x] Scenarios 8 (sweeper → `MISSING_POINTS`), 10 (`ANOTHER_TRIP_ACTIVE`) and 12 (approve → verified, stats +1 once, event logged) pass at DB level
 
 **Human checkpoints:** none in doc 13. *(Added)* Confirm Docker is running or the staging project is linked; review the migration diff before merge.
 
@@ -541,7 +542,7 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 | R15 | Stitch mocks carry scope creep and non-compliant disclosure copy | Medium | M2, M9–M11 | ND-18; `design/README.md` |
 | R16 | Chinese-OEM background killing | High | M9, M12b | D2 battery screen, foreground service, gap detection, field matrix (doc 01 §5) |
 | R17 | Store reviews (Play background location, iOS "Always") | Medium | M12c | Submit the declaration and video by W4 (PRD §9) |
-| R18 | pgTAP suite unwritten (helpers only) | Medium | M4 | M4 deliverable |
+| R18 | pgTAP suite unwritten (helpers only) | ~~Medium~~ **Closed in M4** — 135 cases | — | Done |
 
 ---
 
@@ -574,3 +575,12 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Verified:** `tsc --noEmit`, `eslint --max-warnings=0`, `prettier --check` all clean; **31/31** tests pass (12 new geo tests). `expo prebuild --clean` applies the plugin cleanly and idempotently (maven repo + Podfile hook inserted once each) and emits clear warnings when the `.olf`/`.conf` files are absent; generated `android/` + `ios/` were removed again so the plugin re-applies on the next prebuild. Freebuff preview bundles the web app (HTTP 200) with `sdk.mappls.com` present and the native SDK **absent** from the web bundle; the Android bundle also compiles (HTTP 200, Mappls SDK source resolved). Grep confirms no non-Mappls map/tile libraries.
 - **Left:** the 🧍 device step — add the Mappls credentials (ND-2), then `npx expo run:android` / `eas build --profile development` and confirm the map on a real phone and on web. iOS needs ND-3 (Apple account + device); web rendering needs `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY` set. Commands are listed in the M3 session summary.
 - **Known issues:** (1) The `.olm/.olf` files are per-app secrets and are not in the repo — a prebuild without them produces a Gradle/CocoaPods failure (by design; the plugin warns earlier). (2) The web SDK's click payload shape is undocumented; `parseMapClick` accepts the known variants and `onPress` is a no-op if none match. (3) `map.destroy()` is undocumented on the web SDK, so the web component clears its container node on unmount. (4) `/dev/map` is not `__DEV__`-gated until M12a.
+
+### 2026-09-27 · M4 (Prompt 5) — Supabase backend
+- **Changed (schema):** `0001_phase1_schema.sql` and `0002_consent.sql` both apply **unchanged with zero errors** against Postgres 14 + PostGIS 3 + pg_cron, so the “create a follow-up migration instead of editing 0001” escape clause was not needed. `seed.sql` verified: profiles=4, vehicles=3, loads=4, trips=1, with `load_code_seq` seeded at 141 so codes match the DESIGN.md sample data (NL-2026-000142/143).
+- **Changed (tests):** wrote the whole pgTAP suite that M4 owed — **135 cases in 4 files**, all passing. `01_rls_policies` (46) proves every policy from 0001 for anon, driver A, driver B, owner, shipper and admin, in both the blocked and the allowed direction, and that `verify_trip` / `apply_verified_stats` / `sweep_unverified_trips` are not callable by clients. `02_rpc_errors` (28) produces every docs/06 §1 code from a real call, including `OUTSIDE_PICKUP:<metres>` with the distance computed by `st_distance` and matched exactly. `03_verification_reasons` (26) produces all 10 docs/08 §3 codes one at a time, asserts each is the *only* reason raised, then pins the set to the documented list so a new rule in `verify_trip` without a matching case fails the suite. `04_verification_triggers` (35) covers the `trip_points` AFTER INSERT trigger (a late batch reaching `expected_points` starts verification), the pg_cron sweeper (cron job registered; 6 h grace period honoured; a re-sweep does not double-credit), admin review crediting `driver_stats` exactly once whichever path got the trip there (a second approve is refused, an already-verified trip is unreviewable, a rejection pays out nothing), and `record_consent` including its `REVOKE`d anon path.
+- **Changed (app):** added `src/lib/database.types.ts` (generated from the live catalogue — 9 tables, 18 functions, 2 enums, plus `Tables`/`Enums` helpers, `UserRole`, `TripStatus` and the `VERIFICATION_REASONS` union from docs/08 §3) and `src/lib/supabase.ts` (typed `SupabaseClient<Database>`; session in `expo-secure-store` on native, a `localStorage` adapter on web that degrades to “not remembered” when storage is missing, blocked or over quota; `detectSessionInUrl` only on web). Added `src/lib/supabase.test.ts`. Wrote `docs/DEV_SETUP.md`.
+- **Notable decisions:** (a) `pg_prove` cannot discover a directory here, so CI or a developer must pass the four files explicitly — **see known issues**. (b) `set_config('role', …)` cannot run inside a `SECURITY DEFINER` function and an invoker-security function cannot `SET ROLE` back, so the role helpers stay invoker-security and test files return to the runner with a statement-level `set local role postgres;`. (c) `throws_ok` matches messages **exactly**, not by regex, so the 4-argument form is used throughout. (d) psql does **not** substitute `:variables` inside a dollar-quoted literal, so the two cases that need a runtime trip id build their SQL with `format()`. (e) A trip must be aged as a whole (`started_at`, `ended_at` *and* every point) to simulate the sweeper — backdating `ended_at` alone leaves every point outside `[started_at, ended_at]` and `verify_trip` reads that as a trip with no track.
+- **Verified:** migrations + seed re-applied from a dropped database, then **135/135** pgTAP cases green. `tsc --noEmit`, `eslint --max-warnings=0`, `prettier --check` clean; **37/37** Jest tests pass (6 new for the storage adapters). The storage unit test caught a real bug while it was being written — the first version guarded only *access* to `localStorage`, not the `setItem` call, which throws on quota and would have crashed the web console.
+- **Left:** `0003_phase1_fixes.sql` (ND-21: ND-8, ND-12, ND-13, ND-14, `GPS_JUMPS` into `app_settings`, `admin_review_trip` not-found, `setting()` search_path) and the ND-6 stationary-gap decision — both still blocked on approval. The secret key for the hosted project was supplied redacted, so nothing was verified against the hosted project; the client is written against env vars only. The publishable key still needs to go into Settings → Environment.
+- **Known issues:** (1) **This sandbox has no Docker and no `supabase` CLI**, so `supabase db reset && supabase test db` could not be run verbatim. The suite was executed against a locally provisioned Postgres 14 + PostGIS + pg_cron + pgTAP driven by `pg_prove`, with a throwaway shim supplying the roles, `auth` schema and `supabase_realtime` publication that a real Supabase project provides. The migrations and seed are unchanged and standard, but **the exact `supabase test db` invocation is still unverified** and should be run once on a machine with Docker. (2) Consequently `.github/workflows/ci.yml` still runs only install/typecheck/lint/format/test — adding `supabase test db` needs a Docker-enabled runner, and that is a gap to close rather than a decision. (3) `pg_prove` silently reports `NOTESTS` for a directory argument in this setup; the four test paths are listed explicitly. (4) `env.example` still carries the M1 note (the sandbox blocks the leading-dot name).
