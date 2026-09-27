@@ -6,6 +6,10 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "forceConsistentCasingInFileNames": true,
+    // Resolve platform-split modules (`MapView.native.tsx` / `MapView.web.tsx`)
+    // from a single specifier. Native is the primary type surface; the web file
+    // is still type-checked in its own right.
+    "moduleSuffixes": [".ios", ".android", ".native", ""],
     "paths": {
       "@/*": ["./src/*"]
     }
