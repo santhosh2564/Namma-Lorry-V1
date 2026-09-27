@@ -30,6 +30,11 @@ mappls/
 
 # ---- testing ----
 coverage/
+# Playwright run artefacts (M7): traces, screenshots and the HTML report.
+test-results/
+playwright-report/
+blob-report/
+.playwright/
 
 # ---- editors / os ----
 .DS_Store

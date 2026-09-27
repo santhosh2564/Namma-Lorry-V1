@@ -23,13 +23,17 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role', 'anon')::text, true);
 end $$;
 
--- Back to the test runner's role (postgres) with no JWT; bypasses RLS for setup.
-create function tests.as_postgres() returns void language plpgsql as $$
-begin
-  perform set_config('role', 'postgres', true);
-  perform set_config('request.jwt.claim.sub', '', true);
-  perform set_config('request.jwt.claims', '', true);
-end $$;
+-- Returning to the test runner's role is done with a plain statement in each
+-- test file, NOT through a helper:
+--
+--   set local role postgres;
+--
+-- `set_config('role', ...)` cannot run inside a SECURITY DEFINER function
+-- ("cannot set parameter role within security-definer function"), and an
+-- invoker-security function cannot SET ROLE once the session role has changed
+-- to `authenticated`/`anon`. The session user is still `postgres` (a superuser)
+-- for the whole test, so statement-level SET ROLE is the only correct route.
+-- RLS is off for that role, which is what fixture setup needs.
 
 -- auth user + profile (profile row comes from the handle_new_user trigger).
 create function tests.create_user(p_id uuid, p_phone text, p_role public.user_role, p_name text)
@@ -70,6 +74,18 @@ create function tests.create_trip(p_load uuid, p_driver uuid, p_vehicle uuid) re
 language sql as $$
   insert into public.trips (load_id, driver_id, vehicle_id) values (p_load, p_driver, p_vehicle) returning id
 $$;
+
+-- Rows affected by a DML statement, without tripping over RLS.
+-- "driver cannot update X" is proved by 0 rows affected (no matching policy),
+-- not by an error, and a data-modifying CTE cannot be nested inside a function
+-- argument — so run the statement and read ROW_COUNT instead.
+create function tests.affected(p_sql text) returns integer language plpgsql as $$
+declare n integer;
+begin
+  execute p_sql;
+  get diagnostics n = row_count;
+  return n;
+end $$;
 
 -- Evenly spaced points from the load's pickup to its drop:
 -- point g (1..p_total) is recorded at p_start + g * p_step, at fraction g/p_total of the line.

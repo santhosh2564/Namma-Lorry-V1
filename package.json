@@ -13,12 +13,15 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "e2e": "playwright test",
+    "e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@expo-google-fonts/material-symbols": "^0.4.48",
     "@expo-google-fonts/noto-sans": "^0.4.2",
     "@expo/metro-runtime": "~57.0.16",
+    "@hookform/resolvers": "^5.9.1",
     "@react-native-community/netinfo": "~12.0.1",
     "@supabase/supabase-js": "^2.117.2",
     "@tanstack/react-query": "^5.104.0",
@@ -53,6 +56,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@react-native/jest-preset": "0.86.3",
     "@testing-library/react-native": "^14.0.1",
     "@types/jest": "29.5.14",

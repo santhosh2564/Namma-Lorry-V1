@@ -1,3 +1,10 @@
+// The background location task MUST be defined before anything else runs
+// (CLAUDE.md hard rule 4): the OS can launch the app headlessly and invoke the
+// task before a single screen renders, and `TaskManager.defineTask` only
+// registers a handler if it has already been evaluated. Importing it first
+// makes that order explicit rather than incidental.
+import "@/tracking/task";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -7,12 +14,15 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import "@/i18n";
 
+import { useAuthBootstrap } from "@/features/auth/useAuthBootstrap";
 import { useAppFonts } from "@/theme/fonts";
 import { colors } from "@/theme/tokens";
 
 /**
- * Root layout (M1): providers only. The tracking task import (CLAUDE.md hard
- * rule 4) and the real session/role gate arrive in M8/M5.
+ * Root layout: providers, fonts, and the auth bootstrap that resolves the
+ * session and the local tracking state. `app/index.tsx` (S1) then runs the
+ * routing gate. The background tracking task is registered by the import at the
+ * very top of this file (CLAUDE.md hard rule 4).
  */
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +37,8 @@ export default function RootLayout() {
   // Noto Sans + Material Symbols (M2). Keep the app hidden until fonts are
   // ready, but never block forever if a font fails to load.
   const [fontsLoaded, fontError] = useAppFonts();
+  useAuthBootstrap();
+
   if (!fontsLoaded && !fontError) {
     return null;
   }

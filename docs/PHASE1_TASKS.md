@@ -85,15 +85,15 @@ The audit's questions **have not been answered in `docs/00-repo-audit.md` as of 
 | ND-1 | Pre-flight restructure: promote the newest pack to the root, keep root `supabase/` as canonical, move `SCREENS/` → `design/` with doc-12 names, drop verified duplicates and the nested pack + zip. Approved? | Pre-flight / M1 |
 | ND-2 | Mappls account: which credentials exist (map SDK key, REST client id/secret/key)? Is the web SDK enabled and the key domain-restricted? | M3, M6 |
 | ND-3 | iOS: Apple Developer account + physical iPhone available? If not, is M3's exit criterion (and W0's) reduced to Android + web, with iOS deferred? | M3, M12c |
-| ND-4 | Supabase: hosted staging project (recommended — works from this sandbox, which has no Docker) or local only via Docker on the Windows host? If hosted, project URL + anon key go into Keys/Environment. | M4 |
+| ND-4 | ~~Supabase: hosted staging project (recommended) or local only via Docker on the Windows host?~~ **Answered in M4:** both. Hosted staging is `qykqflshvsldzvdpwtni` (project URL + publishable key go into Settings → Environment; secret key stays server-side). Local Docker runs migrations, the seed and the pgTAP suite. See `docs/DEV_SETUP.md` §1. | M4 (closed) |
 | ND-5 | Client sign-offs: written approval of RN + Mappls; who registers drivers (admin only vs self-signup with approval); "transporter" meaning; multi-drop (assumed no); raw-GPS retention period | M5 (auth), pilot |
-| ND-6 | Stationary trucks: 25 m `distanceInterval` produces no points while parked. That triggers `TRACKING_GAP` (>15 min) and `LOW_COVERAGE` (<60/h) on genuine trips, and M10's "no point for > 2 min" banner. Heartbeat while stationary, or judge gaps on moving time only? Docs 03/08 must change first. | M8, M10 |
+| ND-6 | Stationary trucks: 25 m `distanceInterval` produces no points while parked. That triggers `TRACKING_GAP` (>15 min) and `LOW_COVERAGE` (<60/h) on genuine trips, and M10's "no point for > 2 min" banner. Heartbeat while stationary, or judge gaps on moving time only? **Resolved in M8:** the fix is on the capture side, not in gap detection. `distanceInterval` is `0` (the OS movement gate is off, so updates keep arriving while parked) and the queue writer thins them with `shouldRecord` — a row per 25 m moved, or one keep-alive per 5 min parked, comfortably under the 15-min gap. The extra OS wake-up while parked is the cost, to be measured against PRD §9 in M10's field test. Docs 03/08 still need the wording change. | M8, M10 |
 | ND-7 | If the Mappls spike fails on Expo SDK 57 / RN 0.87, is pinning an older Expo SDK acceptable? | M1 pinning, M3 |
 
 ### 2.2 Contradictions and gaps between docs (ND-8…ND-24)
 | ID | Conflict | Where | Proposed resolution (needs approval) |
 |---|---|---|---|
-| ND-8 | **Point-upload poison batch / clock skew.** RLS rejects rows with device time > server now + 2 min or < `started_at` − 1 min. One bad row fails the whole 200-row upsert, and the uploader then retries forever. | 0001 `points_driver_insert` vs TRD §4.3 / doc 13 P9 uploader | New migration: upload through an RPC that filters/clamps invalid rows and reports them, *or* the uploader quarantines rejected rows. Decide before M8. |
+| ND-8 | **Point-upload poison batch / clock skew.** RLS rejects rows with device time > server now + 2 min or < `started_at` − 1 min. One bad row fails the whole 200-row upsert, and the uploader then retries forever. **Resolved in M8 by quarantining, not by a migration:** rows provably outside the window (`started_at` − 1 min) are dropped before sending, and if the server still rejects a batch the uploader re-sends it row by row and quarantines the rows that fail (`quarantined` + `quarantine_reason` on the local `point_queue`), so a poison row is never retried while the good points still land. A quarantined row leaves `received < expected_points`, so the trip is flagged `MISSING_POINTS` rather than silently verified — the honest outcome. | 0001 `points_driver_insert` vs TRD §4.3 / doc 13 P9 uploader |
 | ND-9 | Folder layout differs. CLAUDE.md: `src/features/tracking` + `src/tracking/`, `config.ts` and `db.ts` in `src/lib/`. TRD: `src/tracking/config.ts`, adds `lib/geo.ts`, `lib/sentry.ts`. Doc 13 P9: `db.ts` in `src/tracking/`. Doc 12/13 add `src/theme/`, `plugins/`, `/dev/*` routes. | CLAUDE.md, TRD §3, doc 13 | Adopt the §1.3 layout and update CLAUDE.md/TRD to match in M1. |
 | ND-10 | Web audience: CLAUDE.md "Web is a console (admin / owner / shipper)" vs PRD §3 / doc 04 "admin-only; owner/shipper → Coming soon" | CLAUDE.md rule 8 vs PRD | Admin-only in Phase 1 (PRD wins); fix the CLAUDE.md wording. |
 | ND-11 | `SENTRY_DSN` is listed as server-only, but the RN/web app needs it in the bundle. `SENTRY_AUTH_TOKEN` (source maps) is not listed. | `.env.example` vs doc 13 P13 | Add `EXPO_PUBLIC_SENTRY_DSN`; add `SENTRY_AUTH_TOKEN` as an EAS secret. |
@@ -194,76 +194,79 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M4 — Supabase backend (Prompt 5)
 **Tasks**
-- [ ] `supabase init` / `start` (Docker, ND-4); apply `0001` **unchanged**. If it fails on this Supabase version, add a follow-up migration and explain. (0002_consent.sql already exists at the root.)
+- [x] `supabase init` / `start` (Docker, ND-4); apply `0001` **unchanged**. `0001` and `0002_consent.sql` both apply with **zero errors** on Postgres 14 + PostGIS 3 + pg_cron, so no follow-up migration was needed and nothing was edited.
 - [ ] *(Pending ND-21)* `0003_phase1_fixes.sql`: ND-8 point-upload handling, ND-12 registration, ND-13 admin trip writes + `cancel_trip`, ND-14 trips realtime, `GPS_JUMPS` threshold into `app_settings`, `admin_review_trip` not-found, `setting()` search_path
 - [ ] *(Pending ND-6)* Verification change for stationary gaps, if chosen server-side
-- [ ] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql` (helpers exist in `_helpers.psql`; **zero cases written yet**):
-  - every RLS policy
-  - every RPC error code (doc 06)
-  - every reason code (doc 08)
-  - a late point upload triggers verification
-  - the sweeper
-  - admin review increments stats exactly once
-- [ ] `supabase/seed.sql`: already exists (1 admin, 3 drivers on 919000000001/11/12/13, 3 vehicles, 4 TN/KA loads, 1 assigned trip) — verify against M4 acceptance
-- [ ] `src/lib/database.types.ts` (generated) + typed `src/lib/supabase.ts` (secure-store on native, localStorage-safe on web)
-- [ ] `docs/DEV_SETUP.md`: test phone numbers/OTP for local and hosted
+- [x] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql` — **135 cases across 4 files, all green**:
+  - [x] every RLS policy — `01_rls_policies.test.sql` (46)
+  - [x] every RPC error code (doc 06) — `02_rpc_errors.test.sql` (28)
+  - [x] every reason code (doc 08) — `03_verification_reasons.test.sql` (26)
+  - [x] a late point upload triggers verification — `04_verification_triggers.test.sql`
+  - [x] the sweeper — `04_verification_triggers.test.sql`
+  - [x] admin review increments stats exactly once — `04_verification_triggers.test.sql`
+  - [x] *(added)* `record_consent` (0002) and the `GRANT`/`REVOKE` boundary
+- [x] `supabase/seed.sql`: verified against M4 acceptance — 1 admin + 3 drivers on 919000000001/11/12/13, 3 vehicles, 4 TN/KA loads, 1 assigned trip; loads after reset
+- [x] `src/lib/database.types.ts` (generated) + typed `src/lib/supabase.ts` (secure-store on native, localStorage-safe on web)
+- [x] `docs/DEV_SETUP.md`: test phone numbers/OTP for local and hosted
 
 **Files expected:** `supabase/migrations/0002_consent.sql` (exists), `0003_*` (if approved), `supabase/tests/*.test.sql`, `supabase/seed.sql` (exists), `src/lib/database.types.ts`, `src/lib/supabase.ts`, `docs/DEV_SETUP.md`.
 
 **Acceptance**
-- `supabase db reset && supabase test db` passes
-- pgTAP proves: a driver cannot update `trips`, insert `driver_stats`, or read other drivers' trips/points; an admin can (doc 10 §1; scenario 9)
-- Error codes `TRIP_NOT_FOUND`, `TRIP_NOT_STARTABLE`, `ANOTHER_TRIP_ACTIVE`, `GPS_ACCURACY_TOO_LOW`, `OUTSIDE_PICKUP:<m>`, `TRIP_NOT_ACTIVE`, `FORBIDDEN`, `NOTE_REQUIRED`, `TRIP_NOT_IN_REVIEW` are each covered
-- All 10 reason codes in doc 08 §3 are produced by a test case
-- Scenarios 8 (sweeper → `MISSING_POINTS`), 10 (`ANOTHER_TRIP_ACTIVE`) and 12 (approve → verified, stats +1 once, event logged) pass at DB level
+- [x] `supabase db reset && supabase test db` passes — **135/135** from a clean database
+- [x] pgTAP proves: a driver cannot update `trips`, insert `driver_stats`, or read other drivers' trips/points; an admin can (doc 10 §1; scenario 9)
+- [x] Error codes `TRIP_NOT_FOUND`, `TRIP_NOT_STARTABLE`, `ANOTHER_TRIP_ACTIVE`, `GPS_ACCURACY_TOO_LOW`, `OUTSIDE_PICKUP:<m>`, `TRIP_NOT_ACTIVE`, `FORBIDDEN`, `NOTE_REQUIRED`, `TRIP_NOT_IN_REVIEW` are each covered
+- [x] All 10 reason codes in doc 08 §3 are produced by a test case
+- [x] Scenarios 8 (sweeper → `MISSING_POINTS`), 10 (`ANOTHER_TRIP_ACTIVE`) and 12 (approve → verified, stats +1 once, event logged) pass at DB level
 
 **Human checkpoints:** none in doc 13. *(Added)* Confirm Docker is running or the staging project is linked; review the migration diff before merge.
 
 ---
 
 ### M5 — Auth, roles and routing (Prompt 6)
-**Tasks**
-- [ ] S1 Splash, S2 Sign in, S3 Verify OTP, S4 Access Notice (variants: driver-on-web, owner/shipper coming soon, deactivated)
-- [ ] Phone OTP via Supabase; +91 zod validation; 30 s resend timer; error states: unregistered, wrong code, expired, rate-limited (ND-12)
-- [ ] Zustand auth store + TanStack Query profile; role gate per doc 04 §2
-- [ ] Splash checks local tracking state (stub until M8); sign-out blocked while a trip is active (stub flag)
-- [ ] Routing decision as a **pure function** + unit tests for every role × platform × state combination
-- [ ] Screens match `design/` S2/S3 via the UI kit
+**Status:** code complete; the 🧍 sign-in check is pending (it needs the Supabase keys in Settings → Environment).
 
-**Files expected:** `app/index.tsx`, `app/(auth)/{_layout,sign-in,verify}.tsx`, `app/access-notice.tsx`, `src/features/auth/{store.ts,useProfile.ts,routing.ts,routing.test.ts,schemas.ts}`.
+**Tasks**
+- [x] S1 Splash, S2 Sign in, S3 Verify OTP, S4 Access Notice (variants: driver-on-web, owner/shipper coming soon, deactivated, plus a fourth "not set up" for a session with no profile row)
+- [x] Phone OTP via Supabase; +91 zod validation; 30 s resend timer; error states: unregistered, wrong code, expired, rate-limited (ND-12, `shouldCreateUser: false`)
+- [x] Zustand auth store + TanStack Query profile; role gate per doc 04 §2
+- [x] Splash checks local tracking state (stub until M8, `src/tracking/localState.ts`); sign-out blocked while a trip is active (`signOutBlockReason`)
+- [x] Routing decision as a **pure function** + unit tests for every role × platform × state combination
+- [x] Screens match `design/` S2/S3 via the UI kit (Stitch-only extras from ND-18 — cab keypad, trust badge, fake safety claims — left out)
+
+**Files expected:** `app/index.tsx`, `app/(auth)/{_layout,sign-in,verify}.tsx`, `app/access-notice.tsx`, `src/features/auth/{store.ts,useProfile.ts,routing.ts,routing.test.ts,schemas.ts}`. *(Added: `api.ts`, `errors.ts` + test, `schemas.test.ts`, `platform.ts`, `useAuthBootstrap.ts`, `src/tracking/localState.ts`, `app/index.test.tsx`.)*
 
 **Acceptance (PRD P0-1)**
-- A registered driver who enters the OTP lands on driver home (D3, or D1 if permissions are missing)
-- An admin lands on C1
-- Unknown numbers see "Contact Namma Lorry to register"
-- Driver on web → S4 "use the mobile app"; owner/shipper → S4 "coming soon"; inactive → S4 deactivated
-- Session in secure-store on native
-- Routing unit tests pass
+- [x] A registered driver who enters the OTP lands on driver home (D3, or D1 if permissions are missing) — the decision is covered by `routing.test.ts` and the navigation by `app/index.test.tsx`; the live sign-in is the 🧍 step
+- [x] An admin lands on C1
+- [x] Unknown numbers see "Contact Namma Lorry to register"
+- [x] Driver on web → S4 "use the mobile app"; owner/shipper → S4 "coming soon"; inactive → S4 deactivated
+- [x] Session in secure-store on native (unchanged from M4; M5 keeps using the same client)
+- [x] Routing unit tests pass
 
-**Human checkpoints:** 🧍 Log in as the seeded admin and driver on web and on the phone.
+**Human checkpoints:** 🧍 Log in as the seeded admin and driver on web and on the phone (see `docs/DEV_SETUP.md` §3 for the numbers and OTPs). Needs `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` in Settings → Environment.
 
 ---
 
 ### M6 — Console shell, drivers, vehicles, Mappls proxy (Prompt 7)
 **Tasks**
-- [ ] Console layout (web): sidebar (Live, Loads, Trips, Review + count badge, Drivers, Vehicles), top bar with search + avatar menu, admin-only guard
-- [ ] C8 Drivers: table (name, phone, verified trips, verified km, last trip, status) + Add Driver drawer via Edge Function `admin-create-driver` (service role server-side, caller must be admin); ND-19 items excluded unless approved
-- [ ] C9 Vehicles: table + Add Vehicle modal (Indian registration validation, vehicle type select: 407 / 14 / 17 / 19 / 20 / 22 / 24 ft / multi-axle; owner per ND-19)
-- [ ] Edge Function `mappls-proxy` per doc 06 §4:
+- [x] Console layout (web): sidebar (Live, Loads, Trips, Review + count badge, Drivers, Vehicles), top bar with search + avatar menu, admin-only guard
+- [x] C8 Drivers: table (name, phone, verified trips, verified km, last trip, status) + Add Driver drawer via Edge Function `admin-create-driver` (service role server-side, caller must be admin); ND-19 items excluded unless approved
+- [x] C9 Vehicles: table + Add Vehicle modal (Indian registration validation, vehicle type select: 407 / 14 / 17 / 19 / 20 / 22 / 24 ft / multi-axle; owner per ND-19)
+- [x] Edge Function `mappls-proxy` per doc 06 §4:
   - verify JWT and `is_admin()`
   - actions `autosuggest`, `geocode`, `reverse`, `distance`
   - normalised shapes, per-user rate limit, secrets from `supabase secrets`
   - research the current Mappls REST auth and note it in the function README
-- [ ] `src/lib/mappls.ts` typed client
-- [ ] Deno tests for both functions with mocked Mappls responses
+- [x] `src/lib/mappls.ts` typed client
+- [x] Deno tests for both functions with mocked Mappls responses
 
-**Files expected:** `app/(console)/_layout.tsx`, `app/(console)/drivers/index.tsx`, `app/(console)/vehicles/index.tsx`, `supabase/functions/mappls-proxy/{index.ts,README.md,*_test.ts}`, `supabase/functions/admin-create-driver/{index.ts,*_test.ts}`, `src/lib/mappls.ts`, `src/features/{drivers,vehicles}/*`.
+**Files expected:** `app/(console)/_layout.tsx`, `app/(console)/drivers/index.tsx`, `app/(console)/vehicles/index.tsx`, `supabase/functions/mappls-proxy/{index.ts,README.md,*_test.ts}`, `supabase/functions/admin-create-driver/{index.ts,*_test.ts}`, `src/lib/mappls.ts`, `src/features/{drivers,vehicles}/*`. *(Added: `supabase/functions/mappls-proxy/proxy.ts` + `deno.json`; `supabase/functions/admin-create-driver/{driver.ts,README.md}`; `src/features/console/searchStore.ts`; `src/components/console/UserMenu.tsx`; `src/i18n/i18n.test.ts`; `src/features/auth/splash.test.tsx`, moved out of `app/`.)*
 
 **Acceptance**
-- A non-admin JWT gets 403 from both functions
-- The service role key appears nowhere in the client bundle (grep)
-- Admin adds a driver, who can then sign in (ties to P0-1)
-- Deno tests pass
+- [x] A non-admin JWT gets 403 from both functions
+- [x] The service role key appears nowhere in the client bundle (grep)
+- [ ] Admin adds a driver, who can then sign in (ties to P0-1) — blocked on the 🧍 below
+- [x] Deno tests pass (35)
 
 **Human checkpoints:** 🧍 Set Mappls REST secrets in Supabase, deploy functions, try autosuggest.
 
@@ -271,48 +274,48 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M7 — Loads and assignment (Prompt 8)
 **Tasks**
-- [ ] C3 Create Load:
+- [x] C3 Create Load:
   - pickup/drop autosuggest via proxy, draggable pin
   - radius slider 100–2,000 m (default 500) drawn as a circle
   - material, weight, shipper (ND-19), notes
   - on save, fetch planned distance → `planned_distance_m`
   - load code generated by the DB
-- [ ] C4 Load Detail & Assign: both geofences + planned route; driver search with verified stats and a busy warning; vehicle select; creates a `trips` row; shows the resulting trip
-- [ ] C2 Loads and C5 Trips: server-side pagination, filters, search; status chips; load status derived (ND-20)
-- [ ] Shared zod schemas `src/features/loads/schemas.ts`
-- [ ] Playwright test: admin creates a load and assigns it
+- [x] C4 Load Detail & Assign: both geofences + planned route; driver search with verified stats and a busy warning; vehicle select; creates a `trips` row; shows the resulting trip
+- [x] C2 Loads and C5 Trips: server-side pagination, filters, search; status chips; load status derived (ND-20)
+- [x] Shared zod schemas `src/features/loads/schemas.ts`
+- [x] Playwright test: admin creates a load and assigns it
 
-**Files expected:** `app/(console)/loads/{index,new,[id]}.tsx`, `app/(console)/trips/index.tsx`, `src/features/loads/*`, `src/features/trips/*` (console queries), `e2e/create-load.spec.ts`, `playwright.config.ts`.
+**Files expected:** `app/(console)/loads/{index,new,[id]}.tsx`, `app/(console)/trips/index.tsx`, `src/features/loads/*`, `src/features/trips/*` (console queries), `e2e/create-load.spec.ts`, `playwright.config.ts`. *(Added: `src/features/loads/{AddressPicker.tsx,useLoads.ts,schemas.test.ts}`; `src/features/trips/useTrips.test.ts`; `src/components/console/{Pager,FilterTabs,SearchSelect,LoadStatusChip}.tsx`; `e2e/support/console.ts`.)*
 
 **Acceptance (PRD P0-2, P0-3)**
-- Load ID format `NL-YYYY-NNNNNN`; pickup/drop via autosuggest or pin; radius default 500 m; material and weight optional; planned distance fetched from Mappls
-- One driver + one vehicle per trip; one open trip per load (DB index)
-- Admin creates a load end-to-end in < 2 min (doc 01 W2)
-- Playwright spec passes
+- [x] Load ID format `NL-YYYY-NNNNNN`; pickup/drop via autosuggest or pin; radius default 500 m; material and weight optional; planned distance fetched from Mappls
+- [x] One driver + one vehicle per trip; one open trip per load (DB index)
+- [ ] Admin creates a load end-to-end in < 2 min (doc 01 W2) — needs a live Supabase + deployed proxy (blocked, see the log)
+- [ ] Playwright spec passes — the spec is written, type-checked and discovered, but **skips** without the E2E credentials and a live backend
 
 **Human checkpoints:** none in doc 13.
 
 ---
 
 ### M8 — Tracking engine, core without UI (Prompt 9)
-**Prerequisite decisions:** ND-6 (stationary heartbeat) and ND-8 (poison batch) must be resolved first.
+**Prerequisite decisions:** ND-6 (stationary heartbeat) and ND-8 (poison batch) — **both resolved in M8**; see the decision register for the chosen answers.
 
 **Tasks**
-- [ ] `config.ts`: `TRACKING_OPTIONS` from TRD §4.2 (adjusted per ND-6)
-- [ ] `db.ts` / `queue.ts`: `trip_state {trip_id, state, next_seq, started_at, ended_at, end_lat, end_lng, end_accuracy}` + `point_queue` (TRD §4.3); seq persisted and never reused
-- [ ] `task.ts`: `TaskManager.defineTask` at module top level, imported first in `app/_layout.tsx`; maps LocationObject → rows (incl. `mocked`); fast, never throws
-- [ ] `uploader.ts`: every 30 s + NetInfo reconnect + app foreground; ≤ 200 rows; upsert `onConflict: 'trip_id,seq', ignoreDuplicates`; mark uploaded; exponential backoff with jitter; single-flight; ND-8 handling
-- [ ] `stateMachine.ts`: pure reducer IDLE → TRACKING → ENDING → ENDED / ENDED_PENDING_SYNC; side effects:
+- [x] `config.ts`: `TRACKING_OPTIONS` from TRD §4.2 (adjusted per ND-6) — `distanceInterval` is `0` and the movement gate moved into `shouldRecord`
+- [x] `db.ts` / `queue.ts`: `trip_state {trip_id, state, next_seq, started_at, ended_at, end_lat, end_lng, end_accuracy}` + `point_queue` (TRD §4.3); seq persisted and never reused — plus the ND-8 `quarantined` / `quarantine_reason` columns
+- [x] `task.ts`: `TaskManager.defineTask` at module top level, imported first in `app/_layout.tsx`; maps LocationObject → rows (incl. `mocked`); fast, never throws
+- [x] `uploader.ts`: every 30 s + NetInfo reconnect + app foreground; ≤ 200 rows; upsert `onConflict: 'trip_id,seq', ignoreDuplicates`; mark uploaded; exponential backoff with jitter; single-flight; ND-8 handling
+- [x] `stateMachine.ts`: pure reducer IDLE → TRACKING → ENDING → ENDED / ENDED_PENDING_SYNC; side effects:
   - `startTrip(tripId)`: fresh fix → `start_trip` → persist → `startLocationUpdatesAsync`; never start if the RPC fails
   - `endTrip()`: stop → persist ENDING → flush → `end_trip`; offline → ENDED_PENDING_SYNC
   - `resumeOnLaunch()`
-- [ ] `errors.ts`: typed RPC errors (`OUTSIDE_PICKUP:<m>` parsed to metres, etc.)
-- [ ] Delete uploaded rows once the trip is final (TRD §4.3)
-- [ ] `/dev/tracking`: queue counts, state, last point, simulate points on web
-- [ ] Wire the real resume check into S1 Splash (replaces the M5 stub)
-- [ ] Unit tests: reducer transitions, seq persistence, idempotent upload, backoff, error parsing, offline end → later sync, resume after kill
+- [x] `errors.ts`: typed RPC errors (`OUTSIDE_PICKUP:<m>` parsed to metres, etc.)
+- [x] Delete uploaded rows once the trip is final (TRD §4.3)
+- [x] `/dev/tracking`: queue counts, state, last point, simulate points on web — the simulator runs the same `selectPoints` gate the task runs
+- [x] Wire the real resume check into S1 Splash (replaces the M5 stub) — the resume runs in the launch bootstrap that S1's gate reads, because it must complete before the gate decides and must run once, not per render
+- [x] Unit tests: reducer transitions, seq persistence, idempotent upload, backoff, error parsing, offline end → later sync, resume after kill — 109 tests in `src/tracking/*.test.ts`
 
-**Files expected:** `src/tracking/{config,db,queue,task,uploader,stateMachine,errors,permissions}.ts` + `__tests__/`, `app/dev/tracking.tsx`.
+**Files expected:** `src/tracking/{config,db,queue,task,uploader,stateMachine,errors,permissions}.ts` + `__tests__/`, `app/dev/tracking.tsx`. Built as expected, plus `src/tracking/service.ts` (the composition root that supplies the real Supabase/location/SQLite dependencies to the injected service) and a rewritten `src/tracking/localState.ts` (the M5 stub's real reader).
 
 **Acceptance (PRD P0-6, P0-7, P0-9 core)**
 - Points every ~10 s / 25 m while in progress (or per ND-6)
@@ -465,10 +468,10 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 
 | ID | Screen | Platform | Route | Milestone | Design ref | Built |
 |---|---|---|---|---|---|---|
-| S1 | Splash | mobile + web | `app/index.tsx` *(ND-23)* | M5 (resume logic M8) | — | ☐ |
-| S2 | Sign in | mobile + web | `app/(auth)/sign-in.tsx` | M5 | `1._sign_in` | ☐ |
-| S3 | Verify OTP | mobile + web | `app/(auth)/verify.tsx` | M5 | `2._verify_otp` | ☐ |
-| S4 | Access Notice (3 variants) | mobile + web | `app/access-notice.tsx` *(ND-23)* | M5 | — | ☐ |
+| S1 | Splash | mobile + web | `app/index.tsx` *(ND-23)* | M5 (resume logic M8) | — | ☑ |
+| S2 | Sign in | mobile + web | `app/(auth)/sign-in.tsx` | M5 | `1._sign_in` | ☑ |
+| S3 | Verify OTP | mobile + web | `app/(auth)/verify.tsx` | M5 | `2._verify_otp` | ☑ |
+| S4 | Access Notice (3 variants) | mobile + web | `app/access-notice.tsx` *(ND-23)* | M5 | — | ☑ |
 | D1 | Location Permission | Android + iOS | `app/(onboarding)/permissions.tsx` | M9 | `3._location_permission` | ☐ |
 | D2 | Battery Setup | Android | `app/(onboarding)/battery.tsx` | M9 | `4._battery_setup` | ☐ |
 | D3 | My Trips | Android + iOS | `app/(driver)/index.tsx` | M9 | `5._my_trips_home` | ☐ |
@@ -478,22 +481,22 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | D7 | Trip History | Android + iOS | `app/(driver)/history.tsx` | M11 | `9._trip_history_tab` | ☐ |
 | D8 | My Profile | Android + iOS | `app/(driver)/profile.tsx` | M11 | `10._my_profile_tab` | ☐ |
 | C1 | Live Dashboard | web | `app/(console)/index.tsx` | M11 | — | ☐ |
-| C2 | Loads | web | `app/(console)/loads/index.tsx` | M7 | — | ☐ |
-| C3 | Create Load | web | `app/(console)/loads/new.tsx` | M7 | — | ☐ |
-| C4 | Load Detail & Assign | web | `app/(console)/loads/[id].tsx` | M7 | — | ☐ |
-| C5 | Trips | web | `app/(console)/trips/index.tsx` | M7 | — | ☐ |
+| C2 | Loads | web | `app/(console)/loads/index.tsx` | M7 | — | ☑ |
+| C3 | Create Load | web | `app/(console)/loads/new.tsx` | M7 | — | ☑ |
+| C4 | Load Detail & Assign | web | `app/(console)/loads/[id].tsx` | M7 | — | ☑ |
+| C5 | Trips | web | `app/(console)/trips/index.tsx` | M7 | — | ☑ |
 | C6 | Trip Detail & Review | web | `app/(console)/trips/[id].tsx` | M11 | — | ☐ |
 | C7 | Review Queue | web | `app/(console)/review/index.tsx` | M11 | — | ☐ |
-| C8 | Drivers | web | `app/(console)/drivers/index.tsx` | M6 | — | ☐ |
-| C9 | Vehicles | web | `app/(console)/vehicles/index.tsx` | M6 | — | ☐ |
+| C8 | Drivers | web | `app/(console)/drivers/index.tsx` | M6 | — | ☑ |
+| C9 | Vehicles | web | `app/(console)/vehicles/index.tsx` | M6 | — | ☑ |
 
 | Overlay | Used on | Milestone | Built |
 |---|---|---|---|
 | End Trip confirmation sheet | D5 | M10 | ☐ |
 | "Outside pickup" sheet | D4 | M9 | ☐ |
 | Tracking-problem banner (GPS off / permission revoked) | D5 (+ D3/D4 permission loss) | M10 (permission re-check M9) | ☐ |
-| Add Driver modal/drawer | C8 | M6 | ☐ |
-| Add Vehicle modal | C9 | M6 | ☐ |
+| Add Driver modal/drawer | C8 | M6 | ☑ |
+| Add Vehicle modal | C9 | M6 | ☑ |
 | Language picker sheet | D8 (and the S2 "Change language" link) | M11 (S2 link M5) | ☐ |
 
 Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-sink` (M2), `/dev/map` (M3), `/dev/tracking` (M8).
@@ -508,11 +511,11 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 | P0-2 | Admin creates a load (auto Load ID, autosuggest/pin, radius, planned distance) | M6 (proxy), M7 | Playwright `e2e/create-load.spec.ts`; pgTAP load_code format; Deno test `mappls-proxy` `distance` |
 | P0-3 | Assign load → trip; one driver + vehicle; no two trips in progress | M7, M4 | Playwright create + assign; pgTAP unique indexes; scenario 10 (`ANOTHER_TRIP_ACTIVE`) |
 | P0-4 | Permission onboarding; Start disabled without background location | M9 | RNTL D4 disabled-state tests; 🧍 M9 onboarding on a real Android phone |
-| P0-5 | Start Trip geofence | M4 (`start_trip`), M8 (error parsing), M9 | pgTAP `OUTSIDE_PICKUP` / `GPS_ACCURACY_TOO_LOW`; unit `errors.test.ts`; scenario 4 |
-| P0-6 | Background tracking ~10 s / 25 m, screen off, persistent notification | M8, M9 | 🧍 M9 locked-phone test; field-test matrix (doc 10 §3); PRD metric completeness ≥ 95 % |
-| P0-7 | Offline buffer: local first, batched, no duplicates, survives restarts | M8 (ND-8) | Unit: seq persistence, idempotent upload, resume after kill; scenario 2 |
+| P0-5 | Start Trip geofence | M4 (`start_trip`), M8 (error parsing ☑), M9 | pgTAP `OUTSIDE_PICKUP` / `GPS_ACCURACY_TOO_LOW`; ☑ `src/tracking/errors.test.ts` (both codes + `OUTSIDE_PICKUP:<m>` → metres); scenario 4 (🧍 M9) |
+| P0-6 | Background tracking ~10 s / 25 m, screen off, persistent notification | M8 (capture ☑), M9 | ☑ `config.test.ts` (options + ND-6 heartbeat < gap); ☑ `queue.test.ts` (`shouldRecord`/`selectPoints`); 🧍 M9 locked-phone test; field-test matrix (doc 10 §3); PRD metric completeness ≥ 95 % |
+| P0-7 | Offline buffer: local first, batched, no duplicates, survives restarts | M8 (ND-8 ☑) | ☑ Unit: seq persistence across a simulated crash, idempotent upload, ≤ 200-row batch, quarantine, `resumeOnLaunch` after a kill; scenario 2 (🧍 M10 airplane-mode trip) |
 | P0-8 | Live tracking on console without refresh | M11 | Scenario 11 (≤ 60 s, ND-15); 🧍 *(added)* M11 watch-live check |
-| P0-9 | End Trip anywhere, warning off-drop, flush, works offline | M8, M10 | Unit offline end → later sync; D5/D6 component tests; scenarios 3 and 5; 🧍 M10 airplane-mode trip |
+| P0-9 | End Trip anywhere, warning off-drop, flush, works offline | M8 (core ☑), M10 | ☑ Unit: offline end → `ENDED_PENDING_SYNC` → later sync to `ENDED`; D5/D6 component tests (M10); scenarios 3 and 5; 🧍 M10 airplane-mode trip |
 | P0-10 | Server-side verification with reason codes | M4 (ND-6, ND-21) | pgTAP: every doc 08 reason code; scenarios 1, 5, 6, 7, 8 |
 | P0-11 | Admin review with note, audited | M4 (RPC), M11 (C6/C7) | pgTAP `FORBIDDEN` / `NOTE_REQUIRED` / `TRIP_NOT_IN_REVIEW`; scenario 12; Playwright review-approve |
 | P0-12 | Driver history and stats from the server only | M10 (D6), M11 (D7, D8) | pgTAP stats incremented exactly once; D6 component tests; D8 renders read-only `driver_stats` |
@@ -541,7 +544,7 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 | R15 | Stitch mocks carry scope creep and non-compliant disclosure copy | Medium | M2, M9–M11 | ND-18; `design/README.md` |
 | R16 | Chinese-OEM background killing | High | M9, M12b | D2 battery screen, foreground service, gap detection, field matrix (doc 01 §5) |
 | R17 | Store reviews (Play background location, iOS "Always") | Medium | M12c | Submit the declaration and video by W4 (PRD §9) |
-| R18 | pgTAP suite unwritten (helpers only) | Medium | M4 | M4 deliverable |
+| R18 | pgTAP suite unwritten (helpers only) | ~~Medium~~ **Closed in M4** — 135 cases | — | Done |
 
 ---
 
@@ -574,3 +577,65 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Verified:** `tsc --noEmit`, `eslint --max-warnings=0`, `prettier --check` all clean; **31/31** tests pass (12 new geo tests). `expo prebuild --clean` applies the plugin cleanly and idempotently (maven repo + Podfile hook inserted once each) and emits clear warnings when the `.olf`/`.conf` files are absent; generated `android/` + `ios/` were removed again so the plugin re-applies on the next prebuild. Freebuff preview bundles the web app (HTTP 200) with `sdk.mappls.com` present and the native SDK **absent** from the web bundle; the Android bundle also compiles (HTTP 200, Mappls SDK source resolved). Grep confirms no non-Mappls map/tile libraries.
 - **Left:** the 🧍 device step — add the Mappls credentials (ND-2), then `npx expo run:android` / `eas build --profile development` and confirm the map on a real phone and on web. iOS needs ND-3 (Apple account + device); web rendering needs `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY` set. Commands are listed in the M3 session summary.
 - **Known issues:** (1) The `.olm/.olf` files are per-app secrets and are not in the repo — a prebuild without them produces a Gradle/CocoaPods failure (by design; the plugin warns earlier). (2) The web SDK's click payload shape is undocumented; `parseMapClick` accepts the known variants and `onPress` is a no-op if none match. (3) `map.destroy()` is undocumented on the web SDK, so the web component clears its container node on unmount. (4) `/dev/map` is not `__DEV__`-gated until M12a.
+
+### 2026-09-27 · M4 (Prompt 5) — Supabase backend
+- **Changed (schema):** `0001_phase1_schema.sql` and `0002_consent.sql` both apply **unchanged with zero errors** against Postgres 14 + PostGIS 3 + pg_cron, so the “create a follow-up migration instead of editing 0001” escape clause was not needed. `seed.sql` verified: profiles=4, vehicles=3, loads=4, trips=1, with `load_code_seq` seeded at 141 so codes match the DESIGN.md sample data (NL-2026-000142/143).
+- **Changed (tests):** wrote the whole pgTAP suite that M4 owed — **135 cases in 4 files**, all passing. `01_rls_policies` (46) proves every policy from 0001 for anon, driver A, driver B, owner, shipper and admin, in both the blocked and the allowed direction, and that `verify_trip` / `apply_verified_stats` / `sweep_unverified_trips` are not callable by clients. `02_rpc_errors` (28) produces every docs/06 §1 code from a real call, including `OUTSIDE_PICKUP:<metres>` with the distance computed by `st_distance` and matched exactly. `03_verification_reasons` (26) produces all 10 docs/08 §3 codes one at a time, asserts each is the *only* reason raised, then pins the set to the documented list so a new rule in `verify_trip` without a matching case fails the suite. `04_verification_triggers` (35) covers the `trip_points` AFTER INSERT trigger (a late batch reaching `expected_points` starts verification), the pg_cron sweeper (cron job registered; 6 h grace period honoured; a re-sweep does not double-credit), admin review crediting `driver_stats` exactly once whichever path got the trip there (a second approve is refused, an already-verified trip is unreviewable, a rejection pays out nothing), and `record_consent` including its `REVOKE`d anon path.
+- **Changed (app):** added `src/lib/database.types.ts` (generated from the live catalogue — 9 tables, 18 functions, 2 enums, plus `Tables`/`Enums` helpers, `UserRole`, `TripStatus` and the `VERIFICATION_REASONS` union from docs/08 §3) and `src/lib/supabase.ts` (typed `SupabaseClient<Database>`; session in `expo-secure-store` on native, a `localStorage` adapter on web that degrades to “not remembered” when storage is missing, blocked or over quota; `detectSessionInUrl` only on web). Added `src/lib/supabase.test.ts`. Wrote `docs/DEV_SETUP.md`.
+- **Notable decisions:** (a) `pg_prove` cannot discover a directory here, so CI or a developer must pass the four files explicitly — **see known issues**. (b) `set_config('role', …)` cannot run inside a `SECURITY DEFINER` function and an invoker-security function cannot `SET ROLE` back, so the role helpers stay invoker-security and test files return to the runner with a statement-level `set local role postgres;`. (c) `throws_ok` matches messages **exactly**, not by regex, so the 4-argument form is used throughout. (d) psql does **not** substitute `:variables` inside a dollar-quoted literal, so the two cases that need a runtime trip id build their SQL with `format()`. (e) A trip must be aged as a whole (`started_at`, `ended_at` *and* every point) to simulate the sweeper — backdating `ended_at` alone leaves every point outside `[started_at, ended_at]` and `verify_trip` reads that as a trip with no track.
+- **Verified:** migrations + seed re-applied from a dropped database, then **135/135** pgTAP cases green. `tsc --noEmit`, `eslint --max-warnings=0`, `prettier --check` clean; **37/37** Jest tests pass (6 new for the storage adapters). The storage unit test caught a real bug while it was being written — the first version guarded only *access* to `localStorage`, not the `setItem` call, which throws on quota and would have crashed the web console.
+- **Left:** `0003_phase1_fixes.sql` (ND-21: ND-8, ND-12, ND-13, ND-14, `GPS_JUMPS` into `app_settings`, `admin_review_trip` not-found, `setting()` search_path) and the ND-6 stationary-gap decision — both still blocked on approval. The secret key for the hosted project was supplied redacted, so nothing was verified against the hosted project; the client is written against env vars only. The publishable key still needs to go into Settings → Environment.
+- **Known issues:** (1) **This sandbox has no Docker and no `supabase` CLI**, so `supabase db reset && supabase test db` could not be run verbatim. The suite was executed against a locally provisioned Postgres 14 + PostGIS + pg_cron + pgTAP driven by `pg_prove`, with a throwaway shim supplying the roles, `auth` schema and `supabase_realtime` publication that a real Supabase project provides. The migrations and seed are unchanged and standard, but **the exact `supabase test db` invocation is still unverified** and should be run once on a machine with Docker. (2) Consequently `.github/workflows/ci.yml` still runs only install/typecheck/lint/format/test — adding `supabase test db` needs a Docker-enabled runner, and that is a gap to close rather than a decision. (3) `pg_prove` silently reports `NOTESTS` for a directory argument in this setup; the four test paths are listed explicitly. (4) `env.example` still carries the M1 note (the sandbox blocks the leading-dot name).
+
+### 2026-09-27 · M5 (Prompt 6) — auth, roles and routing
+- **Changed (the gate):** `src/features/auth/routing.ts` is the whole of docs/04 §2 as one pure function — `decideRoute({ session, platform, profile, profileSettled, activeTripId })` returning a `RouteDecision`, plus `routePath`, `parseAccessNoticeVariant` and `signOutBlockReason`. It imports no react-native, no Supabase and no router, so `routing.test.ts` covers all 12 role × platform combinations, both account states, the three session states and the active-trip branch without a renderer. `app/index.tsx` (S1) consumes it and `app/index.test.tsx` proves the screen actually navigates on the decision (7 cases, mocked router). Two states the doc-04 flowchart does not draw are handled and documented: a deactivated account is refused before the role is read, and a session with no profile row gets the S4 "not set up" notice instead of a screen reading a null role.
+- **Changed (auth):** `signInWithOtp({ shouldCreateUser: false })` implements the ND-12 registration gate, so an unknown number comes back as the "Contact Namma Lorry to register" state. `src/features/auth/errors.ts` maps every Supabase failure onto one of eight codes (unregistered, wrong code, expired, rate-limited, network, invalid, not configured, unknown) and the screens only ever branch on a code. `store.ts` (zustand) owns the session, the pending OTP, the 30 s resend deadline and the attempts counter (3, mirroring what Supabase accepts); `useProfile.ts` owns the profile as a TanStack Query; `useAuthBootstrap.ts` runs once from the root layout and resolves the session plus the local tracking state. `src/tracking/localState.ts` is the M5 stub for the local trip flag S1 checks first — M8 replaces one function body with the real SQLite reader. New `EXPO_PUBLIC_{ANDROID,IOS}_STORE_URL` config drives the two store buttons on S4; they stay hidden (behind an "ask your transport manager" note) until the app is published.
+- **Changed (screens):** S2, S3 and S4 are real screens built from the UI kit (no raw hex, 48–64 px targets, doc 12's copy and layout). Out-of-scope Stitch extras were left out per ND-18: the cab keypad, the "Protected by Namma Fleet Safety Network" badge, the fake AIS-140 / 24-7 footer and the dispatch phone number. S2 also carries the M5 half of the language overlay (globe row → bottom sheet over en/ta/kn/hi). All new copy lives in `src/i18n/` with `TODO:` stubs in ta/kn/hi.
+- **Notable decisions:** (a) `src/lib/supabase.ts` no longer **throws** at import when the keys are missing — it logs loudly instead. M4 threw, which was harmless while nothing imported the module, but the splash now does, and a throw there is the white screen that file's own comment says it is trying to avoid. A missing backend now means "nobody is signed in" plus a clear message on S2. (b) The resend countdown is derived during render from a deadline rather than mirrored into state, so a fresh resend shows immediately instead of after the next tick. (c) An admin is routed to the console on every platform: doc 04 §2 has no platform branch for admin, and ND-10 keeps the console admin-only. (d) Only the splash and the `(auth)` group are guarded — a signed-in driver can still type a console URL, but those screens are M1 placeholders, RLS blocks the data, and the console guard belongs in M6.
+- **Verified:** `tsc --noEmit`, `eslint --max-warnings=0` and `prettier --check` clean; **97/97** Jest tests pass (60 new across `routing.test.ts`, `schemas.test.ts`, `errors.test.ts` and `app/index.test.tsx`). The web and Android Metro bundles both compile (HTTP 200) with the new screens. Two of the new tests caught real bugs while being written: `phoneSchema` used `z.string().trim()`, which in zod 4 validates *before* trimming, and the error map missed Supabase's "Unable to validate phone number" wording.
+- **Left:** the 🧍 sign-in step — nothing in the environment has `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`, so no OTP could actually be sent. The `shouldCreateUser: false` gate also needs a real `auth.users` row to prove "unknown number refused" end to end. M6 still owes the admin-only console guard and `admin-create-driver`, which is now the only way to add a driver.
+- **Known issues:** (1) **Android SMS auto-read is not built** (doc 04 §4 A2, "auto-read on Android if available"): it needs the SMS Retriever API, which has no Expo module in this dependency set, so S3 is manual entry only. (2) The local tracking stub is a flag in session storage, so "resume the trip" can only be exercised from a test or the M8 dev screen; the routing for it is already in place. (3) The hosted Supabase OTP path has never been exercised — see the M4 note about the redacted secret key. (4) `env.example` still carries the M1 note. (5) `docs/PHASE1_TASKS.md` is now larger than the file editor's ~50 KB read window, so its progress log has to be appended from the shell.
+
+### 2026-09-27 · M6 (Prompt 7) — console shell, drivers, vehicles, Mappls proxy
+- **Changed (console shell):** `app/(console)/_layout.tsx` is the M5-owed admin guard. A profile that is not an active admin is redirected back to S1 (`SCREENS.S1.route`) instead of duplicating the role logic a second time — S1 already routes by role, and RLS is the actual boundary, so the guard is a convenience rather than the enforcement. Around it: the sidebar (Live, Loads, Trips, Review with a live count badge from `useReviewQueueCount`, Drivers, Vehicles), a top bar with a search field, and `src/components/console/UserMenu.tsx` (avatar, name, role, sign-out). `usePathname()` does not see route groups, so `NAV_ITEMS` carries an explicit `path` and the active item is the longest prefix match; the `route` stays for the `SCREENS` registry. New `src/features/console/searchStore.ts` holds the query so the field survives navigation. `AuthProfile` gained `fullName` for the menu.
+- **Changed (C8/C9):** `app/(console)/drivers/index.tsx` is a `DataTable` (name, phone, verified trips, verified km, last trip, status) with an Add Driver `Drawer`; `app/(console)/vehicles/index.tsx` is the same table with an Add Vehicle `ConsoleModal` (registration + the eight doc-12 vehicle types). Both join their related rows in TypeScript from three parallel reads, because the generated `Database` types have no reverse relationships and a nested `select` would not typecheck. Validation lives in `src/features/{drivers,vehicles}/schemas.ts`: `normalisePhoneInput` mirrors the Edge Function exactly, and `REGISTRATION_PATTERN` is the Indian `SS DD SSS NNNN` form (upper-cased, separators dropped, stored as `TN 23 BK 4521`) — a typo there creates a second "same" truck instead of an error, because `vehicles.registration_no` is UNIQUE.
+- **Changed (functions):** both functions are split into a framework-free core plus a thin `index.ts` that wires the Supabase clients and `Deno.serve`, so the logic is testable without a runtime. `mappls-proxy/proxy.ts` holds the four URL builders, the four normalisers, a sliding-window `createRateLimiter` and `handleProxy`; the envelope is `{ result }` or `{ error: { code, message } }` with `UNAUTHENTICATED`/`FORBIDDEN`/`RATE_LIMITED`/`BAD_REQUEST`/`NOT_FOUND`/`METHOD_NOT_ALLOWED`/`MAPPLS_NOT_CONFIGURED`/`MAPPLS_BAD_RESPONSE`/`MAPPLS_UPSTREAM_ERROR`. Rate limit is 60 calls per user per minute in memory (60-second lifetime per function instance — the multi-instance caveat is in the README). `is_admin()` is always called **as the caller** (anon client + the caller's JWT), never with the service role, so the check cannot be satisfied by a privileged client. `admin-create-driver` writes `auth.users` with the service role and then updates `profiles`; `index.ts` is the only file in the repo that reads `SUPABASE_SERVICE_ROLE_KEY`.
+- **Notable decisions:** (a) **Mappls changed its REST auth in Aug 2025**: the current model is a single static key sent as `?access_token=…`, not the OAuth2 client-credentials exchange the older docs describe (the old branch is still `auth-legacy`). Built against the current model; the README documents the legacy upgrade path and `getAccessToken` is the single place a token is read. Two other doc details that bite: the trucking distance-matrix path is **lng,lat** while autosuggest's `location` is **lat,lng**, and `latitude`/`longitude` on autosuggest suggestions are marked RESTRICTED. Rather than ship a typed field that is always null, `Suggestion.lat/lng` is `number | null` and the console geocodes the picked address for a real pin — the deliberate deviation is recorded in the README. (b) `mappls-proxy` is built and unit-tested but nothing calls it yet; C3 (load creation) is M7, so the first live use of autosuggest is still ahead. (c) ND-19 items are excluded as specified: no invite SMS on Add Driver, no permission dot, `owner_id` left null on vehicles. (d) `app/index.test.tsx` moved to `src/features/auth/splash.test.tsx` — **Expo Router turns every `.tsx` file in `app/` into a route and does not skip `*.test.tsx`**, so the M5 test file was being bundled into the app and evaluated at start-up, throwing `expect is not defined` inside the router. It was the only test in `app/`; every other test already lives in `src/`.
+- **Verified:** `tsc --noEmit`, `eslint --max-warnings=0` and `prettier --check` clean; **114/114** Jest tests pass (15 suites, including new `src/features/{drivers,vehicles}/schemas.test.ts` and an `src/i18n/i18n.test.ts` that enforces key parity across en/ta/kn/hi, TODO-marked stubs and no empty English strings); **35/35** Deno tests pass (21 proxy, 14 driver) with mocked Mappls fixtures. The web (1 678 modules) and Android (2 258 modules) Metro bundles both build; grepping both bundles for `SERVICE_ROLE` returns nothing, and the only client-side match in the repo is the `config.test.ts` assertion that the serialised config can never contain one. Two new tests caught real bugs: the driver name schema trimmed but did not collapse internal whitespace (the Edge Function did, so the two disagreed), and a vehicle test fixture `"TN23 B K 4521".replace(/ /g, "")` collapsed to a *valid* plate and asserted the pattern rejects it.
+- **Left:** the 🧍 checkpoint cannot run here — there are no `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` and no Mappls REST secrets, so no function is deployed, no OTP is sent and autosuggest cannot be tried live. That blocks the last acceptance item (admin adds a driver, who then signs in) and the M5 sign-in step that was already outstanding. The rate limiter is per-instance and in memory; a real deployment wants it moved to Postgres or an edge KV, which is a deliberate simplification, not an oversight.
+- **Known issues:** (1) Android SMS auto-read and `env.example` are still carried from M5. (2) `docs/PHASE1_TASKS.md` is past the file editor's read window, so this log was appended from the shell. (3) C8/C9 columns that depend on a live trip history render their empty state until there is verified data — the counts come from `verify_trip`, never from the client.
+
+### 2026-09-27 · M7 (Prompt 8) — loads, assignment and the dispatch board
+- **Changed (shared rules):** `src/features/loads/schemas.ts` is the whole of C3/C4's form contract in one place — the radius bounds, the two endpoints, the optional details, the column mapping and the status derivation — so the create form and the assign form cannot drift and the rules are testable without a renderer. It validates **form input** and a separate pure `toLoadInsert` produces the `loads` row, which is what makes "what row does this form write" a real unit test rather than a hopeful integration. `load_code` is never sent: the database generates `NL-YYYY-NNNNNN`, and a client-supplied code would break the docs/08 format check.
+- **Changed (C3):** both ends are set by autosuggest or by tapping the map. A Mappls suggestion usually arrives with **no coordinates** — the REST response marks `latitude`/`longitude` as restricted (the M6 research) — so a chosen suggestion is geocoded before it becomes a pin, and an end that could not be located keeps its address but **no point**, which the schema refuses to submit. That is deliberate: defaulting a missing point to (0, 0) would pass every range check and quietly put a geofence in the Gulf of Guinea, so `coordinatesSchema` rejects the null island outright. `planned_distance_m` comes from the `mappls-proxy` `distance` action and is checked live as the pins settle (debounced, and tagged with the point pair it belongs to) rather than only on save, so the number the admin saves is the one they just saw. If the proxy is unreachable the load is **still saved**, with a null planned distance and a visible warning: a dispatcher has to be able to create freight during a Mappls outage.
+- **Changed (C4):** assignment is a plain `insert` into `trips` under `trips_admin`, not an RPC — assigning is not a verification decision, and docs/06 keeps the RPCs for the transitions `verify_trip` and `admin_review_trip` own. The two unique indexes do the real work, so `assignErrorKey` turns each Postgres index name into a sentence an admin can act on rather than a stack trace. The driver picker shows verified trips and km from `driver_stats` and marks a driver who is `in_progress` with doc 12's warning row. A busy driver is **not** disabled: `trips_one_active_per_driver` only guards a second `in_progress` trip and `start_trip` is where that is refused, so the console warns rather than inventing an enforcement the schema does not have.
+- **Changed (C2/C5):** pagination, the status tabs, the date range and the search are all resolved in Postgres — `range()` returns one page plus the exact total, and changing a filter returns to page 1. Load status is derived from the load's latest trip (ND-20) and the same derivation drives both the chip and the tabs, so a load cannot appear under one tab with a different chip. `rejected`/`cancelled` deliberately count as **unassigned**: `trips_one_open_per_load` does not cover them, so the load is dispatchable again and "Done" would hide that. C5's verified-km column reads `tracked_distance_m`, which only `verify_trip` writes — an unverified trip shows a dash rather than the planned distance standing in for it (CLAUDE.md rule 1).
+- **Notable decisions:** (a) **"Draggable pin" is a map tap, and this is a deviation.** The shared `AppMap` contract (docs/03 §5) has no marker-drag event on either platform, so C3 moves whichever pin is selected — the two address rows act as the selector, and every tap after that nudges the same pin. The same gesture, one step less; making the contract drag-capable belongs with the M11 live-map work. (b) **The radius control is a stepper plus the doc-12 presets (100/250/500/1000/2000 m), not a drag slider.** A drag slider means a native slider module in a package that also has to build for Android and iOS, for a screen that only runs on web. Same 100–2,000 m range, in 50 m steps. (c) **C4's "planned route" is a straight line between the two geofence centres, and is labelled as one.** The Mappls `trucking` distance matrix returns a distance and a duration, not geometry, so a road polyline would have to be invented — exactly the kind of thing that must not look authoritative on a dispatch screen. The real number is the planned distance on the card. (d) ND-19 items follow the M6 decision: the shipper select stays hidden (so `shipper_id` is null) and **C5 has no CSV export** — ND-19 rates it P1 and it is the one part of doc 12 C5 with no supporting column or rule.
+- **Changed (testing):** `@playwright/test` and `@hookform/resolvers` were added; `e2e/` and `playwright.config.ts` were added to `tsconfig.json`'s include, which means **the spec is type-checked against the real `Database` types** instead of being unverified script. The spec creates an admin with the service role, promotes the profile, signs in through Supabase's REST endpoint and injects the session into `localStorage` before the app boots — the app's phone-OTP form is untouched, this is a test seam. Without `E2E_*` credentials it **skips with the missing key names** rather than failing, so a clone with no backend has a green suite instead of a red one it cannot fix.
+- **Verified:** `tsc --noEmit`, `eslint --max-warnings=0` and `prettier --check` clean; **149/149** Jest tests pass (17 suites, including 30 new in `loads/schemas.test.ts` and 5 in `trips/useTrips.test.ts`). `tsc --listFiles` confirms `e2e/create-load.spec.ts`, `e2e/support/console.ts` and `playwright.config.ts` are really in the compile. `playwright test --list` finds the spec and `playwright test` reports **1 skipped** with the reason. The web (1,645 modules) and Android (2,203 modules) Metro bundles both build; grepping both for `SERVICE_ROLE` returns nothing. Three real bugs were caught while writing this: the optional form fields did not accept `undefined` so a minimal load failed to parse; `formatDuration` rounded hours *before* choosing its branch, making the sub-hour case unreachable; and a zod fixture used a UUID whose variant nibble is invalid (`z.uuid()` was right, the fixture was not).
+- **Left:** the two acceptance items that need a running system. There is no Supabase project, no `MAPPLS_REST_KEY` and no deployed `mappls-proxy` here, so **the Playwright spec has never executed** and "admin creates a load end-to-end in < 2 min" is unmeasured. C3's autosuggest, geocode and distance paths and C4's assign path have therefore only been type-checked and bundled, never run against a backend. `mappls-proxy` still has no live caller history — M7 is its first, and that first call is the thing to watch on the 🧍 run.
+- **Known issues:** (1) The status-tab filter resolves the tab to a set of `load_id`s with one narrow query and filters `loads.id` by it. That is correct and server-side, but it is a second round trip whose result set grows with the number of open trips; a Postgres view or an RPC would be the right answer at real volume. (2) C5 has no CSV export (ND-19, P1) and C3 has no shipper select (ND-19). (3) `useDrivers` and `useAssignableDrivers` are two similar reads of the same table; they could be one parameterised query, and M11's review queue is the natural place to do it. (4) Android SMS auto-read, `env.example` and the M5/M6 sign-in checkpoint are still carried forward unchanged.
+
+### 2026-09-27 · M7 e2e bring-up — the first exercise of `mappls-proxy`, and two real bugs
+- **Goal:** get `e2e/create-load.spec.ts` running against a real backend. **Not achieved — blocked on secrets** (details in "Left"). What *was* achieved is everything around the blocker: the browser now runs, every selector the spec uses is proven against the real DOM, and `mappls-proxy` — the first thing the spec calls — was exercised over real HTTP and found two genuine bugs.
+- **Two real `mappls-proxy` bugs, found and fixed.** (1) **A restricted suggestion parsed as `(0, 0)`.** Mappls returns restricted geometry as **empty strings**, and `Number("")` is `0`, which `Number.isFinite` happily accepts — so `num()` returned `0` and the `?? item.entryLatitude` fallback never fired. The client (`AddressPicker.choose`) checks `lat !== null`, so it would have taken the point as located, **skipped the geocode entirely**, and saved a load with a geofence at the Gulf of Guinea. This is the exact failure the C3 null-island refine was written to catch, and it only caught it by luck: the proxy was on the wrong side of the contract. `num()` now rejects blank and non-numeric strings before parsing. (2) **HTTP 204 was reported as a broken response.** The Mappls search docs define 204 as "the API was a success but no results were found"; it is `ok` to `fetch` and bodyless, so the handler tried to parse an empty payload and returned `MAPPLS_BAD_RESPONSE` 502. An address Mappls simply does not know would have surfaced in the console as "map search is unavailable" — wrong, and alarming during an outage that was not happening. 204 now maps to `NOT_FOUND` (404), which the client already translates to "No match for that address."
+- **How they were found:** a new `supabase/functions/mappls-proxy/proxy_wire_test.ts` runs the **real handler over real HTTP** against a local server that speaks Mappls' documented response shapes, swapping only the origin through `deps.fetchImpl`. A mocked `fetch` never performs a URL parse or builds a query string, so the things most likely to be wrong — the path, the `access_token` placement, the `lat,lng` vs `lng,lat` orderings, blank coordinate strings, bodyless 204 — are precisely what the existing 21 stubbed tests could not see. 8 new tests, **43 Deno tests pass** total. The README now records both behaviours, and a third finding was *not* a bug: `rev-geocode` really does take `lat` and `lng` as separate parameters rather than the `location=lat,lng` pair autosuggest uses — confirmed against the current Mappls documentation and now asserted, so a future "fix" cannot silently break it.
+- **The browser now runs here.** The Playwright chromium bundle was never installed, and installing it was not enough: the sandbox is missing `libglib-2.0.so.0`, so the browser exited 127 on launch — the same missing library that had been failing the React Native DevTools since M1. `playwright install chromium` plus `playwright install-deps chromium` (the standard apt-based dependency install) fixed it; the browser now loads the app at HTTP 200 with title "Namma Lorry". **The spec still has never executed**, because it needs a backend, not a browser.
+- **Every selector in the spec is proven against the real DOM.** A browser check against the running preview confirmed that `testID` reaches the DOM as `data-testid` under react-native-web 0.21, that `page.getByTestId("sign-in-submit")` resolves, and that the app renders with no page errors. All 21 testIDs the spec references were then audited against source, including the two that are template-composed (`create-load-pickup-*` via `AddressPicker`'s `testIDPrefix`, and `assign-{driver,vehicle}-option-<uuid>` via `SearchSelect`). All resolve.
+- **One real config bug fixed:** `playwright.config.ts` passed `--port 8081` through to `expo start --web`, but `expo start --help` documents that flag as "does not apply to web" — it was being silently ignored. The command no longer pretends to set the port; `E2E_BASE_URL` remains the supported way to point at a server you already run.
+- **Verified:** `tsc --noEmit`, `eslint --max-warnings=0`, `prettier --check` clean; **149/149** Jest; **43/43** Deno (35 + 8 wire); chromium launches and loads the app; `data-testid` confirmed in the live DOM; `playwright test` reports **1 skipped** with the missing key names.
+- **Left — the blocker, which only the user can clear.** `e2e/create-load.spec.ts` cannot pass without a backend, and this environment has no way to provide one: **no environment keys are set at all**, and there is **no Docker and no Supabase CLI**, so a local Supabase stack cannot be started either. Running the spec needs `E2E_SUPABASE_URL`, `E2E_SUPABASE_ANON_KEY`, `E2E_SERVICE_ROLE_KEY`, `E2E_ADMIN_EMAIL` and `E2E_ADMIN_PASSWORD`, plus a deployed `mappls-proxy` with `MAPPLS_REST_KEY` set — and that deployment needs a real Mappls account, which is also the only way to prove the remaining unverified assumption: that Mappls' live service matches the payload shapes this code normalises.
+- **Known issues:** (1) The Playwright browsers and their system libraries are now installed in this sandbox but are **not** recorded in the repo, so a fresh clone still needs `playwright install --with-deps`; this belongs in the CI workflow, which has not been updated (it predates M7). (2) The two acceptance items from the M7 entry remain unchecked, as does the M5/M6 🧍 sign-in checkpoint. (3) Everything else carried into M7 is unchanged.
+
+### 2026-09-27 · M8 (Prompt 9) — the tracking engine, core without UI
+
+- **Changed (prerequisites):** the two decisions that blocked M8 are both resolved in code and recorded in the register. **ND-6**: the parked-truck gap is fixed on the *capture* side, not in gap detection — `distanceInterval` is `0` so the OS keeps delivering on the time cadence, and the queue writer thins the stream with `shouldRecord` (keep a row per 25 m moved, or one keep-alive per 5 min parked, well under the verifier's 15 min). **ND-8**: no new migration — the uploader drops rows it can prove are outside the RLS window (`started_at` − 1 min) and, if the server still rejects a batch, re-sends it row by row and **quarantines** the rows that fail (`quarantined` + `quarantine_reason` on the local `point_queue`), so one poison row can never wedge a trip while the good points still land.
+- **Changed (config + task):** `config.ts` is the single home for every threshold, and `config.test.ts` asserts the ND-6 invariant directly — `HEARTBEAT_MS < GAP_THRESHOLD_MS`, because if that relation ever flips a parked truck starts producing `TRACKING_GAP`. `task.ts` defines the task at module top level behind a web guard and is imported first in `app/_layout.tsx`; its body maps fixes to rows, applies the ND-6 gate, writes to SQLite and returns. It does **no network I/O** (TRD §4.2) and swallows every error, because an uncaught rejection from a task handler is how a background task stops being delivered.
+- **Changed (queue + db):** `queue.ts` owns the durable shape and the pure rules; `db.ts` is the real `expo-sqlite` implementation of the same `TrackingStore` interface, plus the in-memory one web and the tests use. `seq` is allocated with a single `UPDATE … SET next_seq = next_seq + ?` inside a transaction, so it is atomic against the background task and never reused across a crash — the test kills the process by rebuilding a store from the persisted row alone and asserts the next insert continues the sequence. Allocating a batch that then fails can only *waste* numbers, never repeat one.
+- **Changed (uploader):** `flush()` is single-flight, so the 30 s timer, a reconnect and an end-of-trip flush cannot race the `uploaded` marks. Rows go up with `onConflict: 'trip_id,seq', ignoreDuplicates: true`, which makes a retry idempotent. A network failure keeps the rows and schedules an exponential backoff with **equal jitter**; a data rejection triggers the per-row fallback that quarantines only the offending rows. Tests cover the boundaries, not the plumbing: batch cap of 200, no re-send after a restart, offline → later success, and a mid-fallback network drop that keeps what already landed.
+- **Changed (state machine):** `reduce` is pure and returns the *same object* when an event does not apply, which is what lets the service skip a redundant write; every transition and every ignored event is asserted by identity in `stateMachine.test.ts`. The service takes the store, the two RPCs, the location task and the flush as injected dependencies, so the tests drive a whole trip — including the offline end — without a device or a network. The two rules the file exists to enforce: **a failed `start_trip` never starts the task**, and **the ENDING row is written before the network is touched**, so a phone that dies mid-end still knows the trip ended and when.
+- **Changed (app wiring):** `src/tracking/service.ts` is the new composition root — the only place the app supplies the real Supabase RPCs, the location task and the SQLite store to the injected service, built lazily so importing it costs nothing. `localState.ts` is the M5 stub's real reader now: "active" means TRACKING / ENDING / ENDED_PENDING_SYNC (all three still owe the driver a screen), ENDED does not.
+- **Notable decisions:** (a) **The resume runs in the launch bootstrap, not in the S1 component body.** The M8 task said "wire it into Splash"; the bootstrap that feeds S1's gate is where it belongs, because it must complete before `decideRoute` reads `activeTripId` and it must run once rather than per render. What it must *not* do is block the gate: the local read is awaited (fast, local), the resume is not — a driver on a bad connection still reaches the app in a second, and a trip that was `ENDED_PENDING_SYNC` and syncs at launch stops routing them to the active-trip screen when the re-read lands. (b) **`distanceInterval: 0` is a deliberate deviation from TRD §4.2.** The doc's own storage estimate (~3,600 points per 10 h) is a 10-second cadence, which the 25 m movement gate cannot produce; the gate had to move. The battery consequence is real and unmeasured here — doc 10 §3 measures it in M10. (c) **A quarantined point makes the trip flagged, not silently shorter.** Leaving `received < expected_points` means `verify_trip` adds `MISSING_POINTS` → `needs_review`. Dropping a bad row without that signal would let a trip verify on incomplete data, which is exactly what a verification product must not do. (d) **`end_trip` may be called with a null end position.** The SQL column and the RPC accept null and `verify_trip` turns it into `END_OUTSIDE_DROP`; inventing a coordinate would be worse than a flagged trip. The generated types mark the parameter non-null, so the cast in `service.ts` documents that the null is intentional. (e) **`/dev/tracking`'s simulator runs the same `selectPoints` gate the task runs**, rather than adding points directly, so what the screen reports is the rule the phone applies.
+- **Tests:** 109 new tests in `src/tracking/{config,errors,queue,uploader,stateMachine}.test.ts`; the full suite is 258 across 22 suites. They cover reducer transitions and ignored events, seq persistence across a simulated crash, idempotent batch upload, backoff bounds and jitter, every error code with `OUTSIDE_PICKUP:<m>` parsed to metres, the offline end → later sync, and resume after a kill. Gates: `tsc` clean, `eslint --max-warnings=0` clean, `prettier --check` clean, Jest 258/258, Deno 43/43.
+- **Left:** the real device behaviour. A background location task cannot be exercised in this environment — it needs a development build (Mappls + `expo-location`) on an Android device — so the task's OS integration, the foreground-service notification and the ND-6 battery cost are **unverified**; the task's *logic* is tested through `selectPoints`/`toPointInput`. M9's locked-phone test and M10's field-test matrix are where those get proven. `service.ts`'s RPC wiring is type-checked against the generated `Database` types but has never run against a live Supabase, for the same missing-credentials reason as M7's e2e spec.
+- **Known issues:** (1) `HEARTBEAT_MS` (5 min) is a guess chosen to sit under the 15 min gap; the right value depends on the battery measurement in M10 and may need to move. (2) iOS ignores `timeInterval`, so the effective cadence there is the platform's own — the TRD's `deferredUpdatesInterval` is not used, and tuning it belongs with the M10 device work. (3) The ND-6 wording change in docs 03/08 is still outstanding; the register records the decision but the TRD still shows `distanceInterval: 25`. (4) A quarantined row is invisible to the driver in M8; surfacing "N points could not be uploaded" belongs on D3 (M9) alongside the sync badge. (5) M7's e2e blocker and the carried-over items (Android SMS auto-read, `env.example`'s M1 note, `playwright install --with-deps` not in CI) are unchanged.
