@@ -33,3 +33,17 @@ jobs:
 
       - name: Unit tests
         run: bun run test
+
+      # The Supabase Edge Functions have their own Deno test suite, including a
+      # wire-format suite that starts a loopback HTTP server (`--allow-net`).
+      # It needs no secrets, so it belongs here: two real `mappls-proxy` bugs
+      # (restricted geometry parsing as (0,0), and a 204 read as a broken
+      # response) were found by it and would otherwise be invisible to CI.
+      #
+      # The Playwright console spec is deliberately NOT run here: it needs a
+      # live Supabase project and a deployed `mappls-proxy` with a real
+      # `MAPPLS_REST_KEY`, so it belongs on a machine that has them, not on a
+      # PR runner. It skips with the missing key names when unconfigured.
+      - name: Edge function tests (Deno)
+        working-directory: supabase/functions
+        run: bunx deno test --allow-env --allow-net
