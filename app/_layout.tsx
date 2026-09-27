@@ -1,3 +1,10 @@
+// The background location task MUST be defined before anything else runs
+// (CLAUDE.md hard rule 4): the OS can launch the app headlessly and invoke the
+// task before a single screen renders, and `TaskManager.defineTask` only
+// registers a handler if it has already been evaluated. Importing it first
+// makes that order explicit rather than incidental.
+import "@/tracking/task";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -14,7 +21,8 @@ import { colors } from "@/theme/tokens";
 /**
  * Root layout: providers, fonts, and the auth bootstrap that resolves the
  * session and the local tracking state. `app/index.tsx` (S1) then runs the
- * routing gate. The tracking task import (CLAUDE.md hard rule 4) arrives in M8.
+ * routing gate. The background tracking task is registered by the import at the
+ * very top of this file (CLAUDE.md hard rule 4).
  */
 const queryClient = new QueryClient({
   defaultOptions: {
