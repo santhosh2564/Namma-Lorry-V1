@@ -18,6 +18,14 @@ const publicEnvSchema = z.object({
   // Required before M5 (auth) — tolerated as empty in M1 so the scaffold runs.
   EXPO_PUBLIC_SUPABASE_URL: z.string().default(""),
   EXPO_PUBLIC_SUPABASE_ANON_KEY: z.string().default(""),
+  /**
+   * Supabase's dashboard calls the browser-safe key `EXPO_PUBLIC_SUPABASE_KEY`
+   * in the React Native quickstart, while this repo has always called it
+   * `…_ANON_KEY` (the legacy name, and the one `env.example` documents). Accept
+   * both so pasting the dashboard snippet works instead of silently leaving the
+   * app showing "Supabase is not configured". They are the same value.
+   */
+  EXPO_PUBLIC_SUPABASE_KEY: z.string().default(""),
   // Required before M3 (maps).
   EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY: z.string().default(""),
   // Store links for the S4 "use the mobile app" notice. Empty until the app is
@@ -39,6 +47,18 @@ export type AppConfig = {
   iosStoreUrl: string;
   sentryDsn: string;
 };
+
+/**
+ * The browser-safe key, under either name.
+ *
+ * Exported and pure so the alias is testable without touching `process.env`.
+ */
+export function resolveSupabaseKey(env: {
+  EXPO_PUBLIC_SUPABASE_ANON_KEY?: string;
+  EXPO_PUBLIC_SUPABASE_KEY?: string;
+}): string {
+  return env.EXPO_PUBLIC_SUPABASE_ANON_KEY || env.EXPO_PUBLIC_SUPABASE_KEY || "";
+}
 
 function loadConfig(): AppConfig {
   const parsed = publicEnvSchema.safeParse(process.env);
@@ -68,7 +88,7 @@ function loadConfig(): AppConfig {
   return {
     appEnv: env.EXPO_PUBLIC_APP_ENV,
     supabaseUrl: env.EXPO_PUBLIC_SUPABASE_URL,
-    supabaseAnonKey: env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+    supabaseAnonKey: resolveSupabaseKey(env),
     mapplsMapSdkKey: env.EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY,
     androidStoreUrl: env.EXPO_PUBLIC_ANDROID_STORE_URL,
     iosStoreUrl: env.EXPO_PUBLIC_IOS_STORE_URL,

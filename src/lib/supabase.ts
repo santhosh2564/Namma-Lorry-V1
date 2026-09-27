@@ -81,7 +81,19 @@ export const webSessionStorage: SessionStorage = {
 export const sessionStorage: SessionStorage =
   Platform.OS === "web" ? webSessionStorage : secureStoreSessionStorage;
 
-export const isSupabaseConfigured = config.supabaseUrl !== "" && config.supabaseAnonKey !== "";
+/**
+ * Whether this build has both halves of a Supabase connection.
+ *
+ * Pure and exported so the gate can be tested on both sides of the transition
+ * without depending on the ambient environment: a developer with real
+ * credentials in `.env.local` and CI with none must be able to assert the same
+ * decision.
+ */
+export function isConfigured(url: string, key: string): boolean {
+  return url !== "" && key !== "";
+}
+
+export const isSupabaseConfigured = isConfigured(config.supabaseUrl, config.supabaseAnonKey);
 
 // Only used when the app is misconfigured, so that a bad release surfaces in
 // Sentry as a network error instead of a white screen on the splash route.

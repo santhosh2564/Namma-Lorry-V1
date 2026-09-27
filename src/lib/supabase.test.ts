@@ -1,7 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 
 import {
-  isSupabaseConfigured,
+  isConfigured,
   secureStoreSessionStorage,
   supabase,
   webSessionStorage,
@@ -94,25 +94,43 @@ describe("webSessionStorage", () => {
   });
 });
 
-describe("supabase client", () => {
-  it("is constructed even when Supabase is not configured", () => {
-    // config.ts tolerates empty EXPO_PUBLIC_SUPABASE_* so the scaffold runs;
-    // importing this module in a test must not blow up.
-    expect(isSupabaseConfigured).toBe(false);
-    expect(supabase).toBeDefined();
+describe("isConfigured", () => {
+  // The gate the whole app branches on, as a pure function of two strings — so
+  // it can be asserted here whatever the ambient environment holds. The sandbox
+  // now has real credentials in `.env.local`; CI has none. Both must be able to
+  // test the same decision.
+  it("needs both a URL and a key", () => {
+    expect(isConfigured("https://project.supabase.co", "sb_publishable_key")).toBe(true);
   });
 
-  it("is typed against the Phase 1 schema", async () => {
-    // Compile-time only: if Database were the untyped `any` default, a bad
-    // table or column name would not be a type error.
-    const { data, error } = await supabase
+  it("is false when either half is missing", () => {
+    expect(isConfigured("", "key")).toBe(false);
+    expect(isConfigured("https://project.supabase.co", "")).toBe(false);
+    expect(isConfigured("", "")).toBe(false);
+  });
+});
+
+describe("supabase client", () => {
+  it("constructs without throwing, configured or not", () => {
+    // config.ts tolerates empty EXPO_PUBLIC_SUPABASE_* so the scaffold runs, and
+    // an unconfigured build gets a placeholder URL instead of a crash while the
+    // module is being imported (M5). Importing it in a test must not blow up
+    // either.
+    expect(supabase).toBeDefined();
+    expect(supabase.auth).toBeDefined();
+    expect(typeof supabase.from).toBe("function");
+  });
+
+  it("is typed against the Phase 1 schema", () => {
+    // Compile-time: with the untyped default, a bad table or column name would
+    // not be a type error. The builder is deliberately not awaited — whether the
+    // request reaches a project is an environment fact, and a unit test must not
+    // depend on a reachable backend.
+    const query = supabase
       .from("trips")
       .select("id, status")
       .eq("id", "00000000-0000-0000-0000-000000000000");
 
-    // The test env has no reachable Supabase, so a transport error is the
-    // expected outcome — what matters is that the query typechecked.
-    expect(error).not.toBeNull();
-    expect(data).toBeNull();
+    expect(typeof query.then).toBe("function");
   });
 });
