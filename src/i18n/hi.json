@@ -1,0 +1,9 @@
+{
+  "common": {
+    "appName": "TODO: Namma Lorry",
+    "tagline": "TODO: Your work, verified.",
+    "offline": "TODO: You're offline — trip data is saved on your phone.",
+    "retry": "TODO: Retry",
+    "cancel": "TODO: Cancel"
+  }
+}

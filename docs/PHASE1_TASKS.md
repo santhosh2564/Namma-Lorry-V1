@@ -1,6 +1,6 @@
 # PHASE1_TASKS — Namma Lorry Phase 1 (single source of truth for progress)
 
-**Created:** 26 Sep 2026 (Prompt 1) · **Planned start:** Mon 28 Sep 2026 (doc 01)
+**Created:** 27 Sep 2026 (Prompt 1) · **Planned start:** Mon 28 Sep 2026 (doc 01)
 **How to use:**
 - Every session starts by reading `CLAUDE.md` and this file.
 - Tick boxes only when the acceptance criteria are met.
@@ -30,7 +30,7 @@ Legend: `[ ]` todo · `[x]` done · `[~]` partial · 🧍 human checkpoint (from
 | State / forms | TanStack Query, Zustand, react-hook-form + zod | CLAUDE.md |
 | i18n | i18next + react-i18next; strings in `src/i18n/` (en first; ta/kn/hi keys with TODO values) | CLAUDE.md rule 10, doc 13 P2/P13 |
 | Backend | Supabase: Postgres + PostGIS, Auth (phone OTP), Realtime, Edge Functions (Deno), pg_cron | CLAUDE.md, TRD §6 |
-| Schema | `0001_phase1_schema.sql` is applied **unchanged**; every change goes in a new migration (`0002_consent.sql`, then fixes) | doc 11 hygiene, doc 13 P5 |
+| Schema | `0001_phase1_schema.sql` is applied **unchanged**; every change goes in a new migration (`0002_consent.sql` is already written at the repo root; then `0003_phase1_fixes.sql`) | doc 11 hygiene, doc 13 P5 |
 | Verification | Only in Postgres (`verify_trip`); app km is always labelled "approx." | CLAUDE.md rule 1, doc 08 |
 | Testing | pgTAP (`supabase test db`), Jest (jest-expo) + RNTL, Playwright (web), Deno tests (edge functions), optional Maestro | doc 10 §1, doc 13 |
 | Monitoring | Sentry (`@sentry/react-native` + web), PII scrubbed | TRD §2, doc 13 P13 |
@@ -48,11 +48,10 @@ Legend: `[ ]` todo · `[x]` done · `[~]` partial · 🧍 human checkpoint (from
 | mappls-tracking-react-native | 1.0.0 | Optional, not planned |
 | eas-cli | 24.8.0 | not installed locally |
 | supabase CLI | 2.118.0 | not installed; use `npx supabase` |
-| Node (local) | 26.8.1 | Non-LTS; switch to 24 LTS if tooling misbehaves (R9) |
-| JDK (local) | 17.0.20 | correct for RN Android |
-| Android SDK (local) | platforms 30–36.1, NDK 28.2 | `ANDROID_HOME` must be set |
+| Node (sandbox) | 22.23.2 | OK for Expo tooling; the user's Windows host runs 26.8.1 (non-LTS, R9) |
+| JDK (Windows host) | 17.0.20 | correct for RN Android builds |
 
-### 1.3 Proposed folder layout (pending ND-1 relocation and ND-9 layout reconciliation)
+### 1.3 Proposed folder layout (pending ND-1 pre-flight approval and ND-9 reconciliation)
 ```
 <repo root>/
 ├─ CLAUDE.md  AGENTS.md  README.md  .env.example  .gitignore
@@ -78,20 +77,20 @@ Legend: `[ ]` todo · `[x]` done · `[~]` partial · 🧍 human checkpoint (from
 
 ## 2. Needs decision
 
-These are the audit questions still unanswered, plus contradictions found between docs. **None has been guessed.** Items marked *blocks* stop the named milestone.
+The audit's questions **have not been answered in `docs/00-repo-audit.md` as of 27 Sep 2026** (the Questions section is unchanged), so these remain open. None has been guessed. Items marked *blocks* stop the named milestone.
 
-### 2.1 Open audit questions (no answers found in `docs/00-repo-audit.md` as of 26 Sep 2026)
+### 2.1 Open audit questions (ND-1…ND-7)
 | ID | Question | Blocks |
 |---|---|---|
-| ND-1 | Relocate the repo to a path without spaces (e.g. `C:\dev\namma-lorry`) and restructure: promote the newest pack to the root, delete the verified duplicates, move `SCREENS/` → `design/` with doc-12 names? Is Desktop OneDrive-synced? | Pre-flight / M1 |
+| ND-1 | Pre-flight restructure: promote the newest pack to the root, keep root `supabase/` as canonical, move `SCREENS/` → `design/` with doc-12 names, drop verified duplicates and the nested pack + zip. Approved? | Pre-flight / M1 |
 | ND-2 | Mappls account: which credentials exist (map SDK key, REST client id/secret/key)? Is the web SDK enabled and the key domain-restricted? | M3, M6 |
 | ND-3 | iOS: Apple Developer account + physical iPhone available? If not, is M3's exit criterion (and W0's) reduced to Android + web, with iOS deferred? | M3, M12c |
-| ND-4 | Supabase: local only for now, or an existing hosted staging project to link? (Docker Desktop must be running for local.) | M4 |
+| ND-4 | Supabase: hosted staging project (recommended — works from this sandbox, which has no Docker) or local only via Docker on the Windows host? If hosted, project URL + anon key go into Keys/Environment. | M4 |
 | ND-5 | Client sign-offs: written approval of RN + Mappls; who registers drivers (admin only vs self-signup with approval); "transporter" meaning; multi-drop (assumed no); raw-GPS retention period | M5 (auth), pilot |
 | ND-6 | Stationary trucks: 25 m `distanceInterval` produces no points while parked. That triggers `TRACKING_GAP` (>15 min) and `LOW_COVERAGE` (<60/h) on genuine trips, and M10's "no point for > 2 min" banner. Heartbeat while stationary, or judge gaps on moving time only? Docs 03/08 must change first. | M8, M10 |
 | ND-7 | If the Mappls spike fails on Expo SDK 57 / RN 0.87, is pinning an older Expo SDK acceptable? | M1 pinning, M3 |
 
-### 2.2 Contradictions and gaps between docs
+### 2.2 Contradictions and gaps between docs (ND-8…ND-24)
 | ID | Conflict | Where | Proposed resolution (needs approval) |
 |---|---|---|---|
 | ND-8 | **Point-upload poison batch / clock skew.** RLS rejects rows with device time > server now + 2 min or < `started_at` − 1 min. One bad row fails the whole 200-row upsert, and the uploader then retries forever. | 0001 `points_driver_insert` vs TRD §4.3 / doc 13 P9 uploader | New migration: upload through an RPC that filters/clamps invalid rows and reports them, *or* the uploader quarantines rejected rows. Decide before M8. |
@@ -102,7 +101,7 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-13 | Admin bypass: hard rule 2 says status changes only via RPCs, but RLS `trips_admin` is `for all`, so an admin client can set `status`/`tracked_distance_m` directly with no audit or stats. No `cancel_trip` RPC exists, so `cancelled` is otherwise unreachable. | CLAUDE.md rule 2 vs 0001 | New migration: admin `select/insert` only on trips + a `cancel_trip` RPC. |
 | ND-14 | D6 needs realtime on the `trips` row, but only `trip_live` is in the `supabase_realtime` publication. | doc 13 P11 vs 0001 | Add `trips` to the publication in a migration, or poll (doc 13 allows a polling fallback). |
 | ND-15 | Live delay target: doc 01 W4 exit says "~30 s"; PRD goal 4 and doc 10 scenario 11 say "≤ 60 s". | doc 01 vs PRD | Use ≤ 60 s as acceptance, ~30 s as the target. |
-| ND-16 | Icons: DESIGN.md / doc 13 P3 say Material Symbols **Rounded**; the Stitch exports use **Outlined**. | stitch/DESIGN.md vs SCREENS | Rounded (docs win). |
+| ND-16 | Icons: DESIGN.md / doc 13 P3 say Material Symbols **Rounded**; the Stitch exports use Outlined in most files (Rounded in 3). | stitch/DESIGN.md vs SCREENS | Rounded (docs win). |
 | ND-17 | Two token palettes. The brief: primary #0F2A44, accent #F5A300, bg #F6F7F9, error #D93025. Stitch `SCREENS/namma_lorry/DESIGN.md`: primary #00152a, secondary #825500 / #feaa11, bg #f8f9ff, error #ba1a1a. | stitch/DESIGN.md vs Stitch export | Brief (`stitch/DESIGN.md`) wins; the Stitch token file is reference only. |
 | ND-18 | Stitch mocks contain out-of-scope features and non-compliant copy: FASTag, Fleet SOS, ratings, e-Way Bill, POD/settlement, "Live Trip Navigation", certification claims, and a disclosure saying location "unlocks priority loads and verified payouts". | SCREENS/* vs PRD §3, doc 09 §1 | Ignore these elements; disclosure text comes from doc 09 only. Record the list in `design/README.md`. |
 | ND-19 | Doc 12 console prompts reference data the schema lacks: **permission-health dot** on C8 Drivers, **"Send invite SMS"** toggle on Add Driver, **shipper select** on C3 and **owner select** on C9 (no way to create owner/shipper profiles), **CSV export** on C5. | doc 12 §6 vs 0001 / PRD | Suggest: drop the permission dot and the SMS invite for Phase 1; make shipper/owner optional and hidden until an admin can create those roles; CSV export optional (P1). |
@@ -110,7 +109,7 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-21 | Where verification-fix migrations land: doc 13 P5 (M4) applies 0001 unchanged plus 0002 consent only. The audit fixes (ND-8, ND-12, ND-13, ND-14, `GPS_JUMPS` into `app_settings`, `admin_review_trip` not-found, `setting()` search_path) have no milestone. | doc 13 vs audit | Add `0003_phase1_fixes.sql` to M4 (listed as optional tasks there). |
 | ND-22 | Replay slider (C6) and multi-language files are **P1** in the PRD but are built in M11 / M12a per doc 13. | PRD §6 P1 vs doc 13 | Keep them as doc 13 says (no conflict in intent). Confirm they're not release blockers. |
 | ND-23 | S1 Splash and S4 Access Notice have **no route** in the doc 04 route tree. | doc 12 vs doc 04 | `app/index.tsx` (S1) and `app/access-notice.tsx` (S4). |
-| ND-24 | The doc 13 prerequisite "put the pack in the repo root and design PNGs in `design/` named by screen ID" is not done, and there is **no git repo** although doc 13 requires a commit per prompt. | doc 13 vs folder state | Pre-flight tasks, gated on ND-1. |
+| ND-24 | The doc 13 prerequisite "put the pack in the repo root and design PNGs in `design/` named by screen ID" is not done. | doc 13 vs folder state | Pre-flight tasks, gated on ND-1. |
 
 ---
 
@@ -120,22 +119,22 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### Pre-flight (before M1; gated on ND-1, ND-24)
 - [ ] Answer ND-1…ND-7 in `docs/00-repo-audit.md`
-- [ ] Relocate the repo if approved; `git init`, `.gitignore`, first commit of docs only
-- [ ] Promote the newest pack to the root (`CLAUDE.md`, `AGENTS.md`, `.env.example`, `docs/01–13`, `supabase/`, `stitch/`); delete the verified duplicates
+- [ ] Promote the newest pack to the root (`CLAUDE.md`, `AGENTS.md`, `.env.example`, `docs/01–13`, `supabase/` content already at root, `stitch/DESIGN.md`); delete the verified duplicates
 - [ ] `SCREENS/` → `design/` renamed by doc 12 ID, plus a `design/README.md` listing ignored elements (ND-18)
-- [ ] 🧍 *(added)* Start Docker Desktop; set `ANDROID_HOME`; decide the Node version (R9)
+- [ ] Delete the old pack folder and `namma-lorry-phase1-docs.zip`
+- [ ] 🧍 *(added)* Provide the missing keys/accounts per ND-2…ND-4; on the Windows host, keep Docker Desktop + `ANDROID_HOME` set for native work
 
 ---
 
 ### M1 — Scaffold the app (Prompt 2)
 **Tasks**
-- [ ] Expo app (TS strict, Expo Router) at the repo root, latest stable SDK, **exact versions pinned** (ND-7)
-- [ ] Install: supabase-js, expo-secure-store, expo-location, expo-task-manager, expo-sqlite, @react-native-community/netinfo, expo-device, expo-application, expo-dev-client, @tanstack/react-query, zustand, zod, react-hook-form, i18next, react-i18next
-- [ ] ESLint + Prettier; path alias `@/` → `src/`; Jest (jest-expo) + RNTL; scripts `typecheck`, `lint`, `test`
-- [ ] `app.config.ts` reading `EXPO_PUBLIC_*`; `.env.example` in sync (incl. ND-11); `src/lib/config.ts` zod-validates env and fails loudly in dev
-- [ ] `eas.json` with development / preview / production profiles
-- [ ] GitHub Actions: install, typecheck, lint, test
-- [ ] Placeholder route for **every** screen in §4 (renders screen ID + title)
+- [x] Expo app (TS strict, Expo Router) at the repo root, latest stable SDK, **exact versions pinned** (ND-7)
+- [x] Install: supabase-js, expo-secure-store, expo-location, expo-task-manager, expo-sqlite, @react-native-community/netinfo, expo-device, expo-application, expo-dev-client, @tanstack/react-query, zustand, zod, react-hook-form, i18next, react-i18next
+- [x] ESLint + Prettier; path alias `@/` → `src/`; Jest (jest-expo) + RNTL; scripts `typecheck`, `lint`, `test`
+- [x] `app.config.ts` reading `EXPO_PUBLIC_*`; `.env.example` in sync (incl. ND-11); `src/lib/config.ts` zod-validates env and fails loudly in dev
+- [x] `eas.json` with development / preview / production profiles
+- [x] GitHub Actions: install, typecheck, lint, test
+- [x] Placeholder route for **every** screen in §4 (renders screen ID + title)
 - [ ] Update CLAUDE.md / TRD layout per ND-9 (after approval)
 
 **Files expected:** `package.json`, `app.config.ts`, `eas.json`, `tsconfig.json`, `babel.config.js`, `eslint.config.js`, `.prettierrc`, `jest.config.js`, `.github/workflows/ci.yml`, `src/lib/config.ts`, `app/_layout.tsx`, all route files in §4 (placeholders), `.env.example`.
@@ -193,22 +192,21 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M4 — Supabase backend (Prompt 5)
 **Tasks**
-- [ ] `supabase init` / `start` (Docker, ND-4); apply `0001` **unchanged**. If it fails on this Supabase version, add a follow-up migration and explain.
-- [ ] `0002_consent.sql`: `profiles.consent_version`, `profiles.consent_at`, SECURITY DEFINER `record_consent(p_version text)` for the current user only
+- [ ] `supabase init` / `start` (Docker, ND-4); apply `0001` **unchanged**. If it fails on this Supabase version, add a follow-up migration and explain. (0002_consent.sql already exists at the root.)
 - [ ] *(Pending ND-21)* `0003_phase1_fixes.sql`: ND-8 point-upload handling, ND-12 registration, ND-13 admin trip writes + `cancel_trip`, ND-14 trips realtime, `GPS_JUMPS` threshold into `app_settings`, `admin_review_trip` not-found, `setting()` search_path
 - [ ] *(Pending ND-6)* Verification change for stationary gaps, if chosen server-side
-- [ ] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql`:
+- [ ] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql` (helpers exist in `_helpers.psql`; **zero cases written yet**):
   - every RLS policy
   - every RPC error code (doc 06)
   - every reason code (doc 08)
   - a late point upload triggers verification
   - the sweeper
   - admin review increments stats exactly once
-- [ ] `supabase/seed.sql`: 1 admin, 3 drivers (test phone numbers), 3 vehicles, 4 loads on real TN/KA coordinates, 1 assigned trip (sample data from DESIGN.md)
+- [ ] `supabase/seed.sql`: already exists (1 admin, 3 drivers on 919000000001/11/12/13, 3 vehicles, 4 TN/KA loads, 1 assigned trip) — verify against M4 acceptance
 - [ ] `src/lib/database.types.ts` (generated) + typed `src/lib/supabase.ts` (secure-store on native, localStorage-safe on web)
 - [ ] `docs/DEV_SETUP.md`: test phone numbers/OTP for local and hosted
 
-**Files expected:** `supabase/config.toml`, `supabase/migrations/0002_consent.sql` (+ `0003_*` if approved), `supabase/tests/*.test.sql`, `supabase/seed.sql`, `src/lib/database.types.ts`, `src/lib/supabase.ts`, `docs/DEV_SETUP.md`.
+**Files expected:** `supabase/migrations/0002_consent.sql` (exists), `0003_*` (if approved), `supabase/tests/*.test.sql`, `supabase/seed.sql` (exists), `src/lib/database.types.ts`, `src/lib/supabase.ts`, `docs/DEV_SETUP.md`.
 
 **Acceptance**
 - `supabase db reset && supabase test db` passes
@@ -217,7 +215,7 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 - All 10 reason codes in doc 08 §3 are produced by a test case
 - Scenarios 8 (sweeper → `MISSING_POINTS`), 10 (`ANOTHER_TRIP_ACTIVE`) and 12 (approve → verified, stats +1 once, event logged) pass at DB level
 
-**Human checkpoints:** none in doc 13. *(Added)* Confirm Docker is running and review the migration diff before merge.
+**Human checkpoints:** none in doc 13. *(Added)* Confirm Docker is running or the staging project is linked; review the migration diff before merge.
 
 ---
 
@@ -514,7 +512,7 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 | P0-8 | Live tracking on console without refresh | M11 | Scenario 11 (≤ 60 s, ND-15); 🧍 *(added)* M11 watch-live check |
 | P0-9 | End Trip anywhere, warning off-drop, flush, works offline | M8, M10 | Unit offline end → later sync; D5/D6 component tests; scenarios 3 and 5; 🧍 M10 airplane-mode trip |
 | P0-10 | Server-side verification with reason codes | M4 (ND-6, ND-21) | pgTAP: every doc 08 reason code; scenarios 1, 5, 6, 7, 8 |
-| P0-11 | Admin review with note, audited | M4 (RPC), M11 (C6/C7) | pgTAP `FORBIDDEN` / `NOTE_REQUIRED` / `TRIP_NOT_IN_REVIEW`; scenario 12; Playwright review-approve (doc 10 §1) |
+| P0-11 | Admin review with note, audited | M4 (RPC), M11 (C6/C7) | pgTAP `FORBIDDEN` / `NOTE_REQUIRED` / `TRIP_NOT_IN_REVIEW`; scenario 12; Playwright review-approve |
 | P0-12 | Driver history and stats from the server only | M10 (D6), M11 (D7, D8) | pgTAP stats incremented exactly once; D6 component tests; D8 renders read-only `driver_stats` |
 | P0-13 | No editable experience (UI or API) | M4 (RLS, ND-13), M12a (security review) | Scenario 9; pgTAP driver cannot update trips/points/stats; `docs/HARDENING_REPORT.md` grep for client writes |
 
@@ -526,21 +524,22 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 |---|---|---|---|---|
 | R1 | Mappls RN SDK 2.0.3 (built on RN 0.79) vs Expo 57 / RN 0.87 unproven; shipped Expo plugin broken | High | M3 | Spike first; local `withMappls.ts`; fall back to an older SDK (ND-7) |
 | R2 | No Mappls account/keys | High | M3, M6 | ND-2 |
-| R3 | iOS from Windows: no Xcode; needs Apple account + physical iPhone + EAS cloud builds | High | M3, M12c | ND-3 |
-| R4 | No Supabase project; Docker daemon off; CLI not installed | Medium | M4 | ND-4; `npx supabase` |
+| R3 | iOS: no Xcode in the sandbox; Windows host → EAS cloud builds + Apple account + physical iPhone required | High | M3, M12c | ND-3 |
+| R4 | No Supabase project; Docker absent in the sandbox | Medium | M4 | ND-4; hosted staging recommended |
 | R5 | Point-upload poison batch / clock skew in RLS | High | M8 | ND-8 |
 | R6 | Stationary trucks flagged `TRACKING_GAP` / `LOW_COVERAGE` | High | M4, M8, M10 | ND-6 |
 | R7 | Driver onboarding path (auth user creation, `shouldCreateUser`) | Medium | M5, M6 | ND-5, ND-12 |
-| R8 | Repo path has a space, under Desktop (possible OneDrive) | Medium | M1+ | ND-1 |
-| R9 | Node 26 is non-LTS for Expo | Low–Med | M1 | Pin Node 24 LTS if needed |
-| R10 | `ANDROID_HOME` unset | Low | M3 | Pre-flight |
+| R8 | Three doc copies + two stale root duplicates | Medium (drift) | Pre-flight | ND-1 consolidation |
+| R9 | Node 26 non-LTS on the Windows host (sandbox runs 22) | Low–Med | M1 | Pin Node 24 LTS if tooling misbehaves |
+| R10 | `ANDROID_HOME` unset on the host (previous audit) | Low | M3 | Host-side pre-flight |
 | R11 | EAS free-tier build quota | Low | M3+ | Local Android builds |
 | R12 | Production SMS OTP needs DLT + paid provider | Medium | Pilot | Supabase test numbers until then |
-| R13 | Client sign-offs outstanding | High | M5, pilot | ND-5 |
+| R13 | Client sign-offs outstanding (RN + Mappls, thresholds, driver registration, retention) | High (contractual) | M5, pilot | ND-5 |
 | R14 | Console screens not designed | Medium | M6, M7, M11 | Build from doc 04/12 specs + UI kit |
 | R15 | Stitch mocks carry scope creep and non-compliant disclosure copy | Medium | M2, M9–M11 | ND-18; `design/README.md` |
 | R16 | Chinese-OEM background killing | High | M9, M12b | D2 battery screen, foreground service, gap detection, field matrix (doc 01 §5) |
 | R17 | Store reviews (Play background location, iOS "Always") | Medium | M12c | Submit the declaration and video by W4 (PRD §9) |
+| R18 | pgTAP suite unwritten (helpers only) | Medium | M4 | M4 deliverable |
 
 ---
 
@@ -548,12 +547,12 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 
 *Append one entry per session. Format: date · milestone · what changed · what's left · known issues.*
 
-### 2026-09-26 · Prompt 0 (audit)
-- **Changed:** Created `docs/00-repo-audit.md`. Found no app code; the doc pack, root duplicates and Stitch exports were mapped.
-- **Left:** Answers to audit questions (now ND-1…ND-7).
-- **Known issues:** Migration 0001 defects (ND-8, ND-12, ND-13, ND-14); Mappls plugin broken (R1).
+### 2026-09-27 · Prompt 1 (this plan)
+- **Changed:** Created `docs/PHASE1_TASKS.md`. A newer pack was found at `namma-lorry-phase1-docs/namma-lorry-phase1-docs/` (adds docs 12/13, `stitch/DESIGN.md`, updated doc 04); a copy of doc 13 also sits at the repo root. The refreshed audit (PR #2, merged) confirms: no app code, root `supabase/` with 0001 + already-written 0002_consent + seed + pgTAP helpers, zero pgTAP cases, no edge functions, no keys configured. No application code written.
+- **Left:** Answer ND-1…ND-7 (the audit Questions section is still unanswered), then pre-flight, then M1 (Prompt 2).
+- **Known issues:** Audit questions unanswered; three copies of the docs exist until pre-flight consolidates them; Mappls RN plugin broken (R1); stationary-gap and poison-batch decisions block M8.
 
-### 2026-09-26 · Prompt 1 (this plan)
-- **Changed:** Created `docs/PHASE1_TASKS.md`. A newer pack was found at `namma-lorry-phase1-docs/namma-lorry-phase1-docs/` (adds docs 12/13, `stitch/DESIGN.md`, updated doc 04); a copy of doc 13 also sits at the repo root. No application code written.
-- **Left:** Answer ND-1…ND-24, then pre-flight, then M1 (Prompt 2).
-- **Known issues:** Audit questions still unanswered in `docs/00-repo-audit.md`; three copies of the docs now exist (root loose files, old pack, new nested pack) until pre-flight cleans up.
+### 2026-09-27 · M1 (Prompt 2)
+- **Changed:** Scaffolded the Expo app at the repo root: pinned **Expo SDK 57** set per the `expo-template-default@sdk-57` manifest (expo ~57.0.25, react-native 0.86.3, react/react-dom 19.2.3, expo-router ~57.0.23, reanimated 4.5.1 + worklets 0.10.1, TS ~6.0.3) plus all M1 deps (supabase-js, expo-secure-store/location/task-manager/sqlite/device/application/dev-client, netinfo, TanStack Query, zustand, zod, react-hook-form, i18next + react-i18next). Added `app.config.ts`, `eas.json` (development/development-simulator/preview/production), strict `tsconfig.json` with `@/` alias, ESLint flat config (eslint-config-expo + import order), Prettier (+ `.prettierignore` protecting docs/SCREENS/supabase), Jest 29 + jest-expo + RNTL v14, `env.example` (the sandbox blocks writing `.env.example` directly — see known issues), `.github/workflows/ci.yml`, `src/lib/config.ts` (zod env validation, fails loudly in dev), `src/lib/screens.ts` (doc-12 map), theme token seed, i18n (en + ta/kn/hi TODO stubs), `PlaceholderScreen`, and placeholder routes for all 21 screens + `/dev/env`. Verified: `bunx expo-doctor` 21/21; typecheck, lint, format:check, 7/7 tests green; Freebuff managed preview serves the web app — Metro compiled 1531 modules and the bundle contains every placeholder (S2 sign-in included). M1 checkboxes ticked.
+- **Left:** ND-9 layout reconciliation of CLAUDE.md/TRD (needs approval); the 🧍 review of pinned versions; the doc-13 pre-flight consolidation (ND-1) still pending.
+- **Known issues:** (1) `env.example` is committed under that name because the workspace blocks creating `.env.example`; copy/symlink it as `.env.example` on machines that allow it. (2) React Native DevTools can't install in the sandbox (`libglib-2.0.so.0` missing) — dev-server-only annoyance, harmless for builds/CI/web. (3) RNTL v14 `render()` is async and its `screen` API conflicts with jest-expo's module instance — tests use awaited `render()` destructuring. (4) expo-doctor pinned jest to ~29.7.0 (SDK 57's expectation), not jest 30.
