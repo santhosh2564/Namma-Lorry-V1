@@ -37,6 +37,7 @@
     "expo-status-bar": "~57.0.1",
     "expo-task-manager": "~57.0.20",
     "i18next": "^26.4.2",
+    "mappls-map-react-native": "2.0.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.89.0",

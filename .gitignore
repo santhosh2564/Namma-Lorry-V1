@@ -18,6 +18,9 @@ dist/
 web-build/
 android/
 ios/
+
+# ---- Mappls licensing/config files (downloaded from the Mappls console) ----
+mappls/
 *.orig.*
 *.jks
 *.p8

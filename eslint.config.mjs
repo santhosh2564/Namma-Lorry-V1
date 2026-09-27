@@ -29,6 +29,9 @@ export default defineConfig([
         },
       ],
       "import/no-duplicates": "error",
+      // Platform-split modules (`MapView.native.tsx` / `MapView.web.tsx`) have no
+      // plain `.ts` sibling, so the resolver cannot see them.
+      "import/no-unresolved": ["error", { ignore: ["\\./MapView$"] }],
       "import/no-named-as-default-member": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       eqeqeq: ["error", "smart"],
