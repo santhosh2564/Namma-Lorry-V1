@@ -1,6 +1,33 @@
+# ---- env ----
 .env
 .env.*
 !.env.example
 
+# ---- supabase ----
 supabase/.branches/
 supabase/.temp/
+
+# ---- node / package managers ----
+node_modules/
+.npm/
+*.tsbuildinfo
+
+# ---- expo / react-native ----
+.expo/
+dist/
+web-build/
+android/
+ios/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# ---- testing ----
+coverage/
+
+# ---- editors / os ----
+.DS_Store
+*.log

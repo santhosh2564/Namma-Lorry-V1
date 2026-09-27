@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+dist/
+web-build/
+android/
+ios/
+coverage/
+package-lock.json
+bun.lock
+SCREENS/
+design/
+docs/
+supabase/
+.github/
+*.md
+*.sql
+*.html
