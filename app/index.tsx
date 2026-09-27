@@ -47,8 +47,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   logoText: { color: colors.primary, fontSize: 28, fontWeight: "800" },
-  wordmark: { color: "#FFFFFF", fontSize: 24, fontWeight: "600" },
-  tagline: { color: "rgba(255,255,255,0.7)", fontSize: 15 },
+  wordmark: { color: colors.textInverse, fontSize: 24, fontWeight: "600" },
+  tagline: { color: colors.textInverseMuted, fontSize: 15 },
   spinner: { marginTop: spacing.xl },
-  version: { color: "rgba(255,255,255,0.5)", fontSize: 12 },
+  version: { color: colors.textInverseSubtle, fontSize: 12 },
 });
