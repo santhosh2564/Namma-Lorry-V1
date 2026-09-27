@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["deno.window", "deno.ns"]
+  },
+  "fmt": {
+    "lineWidth": 100,
+    "exclude": ["tests/"]
+  }
+}

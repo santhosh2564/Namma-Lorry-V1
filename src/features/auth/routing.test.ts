@@ -25,6 +25,7 @@ function profile(overrides: Partial<AuthProfile> = {}): AuthProfile {
     id: "11111111-1111-1111-1111-111111111111",
     role: "driver",
     isActive: true,
+    fullName: "Murugan S",
     permissionsGranted: true,
     ...overrides,
   };

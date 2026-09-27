@@ -29,6 +29,7 @@ export function toAuthProfile(row: ProfileRow): AuthProfile {
     id: row.id,
     role: row.role,
     isActive: row.is_active,
+    fullName: row.full_name,
     permissionsGranted: true,
   };
 }

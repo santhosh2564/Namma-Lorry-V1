@@ -3,3 +3,4 @@ export * from "./Drawer";
 export * from "./Modal";
 export * from "./Sidebar";
 export * from "./TopBar";
+export * from "./UserMenu";

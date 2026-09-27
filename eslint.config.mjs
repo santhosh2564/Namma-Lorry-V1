@@ -38,6 +38,16 @@ export default defineConfig([
     },
   },
   {
+    // Deno Edge Functions import through `npm:` specifiers that the Node
+    // resolver cannot follow. Deno resolves them at deploy time, and
+    // `deno check` type-checks them, so the rule only produces false errors
+    // here.
+    files: ["supabase/functions/**/*.ts"],
+    rules: {
+      "import/no-unresolved": "off",
+    },
+  },
+  {
     ignores: [
       "node_modules/**",
       ".expo/**",

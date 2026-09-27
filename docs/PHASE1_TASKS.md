@@ -249,24 +249,24 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M6 — Console shell, drivers, vehicles, Mappls proxy (Prompt 7)
 **Tasks**
-- [ ] Console layout (web): sidebar (Live, Loads, Trips, Review + count badge, Drivers, Vehicles), top bar with search + avatar menu, admin-only guard
-- [ ] C8 Drivers: table (name, phone, verified trips, verified km, last trip, status) + Add Driver drawer via Edge Function `admin-create-driver` (service role server-side, caller must be admin); ND-19 items excluded unless approved
-- [ ] C9 Vehicles: table + Add Vehicle modal (Indian registration validation, vehicle type select: 407 / 14 / 17 / 19 / 20 / 22 / 24 ft / multi-axle; owner per ND-19)
-- [ ] Edge Function `mappls-proxy` per doc 06 §4:
+- [x] Console layout (web): sidebar (Live, Loads, Trips, Review + count badge, Drivers, Vehicles), top bar with search + avatar menu, admin-only guard
+- [x] C8 Drivers: table (name, phone, verified trips, verified km, last trip, status) + Add Driver drawer via Edge Function `admin-create-driver` (service role server-side, caller must be admin); ND-19 items excluded unless approved
+- [x] C9 Vehicles: table + Add Vehicle modal (Indian registration validation, vehicle type select: 407 / 14 / 17 / 19 / 20 / 22 / 24 ft / multi-axle; owner per ND-19)
+- [x] Edge Function `mappls-proxy` per doc 06 §4:
   - verify JWT and `is_admin()`
   - actions `autosuggest`, `geocode`, `reverse`, `distance`
   - normalised shapes, per-user rate limit, secrets from `supabase secrets`
   - research the current Mappls REST auth and note it in the function README
-- [ ] `src/lib/mappls.ts` typed client
-- [ ] Deno tests for both functions with mocked Mappls responses
+- [x] `src/lib/mappls.ts` typed client
+- [x] Deno tests for both functions with mocked Mappls responses
 
-**Files expected:** `app/(console)/_layout.tsx`, `app/(console)/drivers/index.tsx`, `app/(console)/vehicles/index.tsx`, `supabase/functions/mappls-proxy/{index.ts,README.md,*_test.ts}`, `supabase/functions/admin-create-driver/{index.ts,*_test.ts}`, `src/lib/mappls.ts`, `src/features/{drivers,vehicles}/*`.
+**Files expected:** `app/(console)/_layout.tsx`, `app/(console)/drivers/index.tsx`, `app/(console)/vehicles/index.tsx`, `supabase/functions/mappls-proxy/{index.ts,README.md,*_test.ts}`, `supabase/functions/admin-create-driver/{index.ts,*_test.ts}`, `src/lib/mappls.ts`, `src/features/{drivers,vehicles}/*`. *(Added: `supabase/functions/mappls-proxy/proxy.ts` + `deno.json`; `supabase/functions/admin-create-driver/{driver.ts,README.md}`; `src/features/console/searchStore.ts`; `src/components/console/UserMenu.tsx`; `src/i18n/i18n.test.ts`; `src/features/auth/splash.test.tsx`, moved out of `app/`.)*
 
 **Acceptance**
-- A non-admin JWT gets 403 from both functions
-- The service role key appears nowhere in the client bundle (grep)
-- Admin adds a driver, who can then sign in (ties to P0-1)
-- Deno tests pass
+- [x] A non-admin JWT gets 403 from both functions
+- [x] The service role key appears nowhere in the client bundle (grep)
+- [ ] Admin adds a driver, who can then sign in (ties to P0-1) — blocked on the 🧍 below
+- [x] Deno tests pass (35)
 
 **Human checkpoints:** 🧍 Set Mappls REST secrets in Supabase, deploy functions, try autosuggest.
 
@@ -487,16 +487,16 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | C5 | Trips | web | `app/(console)/trips/index.tsx` | M7 | — | ☐ |
 | C6 | Trip Detail & Review | web | `app/(console)/trips/[id].tsx` | M11 | — | ☐ |
 | C7 | Review Queue | web | `app/(console)/review/index.tsx` | M11 | — | ☐ |
-| C8 | Drivers | web | `app/(console)/drivers/index.tsx` | M6 | — | ☐ |
-| C9 | Vehicles | web | `app/(console)/vehicles/index.tsx` | M6 | — | ☐ |
+| C8 | Drivers | web | `app/(console)/drivers/index.tsx` | M6 | — | ☑ |
+| C9 | Vehicles | web | `app/(console)/vehicles/index.tsx` | M6 | — | ☑ |
 
 | Overlay | Used on | Milestone | Built |
 |---|---|---|---|
 | End Trip confirmation sheet | D5 | M10 | ☐ |
 | "Outside pickup" sheet | D4 | M9 | ☐ |
 | Tracking-problem banner (GPS off / permission revoked) | D5 (+ D3/D4 permission loss) | M10 (permission re-check M9) | ☐ |
-| Add Driver modal/drawer | C8 | M6 | ☐ |
-| Add Vehicle modal | C9 | M6 | ☐ |
+| Add Driver modal/drawer | C8 | M6 | ☑ |
+| Add Vehicle modal | C9 | M6 | ☑ |
 | Language picker sheet | D8 (and the S2 "Change language" link) | M11 (S2 link M5) | ☐ |
 
 Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-sink` (M2), `/dev/map` (M3), `/dev/tracking` (M8).
@@ -595,3 +595,12 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Verified:** `tsc --noEmit`, `eslint --max-warnings=0` and `prettier --check` clean; **97/97** Jest tests pass (60 new across `routing.test.ts`, `schemas.test.ts`, `errors.test.ts` and `app/index.test.tsx`). The web and Android Metro bundles both compile (HTTP 200) with the new screens. Two of the new tests caught real bugs while being written: `phoneSchema` used `z.string().trim()`, which in zod 4 validates *before* trimming, and the error map missed Supabase's "Unable to validate phone number" wording.
 - **Left:** the 🧍 sign-in step — nothing in the environment has `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY`, so no OTP could actually be sent. The `shouldCreateUser: false` gate also needs a real `auth.users` row to prove "unknown number refused" end to end. M6 still owes the admin-only console guard and `admin-create-driver`, which is now the only way to add a driver.
 - **Known issues:** (1) **Android SMS auto-read is not built** (doc 04 §4 A2, "auto-read on Android if available"): it needs the SMS Retriever API, which has no Expo module in this dependency set, so S3 is manual entry only. (2) The local tracking stub is a flag in session storage, so "resume the trip" can only be exercised from a test or the M8 dev screen; the routing for it is already in place. (3) The hosted Supabase OTP path has never been exercised — see the M4 note about the redacted secret key. (4) `env.example` still carries the M1 note. (5) `docs/PHASE1_TASKS.md` is now larger than the file editor's ~50 KB read window, so its progress log has to be appended from the shell.
+
+### 2026-09-27 · M6 (Prompt 7) — console shell, drivers, vehicles, Mappls proxy
+- **Changed (console shell):** `app/(console)/_layout.tsx` is the M5-owed admin guard. A profile that is not an active admin is redirected back to S1 (`SCREENS.S1.route`) instead of duplicating the role logic a second time — S1 already routes by role, and RLS is the actual boundary, so the guard is a convenience rather than the enforcement. Around it: the sidebar (Live, Loads, Trips, Review with a live count badge from `useReviewQueueCount`, Drivers, Vehicles), a top bar with a search field, and `src/components/console/UserMenu.tsx` (avatar, name, role, sign-out). `usePathname()` does not see route groups, so `NAV_ITEMS` carries an explicit `path` and the active item is the longest prefix match; the `route` stays for the `SCREENS` registry. New `src/features/console/searchStore.ts` holds the query so the field survives navigation. `AuthProfile` gained `fullName` for the menu.
+- **Changed (C8/C9):** `app/(console)/drivers/index.tsx` is a `DataTable` (name, phone, verified trips, verified km, last trip, status) with an Add Driver `Drawer`; `app/(console)/vehicles/index.tsx` is the same table with an Add Vehicle `ConsoleModal` (registration + the eight doc-12 vehicle types). Both join their related rows in TypeScript from three parallel reads, because the generated `Database` types have no reverse relationships and a nested `select` would not typecheck. Validation lives in `src/features/{drivers,vehicles}/schemas.ts`: `normalisePhoneInput` mirrors the Edge Function exactly, and `REGISTRATION_PATTERN` is the Indian `SS DD SSS NNNN` form (upper-cased, separators dropped, stored as `TN 23 BK 4521`) — a typo there creates a second "same" truck instead of an error, because `vehicles.registration_no` is UNIQUE.
+- **Changed (functions):** both functions are split into a framework-free core plus a thin `index.ts` that wires the Supabase clients and `Deno.serve`, so the logic is testable without a runtime. `mappls-proxy/proxy.ts` holds the four URL builders, the four normalisers, a sliding-window `createRateLimiter` and `handleProxy`; the envelope is `{ result }` or `{ error: { code, message } }` with `UNAUTHENTICATED`/`FORBIDDEN`/`RATE_LIMITED`/`BAD_REQUEST`/`NOT_FOUND`/`METHOD_NOT_ALLOWED`/`MAPPLS_NOT_CONFIGURED`/`MAPPLS_BAD_RESPONSE`/`MAPPLS_UPSTREAM_ERROR`. Rate limit is 60 calls per user per minute in memory (60-second lifetime per function instance — the multi-instance caveat is in the README). `is_admin()` is always called **as the caller** (anon client + the caller's JWT), never with the service role, so the check cannot be satisfied by a privileged client. `admin-create-driver` writes `auth.users` with the service role and then updates `profiles`; `index.ts` is the only file in the repo that reads `SUPABASE_SERVICE_ROLE_KEY`.
+- **Notable decisions:** (a) **Mappls changed its REST auth in Aug 2025**: the current model is a single static key sent as `?access_token=…`, not the OAuth2 client-credentials exchange the older docs describe (the old branch is still `auth-legacy`). Built against the current model; the README documents the legacy upgrade path and `getAccessToken` is the single place a token is read. Two other doc details that bite: the trucking distance-matrix path is **lng,lat** while autosuggest's `location` is **lat,lng**, and `latitude`/`longitude` on autosuggest suggestions are marked RESTRICTED. Rather than ship a typed field that is always null, `Suggestion.lat/lng` is `number | null` and the console geocodes the picked address for a real pin — the deliberate deviation is recorded in the README. (b) `mappls-proxy` is built and unit-tested but nothing calls it yet; C3 (load creation) is M7, so the first live use of autosuggest is still ahead. (c) ND-19 items are excluded as specified: no invite SMS on Add Driver, no permission dot, `owner_id` left null on vehicles. (d) `app/index.test.tsx` moved to `src/features/auth/splash.test.tsx` — **Expo Router turns every `.tsx` file in `app/` into a route and does not skip `*.test.tsx`**, so the M5 test file was being bundled into the app and evaluated at start-up, throwing `expect is not defined` inside the router. It was the only test in `app/`; every other test already lives in `src/`.
+- **Verified:** `tsc --noEmit`, `eslint --max-warnings=0` and `prettier --check` clean; **114/114** Jest tests pass (15 suites, including new `src/features/{drivers,vehicles}/schemas.test.ts` and an `src/i18n/i18n.test.ts` that enforces key parity across en/ta/kn/hi, TODO-marked stubs and no empty English strings); **35/35** Deno tests pass (21 proxy, 14 driver) with mocked Mappls fixtures. The web (1 678 modules) and Android (2 258 modules) Metro bundles both build; grepping both bundles for `SERVICE_ROLE` returns nothing, and the only client-side match in the repo is the `config.test.ts` assertion that the serialised config can never contain one. Two new tests caught real bugs: the driver name schema trimmed but did not collapse internal whitespace (the Edge Function did, so the two disagreed), and a vehicle test fixture `"TN23 B K 4521".replace(/ /g, "")` collapsed to a *valid* plate and asserted the pattern rejects it.
+- **Left:** the 🧍 checkpoint cannot run here — there are no `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` and no Mappls REST secrets, so no function is deployed, no OTP is sent and autosuggest cannot be tried live. That blocks the last acceptance item (admin adds a driver, who then signs in) and the M5 sign-in step that was already outstanding. The rate limiter is per-instance and in memory; a real deployment wants it moved to Postgres or an edge KV, which is a deliberate simplification, not an oversight.
+- **Known issues:** (1) Android SMS auto-read and `env.example` are still carried from M5. (2) `docs/PHASE1_TASKS.md` is past the file editor's read window, so this log was appended from the shell. (3) C8/C9 columns that depend on a live trip history render their empty state until there is verified data — the counts come from `verify_trip`, never from the client.

@@ -65,5 +65,72 @@
     "ta": "தமிழ் (Tamil)",
     "kn": "ಕನ್ನಡ (Kannada)",
     "hi": "हिन्दी (Hindi)"
+  },
+  "console": {
+    "checkingAccess": "Checking your access…",
+    "role": { "admin": "Admin" },
+    "nav": {
+      "live": "Live",
+      "loads": "Loads",
+      "trips": "Trips",
+      "review": "Review",
+      "drivers": "Drivers",
+      "vehicles": "Vehicles"
+    },
+    "drivers": {
+      "title": "Drivers",
+      "subtitle": "Only verified trips and kilometres count towards a driver's experience.",
+      "name": "Name",
+      "namePlaceholder": "Driver's full name",
+      "phone": "Phone",
+      "verifiedTrips": "Verified trips",
+      "verifiedKm": "Verified km",
+      "lastTrip": "Last trip",
+      "noTrips": "No trips yet",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Deactivated",
+      "add": "Add driver",
+      "addTitle": "Add a driver",
+      "addHint": "The driver signs in with this number and a 6-digit code sent by SMS.",
+      "save": "Save driver",
+      "empty": "No drivers match this search.",
+      "emptyTitle": "No drivers yet",
+      "loadFailed": "Couldn't load the driver list. Check your connection and try again."
+    },
+    "driver": {
+      "nameRequired": "Enter the driver's name.",
+      "nameTooLong": "That name is too long.",
+      "invalidPhone": "Enter a 10-digit mobile number.",
+      "createFailed": "Couldn't add the driver. Please try again."
+    },
+    "vehicle": {
+      "title": "Vehicles",
+      "subtitle": "Trucks available for load assignment.",
+      "registration": "Registration",
+      "registrationHint": "Indian format, for example TN 23 BK 4521.",
+      "type": "Type",
+      "owner": "Owner",
+      "noOwner": "Not set",
+      "added": "Added",
+      "add": "Add vehicle",
+      "addTitle": "Add a vehicle",
+      "save": "Save vehicle",
+      "empty": "No vehicles match this search.",
+      "emptyTitle": "No vehicles yet",
+      "loadFailed": "Couldn't load the vehicle list. Check your connection and try again.",
+      "createFailed": "Couldn't add the vehicle. Please try again."
+    }
+  },
+  "mappls": {
+    "notConfigured": "Map search isn't available in this build yet.",
+    "forbidden": "Only an admin can search the map.",
+    "rateLimited": "Too many searches. Wait a moment and try again.",
+    "unauthenticated": "Your session has expired. Sign in again.",
+    "notFound": "No match for that address.",
+    "upstreamError": "Map search is unavailable right now. Try again shortly.",
+    "badRequest": "That search isn't valid.",
+    "networkError": "Can't reach the map service. Check your connection.",
+    "unknownError": "Map search failed. Please try again."
   }
 }

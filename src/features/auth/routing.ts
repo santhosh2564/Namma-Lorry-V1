@@ -57,6 +57,8 @@ export type AuthProfile = {
   id: string;
   role: UserRole;
   isActive: boolean;
+  /** Shown by the console's account menu (M6); the gate never reads it. */
+  fullName: string;
   /**
    * Whether background location + notifications are granted. M9 owns the real
    * check (it lives in the permission screen); M5 keeps the field so the

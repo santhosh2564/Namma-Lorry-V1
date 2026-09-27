@@ -1,9 +1,14 @@
 /**
- * S1 Splash gate test (M5).
+ * S1 Splash gate test (M5, moved out of `app/` in M6).
  *
  * `routing.test.ts` proves the decision; this proves the screen actually
  * navigates on it, so a broken store subscription or a lost navigation cannot
  * ship as a blank splash.
+ *
+ * This test deliberately lives outside `app/`. Expo Router turns *every*
+ * `.tsx` file in `app/` into a route — it does not skip `*.test.tsx` — so a
+ * colocated test file is bundled into the app, evaluated at start-up and throws
+ * `expect is not defined` inside the router itself.
  */
 import { render } from "@testing-library/react-native";
 
@@ -11,7 +16,7 @@ import { render } from "@testing-library/react-native";
 // `init` is synchronous and the copy is there on the first paint.
 import "@/i18n";
 
-import SplashScreen from "./index";
+import SplashScreen from "../../../app/index";
 import { useAuthStore } from "@/features/auth/store";
 
 // `jest.mock` factories are hoisted, so every out-of-scope name they touch has
@@ -52,6 +57,7 @@ const driver = {
   id: "11111111-1111-1111-1111-111111111111",
   role: "driver" as const,
   isActive: true,
+  fullName: "Murugan S",
   permissionsGranted: true,
 };
 
