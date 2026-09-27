@@ -7,6 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import "@/i18n";
 
+import { useAppFonts } from "@/theme/fonts";
 import { colors } from "@/theme/tokens";
 
 /**
@@ -23,6 +24,13 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
+  // Noto Sans + Material Symbols (M2). Keep the app hidden until fonts are
+  // ready, but never block forever if a font fails to load.
+  const [fontsLoaded, fontError] = useAppFonts();
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   return (
     <GestureHandlerRootView style={styles.flex}>
       <QueryClientProvider client={queryClient}>
