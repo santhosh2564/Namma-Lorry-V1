@@ -13,6 +13,10 @@ import { defineConfig, devices } from "@playwright/test";
  */
 const PORT = Number(process.env.E2E_PORT ?? 8081);
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
+// `expo start --port` is documented as "does not apply to web", so the port is
+// not passed through here. Point `E2E_BASE_URL` at a server you already run,
+// or rely on Expo's own default and `reuseExistingServer`.
+const startCommand = "bun run web";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -34,7 +38,7 @@ export default defineConfig({
       ? {
           // Binds 0.0.0.0 so the runner can reach it, and reuses a preview that
           // is already up rather than fighting it for the port.
-          command: `bun run web -- --port ${PORT}`,
+          command: startCommand,
           url: baseURL,
           reuseExistingServer: true,
           timeout: 180_000,

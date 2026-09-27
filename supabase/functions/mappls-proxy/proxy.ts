@@ -157,6 +157,17 @@ function isRecord(value: unknown): value is Json {
 }
 
 function num(value: unknown): number | null {
+  // Mappls sends restricted or absent geometry as an empty string, and
+  // `Number("")` is 0 — so an un-numeric string must be rejected *before* the
+  // parse, or a suggestion with no allowed geometry would come back as the
+  // point (0, 0) and the console would place a pin in the Gulf of Guinea
+  // instead of geocoding the address it was given.
+  if (typeof value === "string" && value.trim() === "") {
+    return null;
+  }
+  if (value === null || value === undefined || typeof value === "boolean") {
+    return null;
+  }
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -307,6 +318,17 @@ function mapUpstreamStatus(status: number): Response {
   return fail("MAPPLS_UPSTREAM_ERROR", "Mappls could not be reached.", 502);
 }
 
+/**
+ * 204 is Mappls' documented "a success, but nothing matched" (geocoding and
+ * search). It is `ok` as far as `fetch` is concerned and carries no body, so
+ * without this the handler would try to parse an empty payload and blame
+ * Mappls for a response it could not read — telling the admin the service is
+ * down when in fact it simply has no match for that address.
+ */
+function isEmptyUpstream(status: number): boolean {
+  return status === 204;
+}
+
 /** Resolves the action + body into a Mappls URL, or an error Response. */
 function buildUpstreamRequest(
   action: ProxyAction,
@@ -428,6 +450,13 @@ export async function handleProxy(req: Request, options: HandleOptions): Promise
 
   if (!upstream.ok) {
     return mapUpstreamStatus(upstream.status);
+  }
+
+  if (isEmptyUpstream(upstream.status)) {
+    // Documented as "a success, but nothing matched". Reported as NOT_FOUND so
+    // the console says "no match for that address" rather than "Mappls is
+    // down" — `geocode` already maps an unusable payload to NOT_FOUND.
+    return fail("NOT_FOUND", "No match for that address.", 404);
   }
 
   let payload: unknown;

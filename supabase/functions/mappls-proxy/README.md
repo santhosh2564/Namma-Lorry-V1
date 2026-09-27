@@ -111,6 +111,14 @@ GET https://search.mappls.com/search/places/autosuggest/json
 > the admin actually picks — that is also what puts a real pin on the map, and
 > it lets the dispatcher correct the point by dragging it.
 >
+> **Restricted geometry arrives as empty strings, not as absent keys**, and
+> `Number("")` is `0`. The normaliser therefore rejects a blank or
+> non-numeric string *before* parsing it, so a restricted suggestion comes back
+> as `lat: null, lng: null` and the console geocodes. Without that guard the
+> response would say `(0, 0)`, the console would treat the pin as located and
+> never geocode, and the load would be saved with a geofence in the Gulf of
+> Guinea. `proxy_wire_test.ts` covers this over real HTTP.
+>
 > This is a deliberate deviation from the single-line shape in docs/06 §4. The
 > alternative — silently dropping un-geocodable suggestions or inventing a pin —
 > would be worse.
@@ -135,11 +143,21 @@ GET https://search.mappls.com/search/address/geocode
 `copResults` is an **object** for `itemCount=1` and an **array** when more than
 one result is asked for; the normaliser accepts both and takes the first.
 
+Mappls documents **HTTP 204** for the search APIs as "the API was a success but
+no results were found". It arrives as a bodyless `ok` response, so it is mapped
+to `NOT_FOUND` (404) rather than being parsed and reported as an unreadable
+response — otherwise an address Mappls simply does not know would surface in
+the console as "map search is unavailable", which is both wrong and alarming.
+
 ### `reverse`
 
 ```
 GET https://search.mappls.com/search/address/rev-geocode?lat=…&lng=…&access_token=…
 ```
+
+`lat` and `lng` are **separate** parameters here, not the `location=lat,lng`
+pair that `autosuggest` takes. Confirmed against the Mappls reverse-geocoding
+documentation and asserted in `proxy_wire_test.ts`.
 
 ```jsonc
 { "responseCode": 200, "version": "270.191",
@@ -227,6 +245,16 @@ deno test supabase/functions/          # or: bunx deno test supabase/functions/
 `proxy_test.ts` runs the full request path with a mocked `fetch`; the Mappls
 payloads in the fixtures are trimmed copies of the real ones documented above.
 No network and no Supabase project are needed.
+
+`proxy_wire_test.ts` runs the **real handler over real HTTP** against a local
+server that speaks the shapes above, swapping only the origin (via
+`deps.fetchImpl`). It exists because a mocked `fetch` never sees a real URL
+parse or query string, so the things most likely to be wrong — the path, the
+`access_token` placement, the `lat,lng` versus `lng,lat` orderings, and blank
+coordinate strings — are exactly what a stub cannot catch. It found two real
+bugs (a restricted suggestion parsing as `(0, 0)`, and a 204 "no match" being
+reported as a broken response). Still needs `--allow-net` for the loopback
+server, but no Mappls account and no Supabase project.
 
 ## Deploy
 
