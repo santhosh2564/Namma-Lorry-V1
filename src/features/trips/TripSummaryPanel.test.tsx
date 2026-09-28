@@ -60,7 +60,7 @@ describe("TripSummaryPanel — verified", () => {
   it("goes back to My Trips", async () => {
     const onBack = jest.fn();
     const { getByTestId } = await render(<TripSummaryPanel {...props({ onBack })} />);
-    fireEvent.press(getByTestId("trip-summary-back"));
+    await fireEvent.press(getByTestId("trip-summary-back"));
     expect(onBack).toHaveBeenCalledTimes(1);
   });
 });

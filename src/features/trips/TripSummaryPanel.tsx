@@ -17,6 +17,7 @@ import { Button, Card, Chip, Icon, ListRow, StatBlock } from "@/components/ui";
 import {
   formatCount,
   reasonDistanceM,
+  reasonDistanceParts,
   reasonKey,
   type SummaryMetrics,
   type SummaryVariant,
@@ -127,7 +128,7 @@ export function TripSummaryPanel({
         <Card style={styles.card} testID="trip-summary-reasons">
           <Text style={styles.cardTitle}>{t("driver.summary.reasonTitle")}</Text>
           {reasonCodes.map((code) => {
-            const distance = reasonDistanceM(code, metrics);
+            const distance = reasonDistanceParts(reasonDistanceM(code, metrics));
             return (
               <ListRow
                 icon="info"
@@ -136,7 +137,12 @@ export function TripSummaryPanel({
                 subtitle={
                   distance === null
                     ? undefined
-                    : t("driver.summary.reasonDistance", { km: (distance / 1000).toFixed(1) })
+                    : t(
+                        distance.unit === "m"
+                          ? "driver.summary.reasonDistanceM"
+                          : "driver.summary.reasonDistance",
+                        distance.unit === "m" ? { m: distance.amount } : { km: distance.amount },
+                      )
                 }
                 testID={`trip-summary-reason-${code}`}
                 title={t(reasonKey(code))}

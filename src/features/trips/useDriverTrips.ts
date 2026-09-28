@@ -12,10 +12,12 @@
 import type { Query } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 
+import type { HistoryRow } from "@/features/trips/historyState";
 import type { Json, Tables } from "@/lib/database.types";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 type TripRow = Tables<"trips">;
+type LoadRow = Tables<"loads">;
 
 /**
  * TanStack's `refetchInterval` shape for the driver-trip query, so a caller can
@@ -217,3 +219,79 @@ export function useDriverStats(userId: string | null) {
     staleTime: 30_000,
   });
 }
+
+/** `driver_stats.last_verified_at` — D8's "Last trip" line. */
+export function useDriverStatsDetail(userId: string | null) {
+  return useQuery({
+    queryKey: ["driver", "stats", userId],
+    enabled: userId !== null && isSupabaseConfigured,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("driver_stats").select("*").maybeSingle();
+      throwUnlessOk(error);
+      return data;
+    },
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * D7 — every trip this driver has run, newest first.
+ *
+ * One read of the driver's own trips (RLS scopes it to them) plus one read of
+ * the loads they reference, joined here because the generated types have no
+ * reverse relationships. No paging: a driver's own history is a few hundred
+ * rows in a year, and unlike the console's trip table this one is read by one
+ * person on a phone. Filtering and month grouping happen on the client in
+ * `historyState` — the alternative would be a round trip per filter tap.
+ */
+export function useDriverHistory(userId: string | null) {
+  return useQuery({
+    queryKey: ["driver", "history", userId],
+    enabled: userId !== null && isSupabaseConfigured,
+    queryFn: async (): Promise<HistoryRow[]> => {
+      const trips = await supabase
+        .from("trips")
+        .select("id, load_id, status, started_at, ended_at, tracked_distance_m")
+        .order("started_at", { ascending: false, nullsFirst: false })
+        .limit(HISTORY_LIMIT);
+
+      throwUnlessOk(trips.error);
+      const rows = trips.data ?? [];
+      if (rows.length === 0) {
+        return [];
+      }
+
+      const loads = await supabase
+        .from("loads")
+        .select("id, load_code, pickup_address, drop_address")
+        .in("id", [...new Set(rows.map((row) => row.load_id))]);
+
+      throwUnlessOk(loads.error);
+      const loadById = new Map((loads.data as LoadRow[]).map((row) => [row.id, row]));
+
+      return rows.flatMap((row) => {
+        const load = loadById.get(row.load_id);
+        if (load === undefined) {
+          return [];
+        }
+        return [
+          {
+            id: row.id,
+            loadCode: load.load_code,
+            pickupAddress: load.pickup_address,
+            dropAddress: load.drop_address,
+            status: row.status,
+            startedAt: row.started_at,
+            endedAt: row.ended_at,
+            trackedDistanceKm:
+              row.tracked_distance_m === null ? null : Math.round(row.tracked_distance_m / 1000),
+          },
+        ];
+      });
+    },
+    staleTime: 30_000,
+  });
+}
+
+/** A driver's own history is bounded; this is a guard, not a page size. */
+export const HISTORY_LIMIT = 500;
