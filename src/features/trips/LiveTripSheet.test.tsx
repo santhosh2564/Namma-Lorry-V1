@@ -133,7 +133,7 @@ describe("LiveTripSheet — tracking problems", () => {
     );
 
     expect(getByTestId("driver-live-problem-permission")).toBeTruthy();
-    fireEvent.press(getByText("Open settings"));
+    await fireEvent.press(getByText("Open settings"));
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 });
@@ -147,7 +147,7 @@ describe("LiveTripSheet — near the drop and ending", () => {
 
     expect(getByTestId("driver-live-near-drop")).toBeTruthy();
     expect(getByText("You've reached the delivery area")).toBeTruthy();
-    fireEvent.press(getByTestId("driver-live-end"));
+    await fireEvent.press(getByTestId("driver-live-end"));
     expect(onEnd).toHaveBeenCalledTimes(1);
     expect(queryByTestId("driver-live-end-error")).toBeNull();
   });

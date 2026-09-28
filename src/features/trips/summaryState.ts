@@ -122,6 +122,27 @@ export function kmFromMetres(metres: number | null): number | null {
   return metres === null ? null : Math.round(metres / 1000);
 }
 
+/** A geofence distance split into an amount and the unit to print it in. */
+export type ReasonDistance = { amount: string; unit: "km" | "m" };
+
+/**
+ * Pure: a geofence distance for display, in metres below a kilometre.
+ *
+ * Rounding 42 m to whole kilometres produces "0 km away", which reads as
+ * "nothing" — so a sub-kilometre miss is shown in metres instead. The
+ * verifier's own precision is not the issue here; the sentence is.
+ */
+export function reasonDistanceParts(metres: number | null): ReasonDistance | null {
+  if (metres === null || !Number.isFinite(metres)) {
+    return null;
+  }
+  const absolute = Math.max(0, Math.round(metres));
+  if (absolute < 1_000) {
+    return { amount: String(absolute), unit: "m" };
+  }
+  return { amount: (absolute / 1_000).toFixed(1), unit: "km" };
+}
+
 const MONTHS = [
   "Jan",
   "Feb",
