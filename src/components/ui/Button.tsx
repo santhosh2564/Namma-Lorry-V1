@@ -4,7 +4,15 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { Icon } from "./Icon";
 import { borderWidth, colors, fonts, radii, spacing, touch } from "@/theme/tokens";
 
-export type ButtonVariant = "primary" | "secondary" | "danger" | "success" | "outline" | "text";
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "danger"
+  /** Red outline — a destructive action that is not the default choice yet (D5's END TRIP). */
+  | "dangerOutline"
+  | "success"
+  | "outline"
+  | "text";
 
 export type ButtonSize = "sm" | "md" | "lg" | "driver";
 
@@ -53,6 +61,16 @@ const variants: Record<ButtonVariant, VariantStyle> = {
     pressed: { backgroundColor: colors.verifiedPressed },
     label: { color: colors.onPrimary },
     spinner: colors.onPrimary,
+  },
+  dangerOutline: {
+    container: {
+      backgroundColor: colors.transparent,
+      borderWidth: borderWidth.hairline,
+      borderColor: colors.rejected,
+    },
+    pressed: { backgroundColor: colors.rejectedMuted },
+    label: { color: colors.rejected },
+    spinner: colors.rejected,
   },
   outline: {
     container: {

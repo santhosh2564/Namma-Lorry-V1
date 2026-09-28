@@ -14,6 +14,7 @@ describe("Button", () => {
       "primary",
       "secondary",
       "danger",
+      "dangerOutline",
       "success",
       "outline",
       "text",

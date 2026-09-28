@@ -91,6 +91,16 @@ export type TrackingStore = {
   pendingPoints(tripId: string, limit: number): Promise<PointQueueRow[]>;
   markUploaded(tripId: string, seqs: readonly number[]): Promise<number>;
   quarantine(tripId: string, seqs: readonly number[], reason: string): Promise<number>;
+  /**
+   * Every stored row for the trip, oldest `seq` first, uploaded rows included.
+   *
+   * This is the **D5 route line** (M10): the screen draws the trip from the
+   * local queue rather than asking the server, so the map keeps up even while
+   * the phone is offline — which is the whole point of queueing locally first
+   * (CLAUDE.md hard rule 5). Rows are only deleted once the trip is final
+   * (`deleteUploaded`), so during a trip this returns the full trace.
+   */
+  routePoints(tripId: string, limit: number): Promise<PointQueueRow[]>;
   /** Deletes rows already uploaded — called once a trip is final (TRD §4.3). */
   deleteUploaded(tripId: string): Promise<number>;
   countPoints(tripId: string): Promise<PointCounts>;
@@ -241,6 +251,12 @@ export function createMemoryTrackingStore(initial?: Partial<TripStateRow>): Trac
     pendingPoints: async (tripId, limit) =>
       matching(tripId)
         .filter((row) => !row.uploaded && !row.quarantined)
+        .sort((a, b) => a.seq - b.seq)
+        .slice(0, Math.max(0, limit))
+        .map((row) => ({ ...row })),
+
+    routePoints: async (tripId, limit) =>
+      matching(tripId)
         .sort((a, b) => a.seq - b.seq)
         .slice(0, Math.max(0, limit))
         .map((row) => ({ ...row })),

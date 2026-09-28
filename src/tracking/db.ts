@@ -240,6 +240,16 @@ export function createSqliteTrackingStore(db: TrackingDatabase): TrackingStore {
       return rows.map(pointFromRow);
     },
 
+    routePoints: async (tripId, limit) => {
+      // Uploaded rows are still here (they are deleted only when the trip is
+      // final), so this is the whole trace — the D5 route line.
+      const rows = await db.getAllAsync<PointDbRow>(
+        "select * from point_queue where trip_id = ? order by seq asc limit ?",
+        [tripId, Math.max(0, limit)],
+      );
+      return rows.map(pointFromRow);
+    },
+
     markUploaded: async (tripId, seqs) => {
       if (seqs.length === 0) {
         return 0;

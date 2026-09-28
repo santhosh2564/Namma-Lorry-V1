@@ -9,12 +9,22 @@
  * console lists do: the generated types have no reverse relationships, so a
  * nested select would not typecheck.
  */
+import type { Query } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 
-import type { Tables } from "@/lib/database.types";
+import type { Json, Tables } from "@/lib/database.types";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 type TripRow = Tables<"trips">;
+
+/**
+ * TanStack's `refetchInterval` shape for the driver-trip query, so a caller can
+ * poll conditionally (D6 polls only while a trip is still being verified).
+ */
+export type RefetchInterval =
+  | number
+  | false
+  | ((query: Query<DriverTrip | null, Error, DriverTrip | null>) => number | false | undefined);
 
 export type DriverTrip = {
   id: string;
@@ -33,6 +43,16 @@ export type DriverTrip = {
   vehicleNo: string;
   status: TripRow["status"];
   startedAt: string | null;
+  /** D6: when the driver ended it. */
+  endedAt: string | null;
+  /** Points the phone said it had recorded when End was tapped. */
+  expectedPoints: number | null;
+  /** Official kilometres — set only by `verify_trip`, never by the client. */
+  trackedDistanceM: number | null;
+  /** docs/08 §3 reason codes, empty when the trip verified cleanly. */
+  verificationReasons: string[];
+  /** `verify_trip`'s measurements, used to explain the reasons (D6). */
+  verificationMetrics: Json | null;
 };
 
 function throwUnlessOk(error: { message: string } | null): void {
@@ -60,6 +80,11 @@ function toDriverTrip(trip: TripRow, load: Tables<"loads">, vehicleNo: string): 
     vehicleNo,
     status: trip.status,
     startedAt: trip.started_at,
+    endedAt: trip.ended_at,
+    expectedPoints: trip.expected_points,
+    trackedDistanceM: trip.tracked_distance_m,
+    verificationReasons: trip.verification_reasons,
+    verificationMetrics: trip.verification_metrics,
   };
 }
 
@@ -118,11 +143,22 @@ export function useDriverTrips(userId: string | null) {
   });
 }
 
-/** D4 — one trip with everything the start flow needs. */
-export function useDriverTrip(tripId: string | null) {
+/**
+ * D4 — one trip with everything the start flow needs.
+ *
+ * `options.refetchInterval` is how D6 adds its polling fallback while a trip is
+ * still being verified: realtime is the fast path there, but a driver on a
+ * network that silently drops websockets must not be stuck on "Checking your
+ * trip…" forever.
+ */
+export function useDriverTrip(
+  tripId: string | null,
+  options: { refetchInterval?: RefetchInterval } = {},
+) {
   return useQuery({
     queryKey: ["driver", "trip", tripId],
     enabled: tripId !== null && isSupabaseConfigured,
+    refetchInterval: options.refetchInterval,
     queryFn: async (): Promise<DriverTrip | null> => {
       const { data: trip, error } = await supabase
         .from("trips")
@@ -152,5 +188,32 @@ export function useDriverTrip(tripId: string | null) {
       return toDriverTrip(trip, load, vehicle?.registration_no ?? "—");
     },
     staleTime: 10_000,
+  });
+}
+
+/**
+ * D6 — the driver's verified experience totals.
+ *
+ * `driver_stats` is written only by `apply_verified_stats` when a trip verifies
+ * (docs/08 §1), and RLS limits the read to the driver's own row. There is no
+ * client-side arithmetic on these numbers anywhere: the app displays the
+ * official total, it never derives it (CLAUDE.md hard rule 1).
+ */
+export function useDriverStats(userId: string | null) {
+  return useQuery({
+    queryKey: ["driver", "stats", userId],
+    enabled: userId !== null && isSupabaseConfigured,
+    queryFn: async (): Promise<{ verifiedTrips: number; verifiedKm: number } | null> => {
+      const { data, error } = await supabase.from("driver_stats").select("*").maybeSingle();
+      throwUnlessOk(error);
+      if (data === null) {
+        return null;
+      }
+      return {
+        verifiedTrips: data.verified_trips,
+        verifiedKm: Math.round(Number(data.verified_distance_m) / 1000),
+      };
+    },
+    staleTime: 30_000,
   });
 }
