@@ -68,7 +68,9 @@
   },
   "console": {
     "checkingAccess": "TODO: Checking your access…",
-    "role": { "admin": "TODO: Admin" },
+    "role": {
+      "admin": "TODO: Admin"
+    },
     "nav": {
       "live": "TODO: Live",
       "loads": "TODO: Loads",
@@ -262,5 +264,102 @@
     "badRequest": "TODO: That search isn't valid.",
     "networkError": "TODO: Can't reach the map service. Check your connection.",
     "unknownError": "TODO: Map search failed. Please try again."
+  },
+  "onboarding": {
+    "permissions": {
+      "step": "TODO: TODO: TODO: Step 1 of 2",
+      "title": "TODO: TODO: TODO: Allow location for your trips",
+      "subtitle": "TODO: TODO: TODO: Namma Lorry uses GPS to record the trips you run and turn them into verified experience.",
+      "disclosure": {
+        "onlyDuringTrips": "TODO: TODO: TODO: Only during trips — tracking starts when you tap Start and stops when you tap End.",
+        "verifiedExperience": "TODO: TODO: TODO: Builds your verified experience — kilometres and trips count only from real GPS.",
+        "sharedWithOps": "TODO: TODO: TODO: Shared with Namma Lorry operations for this load."
+      },
+      "rowForeground": "TODO: TODO: TODO: Precise location",
+      "rowBackground": "TODO: TODO: TODO: Allow all the time",
+      "rowNotifications": "TODO: TODO: TODO: Notifications",
+      "allow": "TODO: TODO: TODO: Allow",
+      "allowedA11y": "TODO: TODO: TODO: Allowed",
+      "openSettings": "TODO: TODO: TODO: Open settings",
+      "blockedForeground": "TODO: TODO: TODO: Precise location is required to record trips. Open Settings → Location → Allow all the time.",
+      "blockedBackground": "TODO: TODO: TODO: Background location is required to record trips. Open Settings → Location → Allow all the time.",
+      "blockedNotifications": "TODO: TODO: TODO: Notifications keep the tracking status visible while you drive.",
+      "continue": "TODO: TODO: TODO: Continue",
+      "pendingHint": "TODO: TODO: TODO: Allow each item above to continue.",
+      "consentFailed": "TODO: TODO: TODO: Couldn't save your agreement. Check your connection and try again.",
+      "webNote": "TODO: TODO: TODO: Trips run on the Namma Lorry mobile app. This web page is for the operations team."
+    },
+    "battery": {
+      "step": "TODO: TODO: TODO: Step 2 of 2",
+      "title": "TODO: TODO: TODO: Keep tracking running",
+      "subtitle": "TODO: TODO: TODO: Some phones stop apps in the background to save battery. This can break your trip record.",
+      "detectedBrand": "TODO: TODO: TODO: Detected phone: {{brand}}",
+      "brands": {
+        "xiaomi": "TODO: TODO: TODO: Xiaomi / Redmi / POCO",
+        "vivo": "TODO: TODO: TODO: Vivo / iQOO",
+        "oppo": "TODO: TODO: TODO: Oppo / Realme / OnePlus",
+        "samsung": "TODO: TODO: TODO: Samsung",
+        "generic": "TODO: TODO: TODO: Your phone"
+      },
+      "steps": {
+        "xiaomi": {
+          "s1": "TODO: TODO: TODO: Tap Open settings below.",
+          "s2": "TODO: TODO: TODO: Choose Battery saver → No restrictions for Namma Lorry.",
+          "s3": "TODO: TODO: TODO: Turn on Autostart for Namma Lorry."
+        },
+        "vivo": {
+          "s1": "TODO: TODO: TODO: Tap Open settings below.",
+          "s2": "TODO: TODO: TODO: Allow background high power consumption for Namma Lorry.",
+          "s3": "TODO: TODO: TODO: Lock Namma Lorry in the recent apps list."
+        },
+        "oppo": {
+          "s1": "TODO: TODO: TODO: Tap Open settings below.",
+          "s2": "TODO: TODO: TODO: Allow Namma Lorry to run in the background.",
+          "s3": "TODO: TODO: TODO: Turn off battery optimisation for Namma Lorry."
+        },
+        "samsung": {
+          "s1": "TODO: TODO: TODO: Tap Open settings below.",
+          "s2": "TODO: TODO: TODO: Remove Namma Lorry from Sleeping apps.",
+          "s3": "TODO: TODO: TODO: Set Namma Lorry to 'Unmonitored' under Battery → Background usage limits."
+        },
+        "generic": {
+          "s1": "TODO: TODO: TODO: Tap Open settings below.",
+          "s2": "TODO: TODO: TODO: Choose Battery → Unrestricted for Namma Lorry.",
+          "s3": "TODO: TODO: TODO: Allow Namma Lorry to run in the background."
+        }
+      },
+      "openSettings": "TODO: TODO: TODO: Open settings",
+      "done": "TODO: TODO: TODO: I've done this",
+      "skip": "TODO: TODO: TODO: Skip for now",
+      "openFailed": "TODO: TODO: TODO: Couldn't open the settings page. Find Namma Lorry under Settings → Apps → Battery.",
+      "notNeeded": "TODO: TODO: TODO: Battery setup is only needed on Android phones.",
+      "continueToTrips": "TODO: TODO: TODO: Continue to trips"
+    }
+  },
+  "driver": {
+    "trips": {
+      "greeting": "TODO: TODO: TODO: Vanakkam, {{name}}",
+      "driverFallback": "TODO: TODO: TODO: driver",
+      "synced": "TODO: TODO: TODO: All synced",
+      "syncPending": "TODO: TODO: TODO: {{count}} points waiting",
+      "resume": "TODO: TODO: TODO: Resume",
+      "assignedSection": "TODO: TODO: TODO: Assigned to you",
+      "emptyTitle": "TODO: TODO: TODO: No trips assigned yet",
+      "emptyMessage": "TODO: TODO: TODO: New trips appear here when Namma Lorry assigns them to you.",
+      "loadFailed": "TODO: TODO: TODO: Couldn't load your trips. Check your connection and try again."
+    },
+    "trip": {
+      "gpsAccuracy": "TODO: TODO: TODO: GPS ±{{metres}} m",
+      "planned": "TODO: TODO: TODO: {{km}} km planned",
+      "start": "TODO: TODO: TODO: START TRIP",
+      "startHint": "TODO: TODO: TODO: Tracking starts now and stops when you end the trip.",
+      "state": {
+        "waiting": "TODO: TODO: TODO: Waiting for GPS…",
+        "gpsWeak": "TODO: TODO: TODO: Waiting for better GPS (±{{metres}} m)…",
+        "outside": "TODO: TODO: TODO: You're {{km}} km from the pickup. Move inside the circle to start.",
+        "ready": "TODO: TODO: TODO: You're at the pickup · GPS accuracy {{metres}} m",
+        "starting": "TODO: TODO: TODO: Starting the trip…"
+      }
+    }
   }
 }

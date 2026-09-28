@@ -30,14 +30,20 @@ export type AuthState = {
   resendAvailableAt: number | null;
   /** Wrong codes left before the driver must request a new one. */
   attemptsLeft: number;
-  /** Trip being recorded on this phone (stub until M8). */
+  /** Trip being recorded on this phone (M8 reads the real state). */
   activeTripId: string | null;
   /** False until `readLocalTrackingState` has answered. */
   trackingChecked: boolean;
+  /** Cached device manufacturer for D2's brand steps (null until read). */
+  deviceManufacturer: string | null;
+  /** Permissions for the D3/D4 readiness checks (null until D1 has read them). */
+  permissionsGranted: boolean | null;
 
   setSession: (status: SessionStatus, userId: string | null) => void;
   setActiveTrip: (tripId: string | null) => void;
   setTrackingChecked: (checked: boolean) => void;
+  setDeviceManufacturer: (manufacturer: string | null) => void;
+  setPermissionsGranted: (granted: boolean) => void;
   /** Called right after a successful `signInWithOtp`. */
   startOtpChallenge: (phone: string, now: number) => void;
   /** Called after a resend: the counter restarts. */
@@ -56,12 +62,18 @@ export const useAuthStore = create<AuthState>()((set) => ({
   attemptsLeft: MAX_OTP_ATTEMPTS,
   activeTripId: null,
   trackingChecked: false,
+  deviceManufacturer: null,
+  permissionsGranted: null,
 
   setSession: (status, userId) => set({ status, userId }),
 
   setActiveTrip: (tripId) => set({ activeTripId: tripId }),
 
   setTrackingChecked: (checked) => set({ trackingChecked: checked }),
+
+  setDeviceManufacturer: (manufacturer) => set({ deviceManufacturer: manufacturer }),
+
+  setPermissionsGranted: (granted) => set({ permissionsGranted: granted }),
 
   startOtpChallenge: (phone, now) =>
     set({

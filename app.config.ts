@@ -1,13 +1,22 @@
 import type { ExpoConfig } from "expo/config";
 
 /**
- * Namma Lorry — app configuration (M1 scaffold).
+ * Namma Lorry — app configuration.
  *
  * Public runtime configuration comes from EXPO_PUBLIC_* env vars, validated in
- * src/lib/config.ts. Native permission strings and the expo-location plugin
- * (background location + foreground service) are configured in M9 — see
- * docs/09 §3 for the exact copy that will go here.
+ * src/lib/config.ts.
+ *
+ * The expo-location plugin settings are the M9 (D1) half of the permission
+ * story: background location and the Android foreground service are enabled in
+ * the manifest so `startLocationUpdatesAsync` can run, and the permission
+ * strings are the exact copy from docs/09 §3 — the same sentences the D1
+ * disclosure paraphrases, so the store listing and the in-app notice agree.
  */
+const LOCATION_PERMISSION_WHEN_IN_USE =
+  "Namma Lorry uses your location to start and end trips at the pickup and delivery points.";
+const LOCATION_PERMISSION_ALWAYS =
+  "Namma Lorry records your route in the background only while a trip you started is in progress, so your driving experience can be verified.";
+
 const defineConfig = (): ExpoConfig => {
   const appEnv = process.env.EXPO_PUBLIC_APP_ENV ?? "development";
 
@@ -23,15 +32,38 @@ const defineConfig = (): ExpoConfig => {
     // Fixed app identities so native prebuild / EAS dev builds are reproducible.
     // (M12c finalises store metadata, icons and build numbers.) Restrict the Mappls
     // map SDK key to these identifiers in the Mappls console.
-    android: { package: "com.nammalorry.driver" },
-    ios: { bundleIdentifier: "com.nammalorry.driver", supportsTablet: false },
+    // docs/09 §3 — iOS background delivery for the trip task.
+    ios: {
+      bundleIdentifier: "com.nammalorry.driver",
+      supportsTablet: false,
+      infoPlist: {
+        UIBackgroundModes: ["location"],
+      },
+    },
 
     // Driver app icons/splash are a M12c release task (assets don't exist yet).
     icon: undefined,
+    android: { package: "com.nammalorry.driver" },
     plugins: [
       "expo-router",
       "expo-sqlite",
       "expo-font",
+      [
+        "expo-location",
+        {
+          // docs/09 §3 — exact strings, unmodified.
+          locationWhenInUsePermission: LOCATION_PERMISSION_WHEN_IN_USE,
+          locationAlwaysAndWhenInUsePermission: LOCATION_PERMISSION_ALWAYS,
+          // D1 requests "Allow all the time" for the background task.
+          isAndroidBackgroundLocationEnabled: true,
+          // TRD §4.2 — the Android foreground service carries the persistent
+          // notification while a trip is recording.
+          isAndroidForegroundServiceEnabled: true,
+        },
+      ],
+      // D1's notifications row: the Android foreground-service notification and
+      // iOS's background-delivery alerts both land here.
+      ["expo-notifications", {}],
       // Mappls is a native SDK → local config plugin applies the Android maven
       // repo + credential files and the iOS Podfile hook during prebuild (R1).
       ["./plugins/withMappls", { configDir: "mappls" }],

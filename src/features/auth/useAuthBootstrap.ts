@@ -22,6 +22,7 @@
 import { useEffect } from "react";
 
 import { useAuthStore } from "@/features/auth/store";
+import { permissionsLost, readPermissionSnapshot } from "@/features/onboarding/permissions";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { readLocalTrackingState } from "@/tracking/localState";
 import { resumeTrackingOnLaunch, startUploadScheduler } from "@/tracking/service";
@@ -41,6 +42,15 @@ export function useAuthBootstrap(): void {
       useAuthStore.getState().setActiveTrip(initial.activeTripId);
       useAuthStore.getState().setTrackingChecked(true);
       startUploadScheduler();
+
+      // 1b. The permission read is also fast and local, and it feeds the gate:
+      // a driver whose background location grant vanished routes back to D1
+      // (docs/12 D1 re-check rule) instead of into an untrackable trip.
+      const snapshot = await readPermissionSnapshot();
+      if (cancelled) {
+        return;
+      }
+      useAuthStore.getState().setPermissionsGranted(!permissionsLost(snapshot));
 
       // 2. Background: restart the task, retry a pending end, flush the queue.
       // A failure here must not strand the splash — the trip stays in storage
