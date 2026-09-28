@@ -1,5 +1,5 @@
-import { PlaceholderScreen } from '@/components/ui';
+import { ProfileScreen } from '@/features/m11/screens';
 
 export default function D8MyProfile() {
-  return <PlaceholderScreen screenId="D8" title="My Profile" milestone="M11" />;
+  return <ProfileScreen />;
 }

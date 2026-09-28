@@ -384,15 +384,15 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 ### M11 — Live console, review, history, profile (Prompt 12)
 **Tasks**
-- [ ] C1 Live Dashboard: all `in_progress` trips from `trip_live` on the Mappls web map; markers rotated by heading; side list with last-update age (red > 15 min); KPI strip; realtime with resubscribe + refetch on reconnect
-- [ ] C6 Trip Detail & Review:
+- [x] C1 Live Dashboard: all `in_progress` trips from `trip_live` on the Mappls web map; markers rotated by heading; side list with last-update age (red > 15 min); KPI strip; realtime with resubscribe + refetch on reconnect
+- [x] C6 Trip Detail & Review:
   - route from `trip_points` (1,000 per page) + live append; planned route dashed; start/end markers
   - replay slider (P1-1, ND-22)
   - metrics + reason chips; `trip_events` timeline
   - review panel only when `needs_review` → `admin_review_trip` with mandatory note; refetch after the decision (no optimistic UI)
-- [ ] C7 Review Queue: `needs_review` oldest first, reason chips, mini map, opens C6, empty state "All caught up"
-- [ ] D7 Trip History: status filters, grouped by month, → D6
-- [ ] D8 My Profile: read-only `driver_stats` with the "can't be edited" caption, language picker sheet, permission/battery health check, privacy policy link, sign out (blocked during an active trip)
+- [x] C7 Review Queue: `needs_review` oldest first, reason chips, mini map, opens C6, empty state "All caught up"
+- [x] D7 Trip History: status filters, grouped by month, → D6
+- [x] D8 My Profile: read-only `driver_stats` with the "can't be edited" caption, language picker sheet, permission/battery health check, privacy policy link, sign out (blocked during an active trip)
 
 **Files expected:** `app/(console)/index.tsx`, `app/(console)/trips/[id].tsx`, `app/(console)/review/index.tsx`, `app/(driver)/{history,profile}.tsx`, `src/features/{live-map,review}/*`, `src/features/trips/ReplaySlider.tsx`, `LanguageSheet.tsx`.
 
@@ -563,6 +563,11 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Changed:** Re-read the audit (rev 2), migration 0001 in full, the PRD and doc 10, and the live DB. Marked done: git repo + remote, Docker running, `supabase start`, 0001 applied unchanged, `0002_consent.sql`, `seed.sql`, `tests/_helpers.psql`, `[auth.sms.test_otp]`. Added the "Local Supabase" decision row; updated ND-4 and pre-flight/M4 checkboxes. No application code written.
 - **Left:** Answers ND-1…ND-7; pre-flight restructure (pack promotion, `design/`, relocation); M4 remainder — pgTAP `*.test.sql` + extension, `docs/DEV_SETUP.md`, `0003_phase1_fixes.sql` (pending ND-21), generated types + typed client (needs M1 first) — then M1.
 - **Known issues:** 0001 defects unfixed (ND-8/12/13/14); `supabase test db` has nothing to run yet; `supabase_vector` container restart-loop (cosmetic, analytics only); local PG 17 vs doc 03's "Postgres 15" — hosted staging must also be PG 17 or migrations need review.
+
+### 2026-09-28 · M11 — live operations, review, history and profile
+- **Changed:** Implemented C1 Live Dashboard, C6 Trip Detail & Review, C7 Review Queue, D7 Trip History and D8 My Profile. Added Supabase-backed loaders for live trips, paginated trip points (1,000 rows per page), events, driver stats and `admin_review_trip`; realtime subscriptions refetch after reconnect; Mappls Web Maps SDK loading, heading-rotated markers, route/replay views and review controls are wired into the Expo Router screens.
+- **Left:** Mappls and Supabase public keys are still required in `.env` for connected data; the local fallback dataset keeps the screens usable without credentials.
+- **Known issues:** Native builds use the same map presentation until the M3 native Mappls SDK spike lands.
 
 ### 2026-09-26 · Prompt 2 (M1 — scaffold)
 - **Changed:** Full Expo SDK 57 app scaffolded at the repo root: 34 deps + 13 devDeps pinned; app.config.ts / tsconfig / babel / eslint / prettier / jest / eas.json / CI; `src/lib/config.ts` zod env validation; src/i18n bootstrap; PlaceholderScreen + 21 routes + 4 group layouts + root layout + 3 dev routes; tests for config and PlaceholderScreen. **ND-11 applied:** `EXPO_PUBLIC_SENTRY_DSN` added to `.env.example`. Verified: `tsc --noEmit` clean, ESLint 0 errors/0 warnings (max-warnings 0), Jest 3/3, `expo export --platform web` succeeds, dev server serves the S2 route (HTTP 200 + bundle compiles).

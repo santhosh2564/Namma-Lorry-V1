@@ -1,5 +1,5 @@
-import { PlaceholderScreen } from '@/components/ui';
+import { LiveDashboardScreen } from '@/features/m11/screens';
 
 export default function C1LiveDashboard() {
-  return <PlaceholderScreen screenId="C1" title="Live Dashboard" milestone="M11" />;
+  return <LiveDashboardScreen />;
 }

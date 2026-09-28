@@ -1,5 +1,5 @@
-import { PlaceholderScreen } from '@/components/ui';
+import { TripHistoryScreen } from '@/features/m11/screens';
 
 export default function D7TripHistory() {
-  return <PlaceholderScreen screenId="D7" title="Trip History" milestone="M11" />;
+  return <TripHistoryScreen />;
 }

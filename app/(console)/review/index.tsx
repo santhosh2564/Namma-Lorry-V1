@@ -1,5 +1,5 @@
-import { PlaceholderScreen } from '@/components/ui';
+import { ReviewQueueScreen } from '@/features/m11/screens';
 
 export default function C7ReviewQueue() {
-  return <PlaceholderScreen screenId="C7" title="Review Queue" milestone="M11" />;
+  return <ReviewQueueScreen />;
 }
