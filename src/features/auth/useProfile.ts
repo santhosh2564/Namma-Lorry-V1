@@ -20,25 +20,29 @@ const PROFILE_QUERY_KEY = ["auth", "profile"] as const;
 /**
  * Map a `profiles` row onto the shape the gate reads.
  *
- * `permissionsGranted` is hard-coded true for now: the real check belongs to
- * the permission screen that M9 builds, and guessing at it here would send
- * drivers straight into a trip they cannot record. M9 replaces this line.
+ * `permissionsGranted` comes from the OS (M9), not the profile row: the launch
+ * bootstrap reads it into the store before the gate runs, and D1 keeps it
+ * fresh, so a driver whose background grant vanished routes back to onboarding
+ * (docs/12 D1) instead of into a trip they cannot record.
  */
-export function toAuthProfile(row: ProfileRow): AuthProfile {
+export function toAuthProfile(row: ProfileRow, permissionsGranted: boolean): AuthProfile {
   return {
     id: row.id,
     role: row.role,
     isActive: row.is_active,
     fullName: row.full_name,
-    permissionsGranted: true,
+    permissionsGranted,
   };
 }
 
 export function useProfile() {
   const userId = useAuthStore((state) => state.userId);
+  // In the query key so a permission change re-resolves the gate's profile
+  // without a network round trip being involved.
+  const permissionsGranted = useAuthStore((state) => state.permissionsGranted);
 
   return useQuery({
-    queryKey: [...PROFILE_QUERY_KEY, userId],
+    queryKey: [...PROFILE_QUERY_KEY, userId, permissionsGranted],
     // Null means "the session has no profile row", which the gate turns into
     // the S4 "not set up" notice.
     queryFn: async ({ signal }): Promise<AuthProfile | null> => {
@@ -57,7 +61,7 @@ export function useProfile() {
         throw new Error(error.message);
       }
 
-      return data === null ? null : toAuthProfile(data);
+      return data === null ? null : toAuthProfile(data, permissionsGranted ?? true);
     },
     enabled: userId !== null,
     // The role and activation flag change rarely; five minutes keeps the gate
