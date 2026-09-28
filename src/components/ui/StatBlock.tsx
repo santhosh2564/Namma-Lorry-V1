@@ -14,10 +14,20 @@ export type StatBlockProps = {
   testID?: string;
 };
 
+/**
+ * NB: the keys are `size`/`line`, not `value`/`line`.
+ *
+ * The worklets babel plugin (pulled in by `babel-preset-expo`, shared with
+ * Reanimated) rewrites **any** inline-style property read as `.value` — `s.value`
+ * in a style object looks exactly like a Reanimated shared value to it, so it
+ * wraps the read in a `require("react-native-reanimated")` warning closure. That
+ * put a needless Reanimated dependency in every render of the D5/D6 stat rows
+ * and made the component untestable under Jest.
+ */
 const sizes = {
-  sm: { value: fontSize.title, line: lineHeight.title },
-  md: { value: fontSize.heading, line: lineHeight.heading },
-  lg: { value: fontSize.display, line: lineHeight.display },
+  sm: { size: fontSize.title, line: lineHeight.title },
+  md: { size: fontSize.heading, line: lineHeight.heading },
+  lg: { size: fontSize.display, line: lineHeight.display },
 } as const;
 
 /** Big bold tabular number with a label — km, time, counts. */
@@ -33,7 +43,7 @@ export function StatBlock({
   const s = sizes[size];
   return (
     <View style={[styles.container, { alignItems: alignToFlex(align) }, style]} testID={testID}>
-      <Text style={[styles.value, { fontSize: s.value, lineHeight: s.line }]}>{value}</Text>
+      <Text style={[styles.value, { fontSize: s.size, lineHeight: s.line }]}>{value}</Text>
       <Text style={styles.label}>{label}</Text>
       {caption ? <Text style={styles.caption}>{caption}</Text> : null}
     </View>

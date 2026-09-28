@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { BottomSheet } from "./BottomSheet";
@@ -12,6 +13,12 @@ export type ConfirmSheetProps = {
   cancelLabel?: string;
   /** Destructive confirm renders a red button (e.g. End trip). */
   destructive?: boolean;
+  /**
+   * Extra content between the message and the buttons — D5 uses it for the
+   * "you are outside the delivery area" warning, which must not stop the
+   * driver from ending (docs/08 §3: end is never blocked).
+   */
+  children?: ReactNode;
   loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -26,6 +33,7 @@ export function ConfirmSheet({
   confirmLabel,
   cancelLabel = "Cancel",
   destructive = false,
+  children,
   loading = false,
   onConfirm,
   onCancel,
@@ -34,6 +42,7 @@ export function ConfirmSheet({
   return (
     <BottomSheet onClose={onCancel} title={title} visible={visible} testID={testID}>
       <Text style={styles.message}>{message}</Text>
+      {children}
       <View style={styles.actions}>
         <Button
           fullWidth
