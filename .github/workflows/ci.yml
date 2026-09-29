@@ -34,6 +34,11 @@ jobs:
       - name: Unit tests
         run: bun run test
 
+      # Mod-level app.config checks: the merged Android manifest and iOS
+      # Info.plist via `expo config --type introspect` (validation M3, M11).
+      - name: App config (introspect)
+        run: bun run test:config
+
       # The console ships as a static web export. It broke on main without CI
       # noticing (validation report B1: expo-sqlite's wasm was unresolvable),
       # so build it on every PR.

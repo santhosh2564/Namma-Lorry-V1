@@ -22,6 +22,7 @@
     "plugins/**/*.ts",
     "e2e/**/*.ts",
     "app.config.ts",
+    "app.config.test.ts",
     ".eslintrc.js",
     "eslint.config.mjs",
     "babel.config.js",
