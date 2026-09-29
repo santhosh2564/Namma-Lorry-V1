@@ -9,11 +9,13 @@ import type { AppConfig } from "@/lib/config";
 const mockInit = jest.fn();
 const mockCaptureException = jest.fn();
 const mockSetUser = jest.fn();
+const mockCaptureMessage = jest.fn();
 
 jest.mock("@sentry/react-native", () => ({
   init: (...args: unknown[]) => mockInit(...args),
   captureException: (...args: unknown[]) => mockCaptureException(...args),
   setUser: (...args: unknown[]) => mockSetUser(...args),
+  captureMessage: (...args: unknown[]) => mockCaptureMessage(...args),
   wrap: <T>(component: T) => component,
 }));
 
@@ -57,6 +59,7 @@ beforeEach(() => {
   mockInit.mockClear();
   mockCaptureException.mockClear();
   mockSetUser.mockClear();
+  mockCaptureMessage.mockClear();
 });
 
 describe("initSentry", () => {
@@ -116,5 +119,37 @@ describe("initSentry", () => {
     expect(mockCaptureException).toHaveBeenCalledWith(error, { extra: { where: "uploader" } });
     expect(mockSetUser).toHaveBeenNthCalledWith(1, { id: "u1" });
     expect(mockSetUser).toHaveBeenNthCalledWith(2, null);
+  });
+});
+
+describe("reportMisconfigured (validation M2)", () => {
+  const problems = [
+    { key: "EXPO_PUBLIC_SUPABASE_URL", reason: "insecure" as const },
+    { key: "EXPO_PUBLIC_SUPABASE_ANON_KEY", reason: "missing" as const },
+  ];
+
+  it("reports once, fatal, with key names and reasons only", () => {
+    const sentry = loadSentry({ sentryDsn: "https://key@o1.ingest.sentry.io/1" });
+    sentry.initSentry();
+    sentry.reportMisconfigured(problems);
+    sentry.reportMisconfigured(problems);
+
+    expect(mockCaptureMessage).toHaveBeenCalledTimes(1);
+    expect(mockCaptureMessage).toHaveBeenCalledWith("App misconfigured", {
+      level: "fatal",
+      tags: { kind: "config" },
+      extra: {
+        problems: ["EXPO_PUBLIC_SUPABASE_URL: insecure", "EXPO_PUBLIC_SUPABASE_ANON_KEY: missing"],
+      },
+    });
+  });
+
+  it("does nothing without a DSN or without problems", () => {
+    loadSentry({ sentryDsn: "" }).reportMisconfigured(problems);
+    const sentry = loadSentry({ sentryDsn: "https://key@o1.ingest.sentry.io/1" });
+    sentry.initSentry();
+    sentry.reportMisconfigured([]);
+
+    expect(mockCaptureMessage).not.toHaveBeenCalled();
   });
 });

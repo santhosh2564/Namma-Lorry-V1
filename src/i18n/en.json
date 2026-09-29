@@ -12,7 +12,7 @@
     },
     "misconfigured": {
       "title": "This app is not set up correctly",
-      "body": "This build cannot connect to Namma Lorry. Please install the latest version or contact your transporter.",
+      "body": "This build cannot connect to Namma Lorry. Please update the app or contact Namma Lorry.",
       "details": "Settings to fix: {{keys}}"
     }
   },

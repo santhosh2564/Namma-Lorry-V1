@@ -69,6 +69,22 @@ export function setSentryUser(id: string | null): void {
   Sentry.setUser(id ? { id } : null);
 }
 
-export function reportMisconfigured(_problems: readonly ConfigProblem[]): void {}
+let misconfigurationReported = false;
+
+/**
+ * Report a misconfigured build once (validation M2). Key names and reasons
+ * only, never values. Safe to call when Sentry is off.
+ */
+export function reportMisconfigured(problems: readonly ConfigProblem[]): void {
+  if (!initialised || misconfigurationReported || problems.length === 0) {
+    return;
+  }
+  misconfigurationReported = true;
+  Sentry.captureMessage("App misconfigured", {
+    level: "fatal",
+    tags: { kind: "config" },
+    extra: { problems: problems.map((p) => `${p.key}: ${p.reason}`) },
+  });
+}
 
 export const wrapWithSentry = Sentry.wrap;

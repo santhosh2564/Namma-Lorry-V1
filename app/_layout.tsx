@@ -16,14 +16,18 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import "@/i18n";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Misconfigured } from "@/components/Misconfigured";
 import { useAuthStore } from "@/features/auth/store";
 import { useAuthBootstrap } from "@/features/auth/useAuthBootstrap";
-import { initSentry, setSentryUser, wrapWithSentry } from "@/lib/sentry";
+import { configProblems } from "@/lib/config";
+import { initSentry, reportMisconfigured, setSentryUser, wrapWithSentry } from "@/lib/sentry";
 import { useAppFonts } from "@/theme/fonts";
 import { colors } from "@/theme/tokens";
 
 // Crash reporting starts before the first render (B4). A no-op without a DSN.
 initSentry();
+// A misconfigured staging/production build reports once, by key name (M2).
+reportMisconfigured(configProblems);
 
 /**
  * Root layout: providers, fonts, and the auth bootstrap that resolves the
@@ -42,7 +46,19 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Config gate (validation M2): a staging or production build with a missing or
+ * invalid env renders the blocking Misconfigured screen instead of the app,
+ * before fonts, the auth bootstrap and routing, so no screen can call Supabase.
+ */
 function RootLayout() {
+  if (configProblems.length > 0) {
+    return <Misconfigured problems={configProblems} />;
+  }
+  return <App />;
+}
+
+function App() {
   // Noto Sans + Material Symbols (M2). Keep the app hidden until fonts are
   // ready, but never block forever if a font fails to load.
   const [fontsLoaded, fontError] = useAppFonts();

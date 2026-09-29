@@ -95,37 +95,58 @@ export function isConfigured(url: string, key: string): boolean {
 
 export const isSupabaseConfigured = isConfigured(config.supabaseUrl, config.supabaseAnonKey);
 
-// Only used when the app is misconfigured, so that a bad release surfaces in
-// Sentry as a network error instead of a white screen on the splash route.
+// Development only: an unconfigured dev build gets a placeholder so the auth
+// bootstrap reads "nobody is signed in" and S2 says sign-in is unavailable,
+// instead of throwing while the module is imported and blanking the splash
+// (M5). Staging and production never get it (validation M2).
 const PLACEHOLDER_URL = "http://127.0.0.1:54321";
 const PLACEHOLDER_KEY = "supabase-anon-key-not-configured";
 
+/**
+ * Where the client connects, or `null` when it must not be created at all.
+ * Pure and exported so the no-localhost rule is testable per environment.
+ */
 export function supabaseCredentials(
   cfg: Pick<AppConfig, "appEnv" | "supabaseUrl" | "supabaseAnonKey">,
 ): { url: string; key: string } | null {
   if (isConfigured(cfg.supabaseUrl, cfg.supabaseAnonKey)) {
     return { url: cfg.supabaseUrl, key: cfg.supabaseAnonKey };
   }
+  if (cfg.appEnv !== "development") {
+    return null;
+  }
   return { url: PLACEHOLDER_URL, key: PLACEHOLDER_KEY };
 }
 
-function credentials(): { url: string; key: string } {
-  if (isSupabaseConfigured) {
-    return { url: config.supabaseUrl, key: config.supabaseAnonKey };
-  }
+const credentials = supabaseCredentials(config);
 
-  // Loud in development, but not fatal: the auth bootstrap treats a missing
-  // backend as "nobody is signed in" and S2 says sign-in is unavailable, which
-  // is a far better failure than throwing while the module is being imported
-  // and blanking the splash (M5).
+if (credentials?.url === PLACEHOLDER_URL) {
   console.error(
     "Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and " +
       "EXPO_PUBLIC_SUPABASE_ANON_KEY in .env — see docs/DEV_SETUP.md.",
   );
-  return { url: PLACEHOLDER_URL, key: PLACEHOLDER_KEY };
 }
 
-const { url, key } = credentials();
+/**
+ * Stands in for the client in a misconfigured staging or production build.
+ * The root layout shows the Misconfigured screen before any screen mounts, so
+ * nothing should reach this; if something does, it fails loudly here rather
+ * than sending a request to a guessed backend. `then` stays undefined so the
+ * object is never mistaken for a promise.
+ */
+function notConfiguredClient(): SupabaseClient<Database> {
+  return new Proxy({} as SupabaseClient<Database>, {
+    get(_target, property) {
+      if (property === "then" || typeof property === "symbol") {
+        return undefined;
+      }
+      throw new Error(
+        `Supabase is not configured for ${config.appEnv} (supabase.${property}); ` +
+          "the build is missing a valid EXPO_PUBLIC_SUPABASE_URL / _ANON_KEY.",
+      );
+    },
+  });
+}
 
 /**
  * The single Supabase client for the app. Typed with `Database`, so
@@ -136,16 +157,19 @@ const { url, key } = credentials();
  * that is what makes the driver's own rows readable and nothing else
  * (docs/09 §2). The service role key never reaches the app.
  */
-export const supabase: SupabaseClient<Database> = createClient<Database>(url, key, {
-  auth: {
-    storage: sessionStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    // Web returns from an auth redirect with the tokens in the URL, so the
-    // session has to be picked up from there. Native never redirects.
-    detectSessionInUrl: Platform.OS === "web",
-  },
-  global: {
-    headers: { "X-Client-Info": `namma-lorry/${config.appEnv}` },
-  },
-});
+export const supabase: SupabaseClient<Database> =
+  credentials === null
+    ? notConfiguredClient()
+    : createClient<Database>(credentials.url, credentials.key, {
+        auth: {
+          storage: sessionStorage,
+          autoRefreshToken: true,
+          persistSession: true,
+          // Web returns from an auth redirect with the tokens in the URL, so the
+          // session has to be picked up from there. Native never redirects.
+          detectSessionInUrl: Platform.OS === "web",
+        },
+        global: {
+          headers: { "X-Client-Info": `namma-lorry/${config.appEnv}` },
+        },
+      });
