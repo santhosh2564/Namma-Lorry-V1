@@ -69,7 +69,9 @@ export SUPABASE_URL=https://<ref>.supabase.co SUPABASE_SERVICE_ROLE_KEY=<secret>
 node scripts/provision-user.mjs --phone 91XXXXXXXXXX --name "Ops Admin" --role admin
 node scripts/provision-user.mjs --phone 91XXXXXXXXXX --name "Murugan S" --role driver --language ta
 node scripts/provision-user.mjs --phone 91XXXXXXXXXX --deactivate    # offboard (keeps history)
+node scripts/provision-user.mjs --phone 91XXXXXXXXXX --activate      # re-enable; nothing else changes
 ```
+- Re-running for an existing number changes **only the flags you pass** (a bare `--name` never resets the role or reactivates anyone). New users default to driver / `en` / active.
 - [ ] One admin per ops person (no shared logins; `reviewed_by` must identify a person).
 - [ ] Pilot drivers (5–10), each with a vehicle created in the console.
 - [ ] App Review demo driver (production): see [APP_REVIEW_NOTES.md](APP_REVIEW_NOTES.md).
