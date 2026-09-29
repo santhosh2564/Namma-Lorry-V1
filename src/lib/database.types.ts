@@ -4,7 +4,7 @@
 //   supabase gen types typescript --local  > src/lib/database.types.ts
 //   supabase gen types typescript --linked > src/lib/database.types.ts
 //
-// Schema: supabase/migrations/0001_phase1_schema.sql + 0002_consent.sql
+// Schema: supabase/migrations/0001_phase1_schema.sql … 0006_dpdp_controls.sql
 // (docs/03-TRD §2). Every table has RLS enabled, so the client is limited to
 // the anon key and these types are the only description of what it may read.
 
@@ -13,6 +13,33 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
   public: {
     Tables: {
+      admin_events: {
+        Row: {
+          id: number;
+          action: string;
+          target_id: string | null;
+          actor_id: string | null;
+          payload: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          action: string;
+          target_id?: string | null;
+          actor_id?: string | null;
+          payload?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          action?: string;
+          target_id?: string | null;
+          actor_id?: string | null;
+          payload?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       app_settings: {
         Row: {
           key: string;
@@ -158,6 +185,7 @@ export type Database = {
           created_at: string;
           consent_version: string | null;
           consent_at: string | null;
+          erased_at: string | null;
         };
         Insert: {
           id: string;
@@ -169,6 +197,7 @@ export type Database = {
           created_at?: string;
           consent_version?: string | null;
           consent_at?: string | null;
+          erased_at?: string | null;
         };
         Update: {
           id?: string;
@@ -180,6 +209,7 @@ export type Database = {
           created_at?: string;
           consent_version?: string | null;
           consent_at?: string | null;
+          erased_at?: string | null;
         };
         Relationships: [
           {
@@ -356,6 +386,7 @@ export type Database = {
           reviewed_by: string | null;
           review_note: string | null;
           device_info: Json | null;
+          points_downsampled_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -380,6 +411,7 @@ export type Database = {
           reviewed_by?: string | null;
           review_note?: string | null;
           device_info?: Json | null;
+          points_downsampled_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -404,6 +436,7 @@ export type Database = {
           reviewed_by?: string | null;
           review_note?: string | null;
           device_info?: Json | null;
+          points_downsampled_at?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -472,6 +505,13 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      admin_erase_driver: {
+        Args: {
+          p_driver_id: string;
+          p_note: string;
+        };
+        Returns: Json;
+      };
       admin_force_end: {
         Args: {
           p_trip_id: string;
@@ -505,6 +545,10 @@ export type Database = {
           p_note: string;
         };
         Returns: Database["public"]["Tables"]["trips"]["Row"];
+      };
+      downsample_old_points: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
       };
       end_trip: {
         Args: {

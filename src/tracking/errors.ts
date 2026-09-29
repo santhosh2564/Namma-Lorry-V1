@@ -19,6 +19,8 @@ export type TrackingErrorCode =
   | "OUTSIDE_PICKUP"
   /** `end_trip` found the trip already ended — treat as success. */
   | "TRIP_NOT_ACTIVE"
+  /** `start_trip`: the driver has no recorded consent (0006, docs/09 §1). */
+  | "CONSENT_REQUIRED"
   /** Client-side: no usable GPS fix, so the RPC was never called. */
   | "GPS_UNAVAILABLE"
   /** The request never reached the server (offline, DNS, timeout). */
@@ -42,6 +44,7 @@ const RPC_CODES: readonly Exclude<TrackingErrorCode, "OUTSIDE_PICKUP" | "GPS_UNA
   "ANOTHER_TRIP_ACTIVE",
   "GPS_ACCURACY_TOO_LOW",
   "TRIP_NOT_ACTIVE",
+  "CONSENT_REQUIRED",
 ];
 
 /**

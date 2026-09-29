@@ -456,6 +456,20 @@
         "outside": "TODO: TODO: TODO: You're {{km}} km from the pickup. Move inside the circle to start.",
         "ready": "TODO: TODO: TODO: You're at the pickup · GPS accuracy {{metres}} m",
         "starting": "TODO: TODO: TODO: Starting the trip…"
+      },
+      "reviewConsent": "TODO: Review notice",
+      "errors": {
+        "notFound": "TODO: Trip not found. Pull down to refresh your trips.",
+        "notStartable": "TODO: This trip can't be started any more. Pull down to refresh your trips.",
+        "anotherActive": "TODO: You already have a trip running. Open it from your trips.",
+        "gpsWeak": "TODO: Waiting for a better GPS signal. Try again in a moment.",
+        "outsidePickup": "TODO: You are {{km}} km from the pickup. Move inside the circle to start.",
+        "notActive": "TODO: This trip has already ended.",
+        "consentRequired": "TODO: Before your first trip, agree to the location notice.",
+        "noGps": "TODO: No GPS signal yet. Step into the open and try again.",
+        "network": "TODO: No internet connection. Check your connection and try again.",
+        "notConfigured": "TODO: This app isn't set up correctly. Contact Namma Lorry.",
+        "unknown": "TODO: Couldn't start the trip. Try again."
       }
     },
     "live": {

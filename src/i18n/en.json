@@ -456,6 +456,20 @@
         "outside": "You're {{km}} km from the pickup. Move inside the circle to start.",
         "ready": "You're at the pickup · GPS accuracy {{metres}} m",
         "starting": "Starting the trip…"
+      },
+      "reviewConsent": "Review notice",
+      "errors": {
+        "notFound": "Trip not found. Pull down to refresh your trips.",
+        "notStartable": "This trip can't be started any more. Pull down to refresh your trips.",
+        "anotherActive": "You already have a trip running. Open it from your trips.",
+        "gpsWeak": "Waiting for a better GPS signal. Try again in a moment.",
+        "outsidePickup": "You are {{km}} km from the pickup. Move inside the circle to start.",
+        "notActive": "This trip has already ended.",
+        "consentRequired": "Before your first trip, agree to the location notice.",
+        "noGps": "No GPS signal yet. Step into the open and try again.",
+        "network": "No internet connection. Check your connection and try again.",
+        "notConfigured": "This app isn't set up correctly. Contact Namma Lorry.",
+        "unknown": "Couldn't start the trip. Try again."
       }
     },
     "live": {
