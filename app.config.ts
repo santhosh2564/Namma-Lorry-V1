@@ -50,6 +50,11 @@ const APP_NAMES: Record<AppEnv, string> = {
   production: "Namma Lorry",
 };
 
+// EAS project @santhoshkrwork/namma-lorry (`eas init`, B5c). Builds and
+// updates land here; the slug below must stay "namma-lorry" to match it.
+const EAS_OWNER = "santhoshkrwork";
+const EAS_PROJECT_ID = "2a3edc84-9fe4-4593-b278-ef919ec1b82c";
+
 const defineConfig = (env: Env): ExpoConfig => {
   const appEnv = appEnvFrom(env);
 
@@ -57,8 +62,22 @@ const defineConfig = (env: Env): ExpoConfig => {
     // Identifiers are shared by every profile; only the name tells testers apart.
     name: APP_NAMES[appEnv],
     slug: "namma-lorry",
+    owner: EAS_OWNER,
     scheme: "namma-lorry",
     version: "1.0.0",
+
+    // EAS Update. `appVersion`, not `fingerprint`: a fingerprint computed on
+    // Windows can differ from the Linux build worker (line endings) and silently
+    // block updates. Any native change therefore needs a `version` bump. Each
+    // build profile's channel is in eas.json; publish with scripts/eas-update.mjs.
+    runtimeVersion: { policy: "appVersion" },
+    updates: {
+      url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
+      // Launch the embedded or cached bundle at once; a downloaded update applies
+      // on the next cold start. A driver's launch never waits on the network.
+      fallbackToCacheTimeout: 0,
+      checkAutomatically: "ON_LOAD",
+    },
     orientation: "portrait",
     userInterfaceStyle: "light",
     newArchEnabled: true,
@@ -174,6 +193,7 @@ const defineConfig = (env: Env): ExpoConfig => {
 
     extra: {
       appEnv,
+      eas: { projectId: EAS_PROJECT_ID },
     },
 
     _internal: {
