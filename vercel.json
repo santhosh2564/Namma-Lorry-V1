@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "npm ci --legacy-peer-deps --no-audit --no-fund --os=linux",
+  "installCommand": "npm ci --legacy-peer-deps --no-audit --no-fund",
   "buildCommand": "npm run export:web",
   "outputDirectory": "dist",
   "cleanUrls": false,

@@ -78,7 +78,7 @@ An update can only change JS and assets. Anything touching native code, permissi
 
 `vercel.json` holds the whole configuration:
 
-- **Build:** `npm ci --legacy-peer-deps --os=linux`, then `npm run export:web` (`expo export -p web`), output `dist/`. The `--os=linux` override is required: the repo `.npmrc` sets `os=win32` (audit finding), which otherwise installs Windows native binaries on Vercel's Linux builders.
+- **Build:** `npm ci --legacy-peer-deps`, then `npm run export:web` (`expo export -p web`), output `dist/`. (Before R0 the repo `.npmrc` had `os=win32` and this needed `--os=linux`; that line is gone, so no override.)
 - **SPA fallback:** every path that isn't a real file rewrites to `/index.html` (`web.output: "single"`), so deep links like `/console/trips/<id>` work on reload.
 - **Security headers:** CSP (self + `*.supabase.co` https/wss + `*.mappls.com`/`*.mapmyindia.com` + Sentry ingest; no inline scripts; `frame-ancestors 'none'`), HSTS, `nosniff`, `X-Frame-Options: DENY`, `Permissions-Policy` (no geolocation/camera/mic), COOP, `X-Robots-Tag: noindex`. `/_expo/static/*` is cached immutably (content-hashed).
 - `Referrer-Policy` is `strict-origin-when-cross-origin`, **not** `no-referrer`. The Mappls web key is domain-restricted and Mappls checks the Referer origin.
