@@ -36,6 +36,7 @@ describe("parseTrackingError", () => {
     "ANOTHER_TRIP_ACTIVE",
     "GPS_ACCURACY_TOO_LOW",
     "TRIP_NOT_ACTIVE",
+    "CONSENT_REQUIRED",
   ])("maps the raw RPC message %s to its code", (code) => {
     expect(parseTrackingError({ message: code }).code).toBe(code);
   });
