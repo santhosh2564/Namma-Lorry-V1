@@ -26,7 +26,13 @@ Phase 1 goal in one line: **prove, from the phone's GPS, that a trip for a speci
 | 09 | `docs/09-security-privacy-compliance.md` | DPDP Act, store policies, threat model | Client, store submission |
 | 10 | `docs/10-test-plan.md` | Unit, RLS, field-test matrix, acceptance | QA, agents |
 | 11 | `docs/11-build-prompts.md` | Copy-paste prompts per milestone | You → Claude Code / Antigravity |
-| — | `.env.example` | Every env variable the app needs | Developers |
+| 12 | `docs/12-screens-and-stitch-prompts.md` + `stitch/DESIGN.md` | Final 21 screens, use cases, Google Stitch prompts | You → Stitch, designer |
+| 13 | `docs/13-claude-code-prompts.md` | Step-by-step Claude Code prompts, Prompt 0 → release (supersedes 11) | You → Claude Code |
+| 14 | `docs/14-phase1-completion-prompts.md` | R0–R15 completion prompts after the M12c review | You → Claude Code |
+| 15 | `docs/15-option-a-merge-plan.md` | Option A: consolidate on origin/main — decision, rules, A0–A7 port checklist | You → Claude Code |
+| 16 | `docs/16-phase1-validation-prompt.md` | Phase 1 validation (V1), fix loop (V2) and re-validation (V3) prompts | You → Claude Code |
+| — | `env.example` | Every env variable the app needs | Developers |
+| — | `supabase/smoke_phase1.sql` | Original psql smoke script (superseded by the pgTAP suites in `supabase/tests/`) | Reference |
 
 ### Documents that still need to come from you / the client
 These can't be written without real inputs, but you need them before store release:

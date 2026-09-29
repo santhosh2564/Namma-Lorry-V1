@@ -135,7 +135,7 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 - [x] `eas.json` with development / preview / production profiles
 - [x] GitHub Actions: install, typecheck, lint, test
 - [x] Placeholder route for **every** screen in §4 (renders screen ID + title)
-- [ ] Update CLAUDE.md / TRD layout per ND-9 (after approval)
+- [~] Update CLAUDE.md / TRD layout per ND-9 (after approval) — CLAUDE.md/AGENTS.md done 29 Sep (docs pack PR); TRD §3 not yet
 
 **Files expected:** `package.json`, `app.config.ts`, `eas.json`, `tsconfig.json`, `babel.config.js`, `eslint.config.js`, `.prettierrc`, `jest.config.js`, `.github/workflows/ci.yml`, `src/lib/config.ts`, `app/_layout.tsx`, all route files in §4 (placeholders), `.env.example`.
 
@@ -723,3 +723,11 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Changed (B1):** `expo export -p web` failed with `Unable to resolve module ./wa-sqlite/wa-sqlite.wasm`: expo-sqlite's web worker imports a `.wasm` file, Metro's default `assetExts` has no `wasm`, and the driver routes pull `expo-sqlite` into the web graph through `@/tracking/db`. The M9 entry above saw the same error in the dev server and put it down to a stale bundle URL. Added `metro.config.js` (Expo defaults + `wasm` asset), a `export:web` script, and a CI step that runs the production export on every PR. Regression test: `src/lib/metroConfig.test.ts`.
 - **Verified:** the production export emits the entry bundle, the SQLite worker and `wa-sqlite.*.wasm`; Jest 479/479; `tsc`, ESLint clean.
 - **Left:** hosting config (Vercel, SPA fallback, CSP) is still part of B5.
+
+### 2026-09-29 · Docs pack promoted to the repo root (docs/14 R1 steps 1–2)
+- **Changed:** the newest pack (`namma-lorry-phase1-docs/namma-lorry-phase1-docs/`) now lives at the root: `CLAUDE.md`, `AGENTS.md` (identical to CLAUDE.md), `README.md`, `docs/01–04, 06–13`, `stitch/DESIGN.md`; `docs/14` added from the completion-prompt file; `docs/15-option-a-merge-plan.md` (Option A rationale + port checklist) and `docs/16-phase1-validation-prompt.md` (V1 validation, V2 fix loop, V3 re-validation) added as pasted; README file table lists 14–16. The live root `supabase/` was kept as is; the pack's psql smoke script moved to `supabase/smoke_phase1.sql` (outside `tests/`, so `supabase test db` does not pick it up).
+- **CLAUDE.md:** layout rewritten to what the code uses (ND-9: route groups, `src/features`, `src/tracking`, `src/lib`, `src/theme`, `plugins/`, `e2e/`), bun as the package manager, rule 8 = admin-only web console (ND-10), hard rules 11–13 from docs/14 R1.
+- **Deleted after byte-compare (md5 identical to the kept copy):** root `02-PRD.md`, `03-TRD.md`, `13-claude-code-prompts.md`, `0001_phase1_schema.sql` (= `supabase/migrations/0001`); the whole old pack `namma-lorry-phase1-docs/` (docs 01–03, 06–12, AGENTS/CLAUDE, DESIGN.md, 0001, smoke test — all identical to the newest pack) and `namma-lorry-phase1-docs.zip`; `SCREENS/12_screens_and_stitch_prompts.md` (= docs/12) and `SCREENS/design.md` (= stitch/DESIGN.md).
+- **Deleted, not identical (older revisions superseded):** root `04-screen-navigation.md` and old-pack doc 04 (the newest pack's doc 04 merges C8 into C6 — see docs/00 §1); root `README.md` (older revision without docs 12/13); both pack `.env.example` copies (older than the live root `env.example`, which has the store-URL, Mappls-licence and Sentry entries).
+- **Kept:** `SCREENS/namma_lorry/DESIGN.md` — it differs from `stitch/DESIGN.md` (Stitch-exported token palette; ND-17 says the brief wins). The `SCREENS/ → design/` move (R1 step 3) and the docs/04 route update (R1 step 4) are not part of this PR.
+- **Added:** `.gitattributes` (`* text=auto eol=lf` plus binary rules for images, fonts, archives, PDFs, keystores). The index was already all-LF, so `git add --renormalize .` changed no files.
