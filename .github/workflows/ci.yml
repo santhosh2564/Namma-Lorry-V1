@@ -28,6 +28,14 @@ jobs:
       - name: Test
         run: npm test -- --ci
 
+      # Release scripts (eas-update, provision-user, asset gate) + app.config introspection.
+      - name: Test release scripts
+        run: npm run test:scripts
+
+      # The web console build Vercel runs (vercel.json buildCommand).
+      - name: Export web
+        run: npm run export:web
+
       # docs/09 §4 "npm audit in CI". Gate on critical only: the current high
       # (react-server-dom-webpack, RSC server DoS) is not reachable in our static web
       # export — see docs/HARDENING_REPORT.md. Raise to high once it is bumped.
