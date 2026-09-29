@@ -1,5 +1,7 @@
-import { startEnabled, startState } from "@/features/trips/startState";
+import { startEnabled, startErrorText, startState } from "@/features/trips/startState";
+import en from "@/i18n/en.json";
 import { destinationPoint, haversineMetres } from "@/lib/geo";
+import type { TrackingErrorCode } from "@/tracking/errors";
 
 const PICKUP = { lat: 12.9698, lng: 79.9382, radiusM: 500 };
 
@@ -61,5 +63,55 @@ describe("startEnabled", () => {
     for (const state of ["no_fix", "gps_weak", "outside_radius", "starting", "error"] as const) {
       expect(startEnabled(state)).toBe(false);
     }
+  });
+});
+
+describe("startErrorText", () => {
+  // Every code start_trip / the engine can hand D4 (docs/06 §1). The raw
+  // upstream message is never rendered; each code has driver-facing text.
+  const codes: TrackingErrorCode[] = [
+    "TRIP_NOT_FOUND",
+    "TRIP_NOT_STARTABLE",
+    "ANOTHER_TRIP_ACTIVE",
+    "GPS_ACCURACY_TOO_LOW",
+    "OUTSIDE_PICKUP",
+    "TRIP_NOT_ACTIVE",
+    "CONSENT_REQUIRED",
+    "GPS_UNAVAILABLE",
+    "NETWORK",
+    "NOT_CONFIGURED",
+    "UNKNOWN",
+  ];
+
+  function lookup(key: string): unknown {
+    return key
+      .split(".")
+      .reduce<unknown>((node, part) => (node as Record<string, unknown>)?.[part], en);
+  }
+
+  it.each(codes)("gives %s an English string", (code) => {
+    const { key } = startErrorText({ code, message: "raw upstream text" });
+    expect(typeof lookup(key)).toBe("string");
+  });
+
+  it("maps CONSENT_REQUIRED to the consent text and offers the notice again", () => {
+    expect(startErrorText({ code: "CONSENT_REQUIRED", message: "CONSENT_REQUIRED" })).toEqual({
+      key: "driver.trip.errors.consentRequired",
+      reviewConsent: true,
+    });
+  });
+
+  it("carries the OUTSIDE_PICKUP distance in km", () => {
+    expect(
+      startErrorText({
+        code: "OUTSIDE_PICKUP",
+        message: "OUTSIDE_PICKUP:3210",
+        outsidePickupM: 3210,
+      }),
+    ).toEqual({
+      key: "driver.trip.errors.outsidePickup",
+      params: { km: 3.2 },
+      reviewConsent: false,
+    });
   });
 });

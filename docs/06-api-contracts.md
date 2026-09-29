@@ -13,6 +13,7 @@ supabase.rpc('start_trip', {
 | Error | Meaning | App shows |
 |---|---|---|
 | `TRIP_NOT_FOUND` | not yours / doesn't exist | "Trip not found" |
+| `CONSENT_REQUIRED` | driver has no recorded consent (`profiles.consent_version` is null; 0006) | "Agree to the location notice" + **Review notice** → D1 |
 | `TRIP_NOT_STARTABLE` | not in `assigned` | refresh list |
 | `ANOTHER_TRIP_ACTIVE` | driver already tracking | open active trip |
 | `GPS_ACCURACY_TOO_LOW` | accuracy > 50 m | "Waiting for better GPS signal" |
@@ -49,6 +50,17 @@ supabase.rpc('admin_force_end', { p_trip_id: string, p_note: string }) // → tr
 ```
 For an `in_progress` trip the driver cannot end (phone lost, app removed). `ended_at` = the last received point; the trip is verified over the points that arrived and always lands in `needs_review` with `MISSING_POINTS` (and `END_OUTSIDE_DROP`, since there is no end position), so it never adds stats without a review. Logs a `force_ended` event with the admin, the note and the received point count, and clears the live position.
 Errors: `FORBIDDEN`, `NOTE_REQUIRED`, `TRIP_NOT_FOUND`, `TRIP_NOT_ACTIVE` (not `in_progress`).
+
+### `admin_erase_driver` (admin)
+```ts
+supabase.rpc('admin_erase_driver', { p_driver_id: string, p_note: string })
+// → { points_deleted: number, trips_kept: number, trips_cancelled: number }
+```
+DPDP erasure (docs/09 §1). Deletes every `trip_points` / `trip_live` row of the driver, removes start/end positions and `device_info` from their trips, blanks `full_name` and `phone`, sets `is_active = false` and `erased_at`. Assigned trips are cancelled. Trip results and `driver_stats` are kept (anonymised). Logs `driver_erased` in `admin_events` with the admin and the note. The auth user is **not** removed; see docs/RUNBOOK.md §Erasure.
+Errors: `FORBIDDEN`, `NOTE_REQUIRED`, `DRIVER_NOT_FOUND` (no such driver profile), `DRIVER_HAS_ACTIVE_TRIP` (a trip is `in_progress` or `completed`; end or force-end it and let it verify first).
+
+### Internal (not callable by clients)
+`downsample_old_points()` — nightly pg_cron job `downsample-old-points` (21:30 UTC). Final trips (`verified` / `rejected` / `cancelled`) older than `app_settings.raw_point_retention_days` keep ≤ 500 points (ST_Simplify; first and last point always kept) and get `points_downsampled_at`.
 
 ## 2. Table access (via RLS)
 | Operation | Who | Call |

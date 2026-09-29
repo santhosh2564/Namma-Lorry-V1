@@ -12,11 +12,13 @@ import { readPermissionSnapshot, type PermissionSnapshot } from "@/features/onbo
 import {
   distanceToPickupM,
   startEnabled,
+  startErrorText,
   startState,
   type StartState,
 } from "@/features/trips/startState";
 import { useDriverTrip } from "@/features/trips/useDriverTrips";
 import { colors, fonts, fontSize, spacing } from "@/theme/tokens";
+import { parseTrackingError, type TrackingError } from "@/tracking/errors";
 import { startTrip } from "@/tracking/service";
 
 /**
@@ -43,7 +45,7 @@ export default function TripDetailScreen() {
     null,
   );
   const [starting, setStarting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<TrackingError | null>(null);
 
   const refreshPermissions = useCallback(() => {
     void readPermissionSnapshot().then(setPermissions);
@@ -106,8 +108,9 @@ export default function TripDetailScreen() {
     if (pickup === null) {
       return "no_fix";
     }
-    return startState({ fix, permissionsOk, pickup, starting, error });
+    return startState({ fix, permissionsOk, pickup, starting, error: error?.code ?? null });
   }, [fix, permissionsOk, pickup, starting, error]);
+  const errorText = error === null ? null : startErrorText(error);
 
   const distance = pickup === null ? null : distanceToPickupM(fix, pickup);
 
@@ -127,9 +130,9 @@ export default function TripDetailScreen() {
         router.replace({ pathname: "/(driver)/trips/[id]/live", params: { id: trip.id } });
         return;
       }
-      setError(result.error.message);
+      setError(result.error);
     } catch (thrown) {
-      setError(thrown instanceof Error ? thrown.message : String(thrown));
+      setError(parseTrackingError(thrown));
     } finally {
       setStarting(false);
     }
@@ -205,9 +208,13 @@ export default function TripDetailScreen() {
 
           <StartStateRow distance={distance} fix={fix} state={state} />
 
-          {error !== null ? (
+          {errorText !== null ? (
             <Banner
-              message={error}
+              actionLabel={errorText.reviewConsent ? t("driver.trip.reviewConsent") : undefined}
+              message={t(errorText.key, errorText.params)}
+              onAction={
+                errorText.reviewConsent ? () => router.push("/(onboarding)/permissions") : undefined
+              }
               onDismiss={() => setError(null)}
               testID="driver-trip-start-error"
               variant="error"

@@ -112,7 +112,12 @@ export default function PermissionsScreen() {
     try {
       // Record who agreed to what, when (docs/09 §1). Failure blocks the flow:
       // an unrecorded consent must not let a driver sail into tracking.
-      await recordConsent();
+      // recordConsent reports failure by returning { ok: false }, not throwing.
+      const result = await recordConsent();
+      if (!result.ok) {
+        setConsentError(true);
+        return;
+      }
       router.replace("/(onboarding)/battery");
     } catch {
       setConsentError(true);

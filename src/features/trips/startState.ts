@@ -16,6 +16,7 @@
  *   verdict the server will hand down so the button never lies.
  */
 import { haversineMetres } from "@/lib/geo";
+import type { TrackingError, TrackingErrorCode } from "@/tracking/errors";
 import { accuracyIsAcceptable } from "@/tracking/permissions";
 
 export type StartState = "no_fix" | "gps_weak" | "outside_radius" | "ready" | "starting" | "error";
@@ -74,4 +75,42 @@ export function startState(input: StartStateInput): StartState {
 /** Pure: is the START button pressable in this state? */
 export function startEnabled(state: StartState): boolean {
   return state === "ready";
+}
+
+const START_ERROR_KEYS: Record<TrackingErrorCode, string> = {
+  TRIP_NOT_FOUND: "notFound",
+  TRIP_NOT_STARTABLE: "notStartable",
+  ANOTHER_TRIP_ACTIVE: "anotherActive",
+  GPS_ACCURACY_TOO_LOW: "gpsWeak",
+  OUTSIDE_PICKUP: "outsidePickup",
+  TRIP_NOT_ACTIVE: "notActive",
+  CONSENT_REQUIRED: "consentRequired",
+  GPS_UNAVAILABLE: "noGps",
+  NETWORK: "network",
+  NOT_CONFIGURED: "notConfigured",
+  UNKNOWN: "unknown",
+};
+
+export type StartErrorText = {
+  /** i18n key under `driver.trip.errors`. */
+  key: string;
+  params?: { km: number };
+  /** CONSENT_REQUIRED: offer the D1 notice again instead of a plain retry. */
+  reviewConsent: boolean;
+};
+
+/**
+ * Pure: the driver-facing text for a failed START (docs/06 §1 "App shows").
+ * The upstream message is for logs only and is never rendered.
+ */
+export function startErrorText(error: TrackingError): StartErrorText {
+  const key = `driver.trip.errors.${START_ERROR_KEYS[error.code]}`;
+  if (error.code === "OUTSIDE_PICKUP" && error.outsidePickupM !== undefined) {
+    return {
+      key,
+      params: { km: Math.round(error.outsidePickupM / 100) / 10 },
+      reviewConsent: false,
+    };
+  }
+  return { key, reviewConsent: error.code === "CONSENT_REQUIRED" };
 }
