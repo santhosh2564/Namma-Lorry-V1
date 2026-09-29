@@ -1,7 +1,7 @@
-import en from "@/i18n/en.json";
 import { startEnabled, startErrorText, startState } from "@/features/trips/startState";
-import type { TrackingErrorCode } from "@/tracking/errors";
+import en from "@/i18n/en.json";
 import { destinationPoint, haversineMetres } from "@/lib/geo";
+import type { TrackingErrorCode } from "@/tracking/errors";
 
 const PICKUP = { lat: 12.9698, lng: 79.9382, radiusM: 500 };
 
