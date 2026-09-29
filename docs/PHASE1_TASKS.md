@@ -452,13 +452,13 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 🧍 Run the field-test script on the brand matrix in doc 10 §3 (Xiaomi, Vivo/Oppo, Samsung A, Realme, iPhone per ND-3) and paste the results.
 
 #### M12c — Release preparation (Prompt 15)
-- [ ] `app.config.ts`: name, bundle id / package, version and build numbers, icons and splash (list missing assets), permission strings, foreground service verified in prebuild output
-- [ ] EAS preview (APK/AAB + TestFlight per ND-3) and production profiles; env per profile; EAS Update channels
-- [ ] Web console: `npx expo export -p web`, Vercel (or Netlify) config, SPA fallback, security headers
-- [ ] Hosted Supabase checklist: link staging/prod, push migrations, secrets, deploy functions, pg_cron job, SMS provider (DLT)
-- [ ] `docs/release/`: Play background-location declaration + video shot list, Data safety, Apple App Privacy, App Review notes + demo account, privacy policy (doc 09 §6, marked "requires legal review")
-- [ ] `docs/RUNBOOK.md`: deploy, rollback, key rotation, stuck trip, re-run verification, data incident
-- [ ] Final ordered list of manual steps for the human
+- [x] `app.config.ts`: name per env, `com.nammalorry.app`, version 1.0.0 (runtime = appVersion), EAS-remote build numbers, doc 09 §3 strings via the expo-location plugin, Android FGS location + POST_NOTIFICATIONS, `allowBackup=false`, blocked unused permissions, `fetch` background mode stripped, iOS privacy manifest, `usesNonExemptEncryption=false`. Verified: `expo prebuild` Android manifest + `expo config --type introspect` iOS plist. **Assets: all missing** (docs/release/ASSETS.md); `npm run release:assets` gates preview/production EAS builds
+- [x] EAS: `preview` (store: TestFlight + Play internal, staging), `preview_apk` (sideload), `production`; channels development/preview/production; EAS environments; `expo-updates` installed; `npm run update:*` wrapper. **Project id not linked yet** (updates compiled off until `eas init`)
+- [x] Web: `vercel.json` (build, `--os=linux` install override, SPA rewrite, CSP + security headers, immutable static cache). CSP to re-check after M3's real map
+- [x] Hosted Supabase checklist (`docs/release/SUPABASE_HOSTED.md`) + `scripts/provision-user.mjs` (tested locally)
+- [x] `docs/release/`: Play location/FGS declarations + video shot list, Data safety, Apple App Privacy, App Review notes + demo account, privacy policy (requires legal review)
+- [x] `docs/RUNBOOK.md` (SQL for stuck trips / re-verify / stats tested in rolled-back transactions locally)
+- [x] Ordered manual steps handed to the human (progress log 2026-09-29 M12c)
 
 **Phase 1 definition of done (doc 01 §6)**
 - [ ] 10 real pilot trips; ≥ 8 auto-verified; every flagged trip has a correct, human-readable reason
@@ -593,3 +593,9 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Failures found → fixed:** (1) seeded Hosur→Peenya planned distance of 41 km is shorter than any real road, so genuine trips were flagged `DISTANCE_TOO_LONG`; seed now 62 km (DESIGN.md's sample text still says 41 km). (2) Concurrent `start_trip` returned a raw `23505` instead of `ANOTHER_TRIP_ACTIVE` → migration `0004_start_trip_concurrency.sql` (per-driver advisory lock + mapping). (3) C1 was unreachable on web — `/` rendered S1 because doc 04's route groups collide → console moved to `app/console/` (ND-26). (4) Realtime changes made between SUBSCRIBED and "Subscribed to PostgreSQL" were lost and never refetched (C1 stayed empty on a cold server) → refetch on the postgres_changes ready message + 30 s polling on C1/C6 while a trip is open.
 - **Left:** everything marked ⏳ in the matrix needs M8–M10 and real devices; no Maestro flows (no driver screens to drive); field runs per `docs/FIELD_TEST_SCRIPT.md`.
 - **Known issues:** ND-25 (abandoned in-progress trips never close), ND-13 (admin direct trip writes), ND-26 remainder (S1 vs D3 both at `/`). Playwright runs leave fixture loads/trips in the local DB (`supabase db reset` clears them). The C1 "Map preview" is still not a Mappls map (M3).
+
+### 2026-09-29 · M12c — release preparation (Prompt 15)
+- **Changed:** `app.config.ts`, `eas.json`, `vercel.json`, `package.json` (1.0.0, `expo-updates`, scripts `release:assets`, `eas-build-pre-install`, `export:web`, `update:preview|production`), `scripts/{check-release-assets,provision-user,eas-update}.mjs`, placeholder `assets/notification-icon.png`, `.gitignore` (`.vercel/`, `backups/`), `docs/release/*`, `docs/RUNBOOK.md`.
+- **Found:** expo-task-manager silently adds iOS `fetch` background mode (stripped); `eas update` ignores eas.json `build.env`, so a bare publish would ship `APP_ENV=development` to production (wrapper added); `.npmrc os=win32` would break Vercel's Linux install (overridden in vercel.json; CI likely affected too); POST_NOTIFICATIONS was missing (Android 13+ would hide the trip notification).
+- **Left:** brand assets; `eas init` project id; all account/console steps; M3–M10 before any meaningful store build; legal review.
+

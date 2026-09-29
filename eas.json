@@ -7,6 +7,8 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "channel": "development",
+      "environment": "development",
       "ios": {
         "simulator": true
       },
@@ -22,15 +24,29 @@
       "withoutCredentials": true
     },
     "preview": {
-      "distribution": "internal",
+      "distribution": "store",
+      "channel": "preview",
+      "environment": "preview",
+      "autoIncrement": true,
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       },
       "env": {
         "EXPO_PUBLIC_APP_ENV": "preview"
       }
     },
+    "preview_apk": {
+      "extends": "preview",
+      "distribution": "internal",
+      "autoIncrement": false,
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
+      "distribution": "store",
+      "channel": "production",
+      "environment": "production",
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
@@ -41,6 +57,17 @@
     }
   },
   "submit": {
-    "production": {}
+    "preview": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "completed"
+      }
+    },
+    "production": {
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    }
   }
 }

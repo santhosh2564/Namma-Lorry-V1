@@ -1,6 +1,6 @@
 {
   "name": "namma-lorry",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -17,7 +17,12 @@
     "i18n:sync": "node scripts/i18n-sync.mjs",
     "gpx:gen": "node scripts/gen-gpx.mjs",
     "test:db": "supabase test db && bash test/db/start-trip-race.sh",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "release:assets": "node scripts/check-release-assets.mjs",
+    "eas-build-pre-install": "node scripts/check-release-assets.mjs",
+    "export:web": "expo export -p web",
+    "update:preview": "node scripts/eas-update.mjs preview",
+    "update:production": "node scripts/eas-update.mjs production"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.16",
@@ -42,6 +47,7 @@
     "expo-status-bar": "~57.0.1",
     "expo-system-ui": "~57.0.4",
     "expo-task-manager": "~57.0.20",
+    "expo-updates": "~57.0.23",
     "i18next": "^26.4.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
