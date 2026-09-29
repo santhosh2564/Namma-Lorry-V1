@@ -1,0 +1,26 @@
+{
+  "history": [
+    {
+      "id": "6f759f1e-cf24-434c-b834-009533b85643",
+      "status": "verified",
+      "tracked_distance_m": 5974,
+      "verification_reasons": []
+    },
+    {
+      "id": "f0000000-0000-4000-8000-000000000001",
+      "status": "assigned",
+      "tracked_distance_m": null,
+      "verification_reasons": []
+    }
+  ],
+  "stats": [
+    {
+      "driver_id": "d0000000-0000-4000-8000-000000000001",
+      "verified_trips": 1,
+      "verified_distance_m": 5974,
+      "first_verified_at": "2026-09-29T09:03:33.975+00:00",
+      "last_verified_at": "2026-09-29T09:03:33.975+00:00",
+      "updated_at": "2026-09-29T09:03:34.008485+00:00"
+    }
+  ]
+}
