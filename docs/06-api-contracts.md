@@ -36,6 +36,20 @@ supabase.rpc('admin_review_trip', { p_trip_id: string, p_approve: boolean, p_not
 ```
 Errors: `FORBIDDEN`, `NOTE_REQUIRED`, `TRIP_NOT_IN_REVIEW`.
 
+### `cancel_trip` (admin)
+```ts
+supabase.rpc('cancel_trip', { p_trip_id: string, p_note: string }) // → trips row (status 'cancelled')
+```
+Only an `assigned` trip can be cancelled; the load can then be assigned again. Logs a `cancelled` event with the admin and the note.
+Errors: `FORBIDDEN`, `NOTE_REQUIRED`, `TRIP_NOT_FOUND`, `TRIP_NOT_CANCELLABLE` (not `assigned`).
+
+### `admin_force_end` (admin)
+```ts
+supabase.rpc('admin_force_end', { p_trip_id: string, p_note: string }) // → trips row (status 'needs_review')
+```
+For an `in_progress` trip the driver cannot end (phone lost, app removed). `ended_at` = the last received point; the trip is verified over the points that arrived and always lands in `needs_review` with `MISSING_POINTS` (and `END_OUTSIDE_DROP`, since there is no end position), so it never adds stats without a review. Logs a `force_ended` event with the admin, the note and the received point count, and clears the live position.
+Errors: `FORBIDDEN`, `NOTE_REQUIRED`, `TRIP_NOT_FOUND`, `TRIP_NOT_ACTIVE` (not `in_progress`).
+
 ## 2. Table access (via RLS)
 | Operation | Who | Call |
 |---|---|---|
@@ -44,7 +58,7 @@ Errors: `FORBIDDEN`, `NOTE_REQUIRED`, `TRIP_NOT_IN_REVIEW`.
 | My stats | driver | `from('driver_stats').select('*').maybeSingle()` |
 | Trip route | admin / driver | `from('trip_points').select('seq,recorded_at,lat,lng,speed_mps,heading').eq('trip_id',id).order('seq')` (paginate 1,000 rows) |
 | Create load | admin | `from('loads').insert({...}).select().single()` |
-| Assign | admin | `from('trips').insert({ load_id, driver_id, vehicle_id })` |
+| Assign | admin | `from('trips').insert({ load_id, driver_id, vehicle_id })` — the only direct admin write to `trips`: RLS allows SELECT and an INSERT of a fresh `assigned` trip; UPDATE/DELETE go through the RPCs above (ND-13) |
 | Drivers / vehicles | admin | `from('profiles')…`, `from('vehicles')…` |
 | Review queue | admin | `from('trips').select(...).eq('status','needs_review').order('ended_at')` |
 

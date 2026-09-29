@@ -55,3 +55,22 @@ jobs:
       - name: Edge function tests (Deno)
         working-directory: supabase/functions
         run: bunx deno test --allow-env --allow-net
+
+  # Every migration from zero plus the seed, then the pgTAP suites in
+  # supabase/tests (RLS, RPC errors, verification). Only Postgres is started,
+  # so it needs no secrets. Before this job existed the pgTAP suites never ran
+  # in CI (validation report 0.4), and the admin trip-write bypass (B2) got in.
+  database:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+
+      - name: Start Postgres (migrations + seed)
+        run: supabase db start
+
+      - name: pgTAP
+        run: supabase test db
