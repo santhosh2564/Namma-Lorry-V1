@@ -8,9 +8,8 @@ import { Text } from "react-native";
 
 import "@/i18n";
 
-import en from "@/i18n/en.json";
-
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import en from "@/i18n/en.json";
 import { reportError } from "@/lib/sentry";
 
 jest.mock("@/lib/sentry", () => ({ reportError: jest.fn() }));

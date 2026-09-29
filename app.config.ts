@@ -67,6 +67,16 @@ const defineConfig = (): ExpoConfig => {
       // Mappls is a native SDK → local config plugin applies the Android maven
       // repo + credential files and the iOS Podfile hook during prebuild (R1).
       ["./plugins/withMappls", { configDir: "mappls" }],
+      // Sentry source-map upload at build time (B4). Only when the EAS secret
+      // SENTRY_AUTH_TOKEN exists, so local and CI builds without it still work.
+      ...(process.env.SENTRY_AUTH_TOKEN
+        ? [
+            [
+              "@sentry/react-native/expo",
+              { organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT },
+            ] as [string, Record<string, unknown>],
+          ]
+        : []),
     ],
 
     experiments: {
