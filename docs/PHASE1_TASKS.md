@@ -448,7 +448,7 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 #### M12c — Release preparation (Prompt 15)
 - [ ] `app.config.ts`: name, bundle id / package, version and build numbers, icons and splash (list missing assets), permission strings, foreground service verified in prebuild output
 - [ ] EAS preview (APK/AAB + TestFlight per ND-3) and production profiles; env per profile; EAS Update channels
-- [ ] Web console: `npx expo export -p web`, Vercel (or Netlify) config, SPA fallback, security headers
+- [ ] Web console: `npx expo export -p web` ✅ (builds, in CI — validation B1, 29 Sep), Vercel (or Netlify) config, SPA fallback, security headers
 - [ ] Hosted Supabase checklist: link staging/prod, push migrations, secrets, deploy functions, pg_cron job, SMS provider (DLT)
 - [ ] `docs/release/`: Play background-location declaration + video shot list, Data safety, Apple App Privacy, App Review notes + demo account, privacy policy (doc 09 §6, marked "requires legal review")
 - [ ] `docs/RUNBOOK.md`: deploy, rollback, key rotation, stuck trip, re-run verification, data incident
@@ -717,3 +717,9 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Verified:** `tsc` clean, `eslint --max-warnings=0` clean, Prettier clean, Jest 476/476, Deno 43/43. Preview: the web bundle compiles (HTTP 200, 11.07 MB) with all five screens and every new component present, and the app boots to `/sign-in` with **zero console/page errors** (Playwright smoke).
 - **Left (needs a real session, per docs/10 §3):** the live board against real `trip_live` traffic, a route longer than 1000 points (the "load page N" path), realtime actually delivering on a browser that blocks websockets, and the replay of a nine-hour trip — all need a hosted project with migrations applied and real trips in it, none of which exist in this sandbox. The hosted project's pending migrations now include 0003 and 0004.
 - **Known issues:** (1) The C1 route tail and the C6 planned route are straight lines, as in C4 — road-snapped polylines need a routing service this phase does not buy. (2) C6 has no map "last update" pill for a live trip; the freshness is visible in the list it was opened from. (3) D8's "Help & support" opens the access-notice screen, which is not a support page — a real destination (phone number or URL) is M12c. (4) D2's battery reminder is still unrendered outside D2; the health check reports "unknown" instead. (5) `supabase/tests/06` and the other pgTAP files cannot run here (no Postgres), as with 01–05.
+
+### 2026-09-29 · Validation fixes — base line chosen, B1 (production web export)
+- **Decided:** fixes for `docs/PHASE1_VALIDATION_REPORT.md` (PR #11) target **`main`** (report §5 item 1 / M1). Work from `r0-stabilise` (race fix, fail-closed config, Sentry, CI jobs, release docs) is ported per item, with its migrations renumbered after main's 0003/0004.
+- **Changed (B1):** `expo export -p web` failed with `Unable to resolve module ./wa-sqlite/wa-sqlite.wasm`: expo-sqlite's web worker imports a `.wasm` file, Metro's default `assetExts` has no `wasm`, and the driver routes pull `expo-sqlite` into the web graph through `@/tracking/db`. The M9 entry above saw the same error in the dev server and put it down to a stale bundle URL. Added `metro.config.js` (Expo defaults + `wasm` asset), a `export:web` script, and a CI step that runs the production export on every PR. Regression test: `src/lib/metroConfig.test.ts`.
+- **Verified:** the production export emits the entry bundle, the SQLite worker and `wa-sqlite.*.wasm`; Jest 479/479; `tsc`, ESLint clean.
+- **Left:** hosting config (Vercel, SPA fallback, CSP) is still part of B5.
