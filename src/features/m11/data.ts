@@ -210,8 +210,13 @@ export async function fetchDriverProfile(): Promise<DriverProfile> {
 type Unsubscribe = () => void;
 
 /**
- * Realtime subscription with resubscribe on channel error/timeout. `onReconnect` fires
- * on every (re)SUBSCRIBED so callers refetch anything missed while disconnected (docs/06 §3).
+ * Realtime subscription with resubscribe on error/timeout (docs/06 §3).
+ *
+ * `onReconnect` fires when the server confirms postgres_changes are being captured
+ * (the "Subscribed to PostgreSQL" system message), not merely on SUBSCRIBED: changes made
+ * between the two are never delivered, so callers refetch at that point. Found in M12b —
+ * on a cold realtime server the gap was ~2 s and C1 missed a trip that started inside it.
+ * Screens also poll (refetchInterval) as a safety net for anything realtime still misses.
  */
 export function subscribe(
   table: string,
@@ -225,23 +230,33 @@ export function subscribe(
   let stopped = false;
   let channel: ReturnType<typeof db.channel> | null = null;
 
+  const reconnect = () => {
+    if (stopped) return;
+    const dead = channel;
+    channel = null;
+    void (dead ? db.removeChannel(dead) : Promise.resolve()).then(() => {
+      if (!stopped) connect();
+    });
+  };
+
   const connect = () => {
     channel = db
       .channel(name)
+      .on('system', {}, (payload: { extension?: string; status?: string; message?: string }) => {
+        if (__DEV__)
+          console.info(`[realtime] ${name} system ${payload.status}: ${payload.message}`);
+        if (payload.extension !== 'postgres_changes') return;
+        if (payload.status === 'ok') onReconnect?.();
+        else if (payload.status === 'error') reconnect();
+      })
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table, ...(filter ? { filter } : {}) },
         (payload) => onChange((payload.new as Row | undefined) ?? null),
       )
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') onReconnect?.();
-        if (!stopped && (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')) {
-          const dead = channel;
-          channel = null;
-          void (dead ? db.removeChannel(dead) : Promise.resolve()).then(() => {
-            if (!stopped) connect();
-          });
-        }
+      .subscribe((status, err) => {
+        if (__DEV__) console.info(`[realtime] ${name} ${status}${err ? ` ${err.message}` : ''}`);
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') reconnect();
       });
   };
   connect();

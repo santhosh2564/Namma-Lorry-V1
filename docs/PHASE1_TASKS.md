@@ -112,6 +112,8 @@ These are the audit questions still unanswered, plus contradictions found betwee
 | ND-22 | Replay slider (C6) and multi-language files are **P1** in the PRD but are built in M11 / M12a per doc 13. | PRD §6 P1 vs doc 13 | Keep them as doc 13 says (no conflict in intent). Confirm they're not release blockers. |
 | ND-23 | S1 Splash and S4 Access Notice have **no route** in the doc 04 route tree. | doc 12 vs doc 04 | `app/index.tsx` (S1) and `app/access-notice.tsx` (S4). |
 | ND-24 | The doc 13 prerequisite "put the pack in the repo root and design PNGs in `design/` named by screen ID" is not done, and there is **no git repo** although doc 13 requires a commit per prompt. | doc 13 vs folder state | Pre-flight tasks, gated on ND-1. |
+| ND-25 | *(M12b)* **Abandoned in-progress trips never close.** If `end_trip` never reaches the server (phone lost or wiped mid-trip), the trip stays `in_progress` forever: the sweeper only handles `completed`, and the driver's next Start gets `ANOTHER_TRIP_ACTIVE` indefinitely. No admin `cancel_trip` exists (ND-13). | 0001 sweeper vs doc 10 scenario 8 | Sweeper also closes `in_progress` trips with no point for > `unsynced_grace_hours` (→ `completed` + verify, flags `MISSING_POINTS`/`END_OUTSIDE_DROP`), and/or ND-13's admin `cancel_trip`. pgTAP TODO S8b fails until decided. |
+| ND-26 | *(M12b — applied, please review)* **Route collisions in doc 04.** Route groups add no URL segment, so `(console)/index`, `(driver)/index` and `app/index` (S1, ND-23) all resolve to `/`, and `(console)/trips/[id]` + `(driver)/trips/[id]` to `/trips/:id`. On web **C1 was unreachable** (S1 rendered at `/`) and D4 would have been shadowed by C6. | doc 04 §1 vs Expo Router | **Done:** console moved to a real segment `app/console/` (`/console`, `/console/trips/:id`, `/console/review`, …); doc 04 needs the same update. **Still open:** S1 (`app/index`) vs D3 (`(driver)/index`) both at `/` — resolve in M5 (e.g. D3 at `/trips`, or the splash redirects to a driver home path). |
 
 ---
 
@@ -258,7 +260,7 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 - [ ] `src/lib/mappls.ts` typed client
 - [ ] Deno tests for both functions with mocked Mappls responses
 
-**Files expected:** `app/(console)/_layout.tsx`, `app/(console)/drivers/index.tsx`, `app/(console)/vehicles/index.tsx`, `supabase/functions/mappls-proxy/{index.ts,README.md,*_test.ts}`, `supabase/functions/admin-create-driver/{index.ts,*_test.ts}`, `src/lib/mappls.ts`, `src/features/{drivers,vehicles}/*`.
+**Files expected:** `app/console/_layout.tsx`, `app/console/drivers/index.tsx`, `app/console/vehicles/index.tsx`, `supabase/functions/mappls-proxy/{index.ts,README.md,*_test.ts}`, `supabase/functions/admin-create-driver/{index.ts,*_test.ts}`, `src/lib/mappls.ts`, `src/features/{drivers,vehicles}/*`.
 
 **Acceptance**
 - A non-admin JWT gets 403 from both functions
@@ -283,7 +285,7 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 - [ ] Shared zod schemas `src/features/loads/schemas.ts`
 - [ ] Playwright test: admin creates a load and assigns it
 
-**Files expected:** `app/(console)/loads/{index,new,[id]}.tsx`, `app/(console)/trips/index.tsx`, `src/features/loads/*`, `src/features/trips/*` (console queries), `e2e/create-load.spec.ts`, `playwright.config.ts`.
+**Files expected:** `app/console/loads/{index,new,[id]}.tsx`, `app/console/trips/index.tsx`, `src/features/loads/*`, `src/features/trips/*` (console queries), `e2e/create-load.spec.ts`, `playwright.config.ts`.
 
 **Acceptance (PRD P0-2, P0-3)**
 - Load ID format `NL-YYYY-NNNNNN`; pickup/drop via autosuggest or pin; radius default 500 m; material and weight optional; planned distance fetched from Mappls
@@ -396,7 +398,7 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 
 > **Correction (M12a, 29 Sep 2026):** the ticks above overstate what shipped. `MapplsMap` loads the Mappls script but never creates a map (it is a schematic preview, now labelled "Map preview"); loaders returned demo data on any error or empty result; the D8 language picker and permission/battery "health" were cosmetic; no tests were added. M12a fixed the data, language and error-state issues — see `docs/HARDENING_REPORT.md` §0. A real Mappls map still depends on M3.
 
-**Files expected:** `app/(console)/index.tsx`, `app/(console)/trips/[id].tsx`, `app/(console)/review/index.tsx`, `app/(driver)/{history,profile}.tsx`, `src/features/{live-map,review}/*`, `src/features/trips/ReplaySlider.tsx`, `LanguageSheet.tsx`.
+**Files expected:** `app/console/index.tsx`, `app/console/trips/[id].tsx`, `app/console/review/index.tsx`, `app/(driver)/{history,profile}.tsx`, `src/features/{live-map,review}/*`, `src/features/trips/ReplaySlider.tsx`, `LanguageSheet.tsx`.
 
 **Acceptance (PRD P0-8, P0-11, P0-12)**
 - Active trips show on the Mappls map; marker and polyline update without refresh; ≤ 60 s behind the phone (scenario 11; ND-15)
@@ -422,26 +424,30 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 **Files expected:** `src/i18n/*.json`, `src/lib/sentry.ts`, `src/components/ErrorBoundary.tsx`, `docs/HARDENING_REPORT.md`.
 
 #### M12b — Acceptance scenarios (Prompt 14)
-- [ ] Automate every doc 10 §4 scenario that can be automated (pgTAP, unit, Playwright, Maestro + GPX)
-- [ ] `docs/FIELD_TEST_SCRIPT.md` for device-only scenarios + a results table template
-- [ ] `test/gpx/sriperumbudur-coimbatore.gpx`, `test/gpx/hosur-peenya.gpx`
-- [ ] Fix failures; list anything unverified
-- [ ] Fill the pass/fail matrix below
+- [~] Automate every doc 10 §4 scenario that can be automated — **server and console side done**: pgTAP `supabase/tests/acceptance.test.sql` (61 assertions, real routes, driver uploads through RLS), `test/db/start-trip-race.sh` (two-session race), Playwright `e2e/acceptance.spec.ts` (4 tests, web console + REST). **Not possible yet:** unit/RNTL/Maestro for the phone side — the tracking engine, D4 and D5 don't exist (M8–M10), so no Maestro flows were written
+- [x] `docs/FIELD_TEST_SCRIPT.md`: per-scenario steps, expected result, what to record (points expected vs received, max gap, battery %, data used, verification result, km ratio, live delay), SQL to pull the metrics, emulator GPX procedure, results table, doc 10 §3 device matrix and sign-off. **Cannot be executed until M8–M10 ship**
+- [x] `test/gpx/sriperumbudur-coimbatore.gpx` (464.7 km, 3,043 fixes, 8.5 h) and `test/gpx/hosur-peenya.gpx` (65.9 km, 680 fixes, 1.9 h), generated by `npm run gpx:gen` from `test/gpx/routes.json` (highway town/junction waypoints, straight between them — corridor-accurate, not road-snapped). The same waypoints drive the pgTAP routes; `src/__tests__/gpxRoutes.test.ts` keeps GPX, SQL helper and seed in step
+- [x] Fix failures — 4 found and fixed (see progress log): seeded 41 km planned distance, concurrent `start_trip` error contract (**migration `0004`**), console unreachable at `/` (**ND-26** → `/console`), realtime missed-event window (refetch on "Subscribed to PostgreSQL" + 30 s polling). Recorded, not fixed: ND-25, ND-13
+- [x] Fill the pass/fail matrix below
 
-| # | Scenario (doc 10 §4) | Expected | How proved | Result |
+✅ pass · ⚠️ pass with a known gap · ⏳ part still needs M8–M10 and/or a real device
+
+| # | Scenario (doc 10 §4) | Expected | How proved (M12b) | Result |
 |---|---|---|---|---|
-| 1 | Normal trip, network throughout | `verified`, km ±5 % of planned | pgTAP + field | ☐ |
-| 2 | 20 min airplane mode | all points arrive; `verified` | unit + field (M10 🧍) | ☐ |
-| 3 | End offline, reconnect 1 h later | `completed` → `verified` | pgTAP + unit + field | ☐ |
-| 4 | Start 3 km from pickup | blocked, distance shown | pgTAP + RNTL + field | ☐ |
-| 5 | End 2 km before drop | `needs_review` `END_OUTSIDE_DROP` | pgTAP + field | ☐ |
-| 6 | Fake GPS app | `needs_review` `MOCK_LOCATION` | pgTAP + field | ☐ |
-| 7 | Force-stopped 30 min | `needs_review` `TRACKING_GAP`; admin can approve | pgTAP + field | ☐ |
-| 8 | Never reconnects after end | sweeper 6 h → `MISSING_POINTS` | pgTAP | ☐ |
-| 9 | Driver REST update of `trips.status` | 0 rows / RLS error | pgTAP | ☐ |
-| 10 | Two trips started | second `ANOTHER_TRIP_ACTIVE` | pgTAP | ☐ |
-| 11 | Console live view | ≤ 60 s behind phone | field + C1 | ☐ |
-| 12 | Admin approves flagged trip | `verified`, stats +1 once, event logged | pgTAP + Playwright | ☐ |
+| 1 | Normal trip, network throughout | `verified`, km ±5 % of planned | pgTAP S1a Hosur→Peenya with ~5 m jitter + 10 off-route poor-accuracy fixes: **tracked 65,783 m vs planned 65,849 m (−0.1 %)**, verified, stats +1, events started→ended→verified. S1b Sriperumbudur→Coimbatore, 1,080 fixes vs seeded 512 km → verified. Field: script S1 | ✅ DB · ⏳ device |
+| 2 | 20 min airplane mode | all points arrive; `verified` | pgTAP S2: 120-fix offline batch arrives after newer fixes → 720/720 stored, live position not regressed, max gap 10 s, verified. Phone queue/uploader unit tests belong to M8 (no engine yet) | ✅ DB · ⏳ unit + device |
+| 3 | End offline, reconnect 1 h later | `completed` → `verified` | pgTAP S3a (flush, then late `end_trip` → verified; `ended_at` = device tap time) + S3b (`end_trip` first → `completed`; last upload triggers → verified exactly once) | ✅ DB · ⏳ unit + device |
+| 4 | Start 3 km from pickup | blocked, distance shown | pgTAP S4: `OUTSIDE_PICKUP:<exact m>`, trip stays assigned, nothing logged. Unit `errors.test.ts`: "You are 3.1 km from the pickup…". D4 RNTL: screen not built | ✅ DB + message · ⏳ D4 + device |
+| 5 | End 2 km before drop | `needs_review` `END_OUTSIDE_DROP` | pgTAP S5: reasons exactly `{END_OUTSIDE_DROP}` | ✅ DB · ⏳ device |
+| 6 | Fake GPS app | `needs_review` `MOCK_LOCATION` | pgTAP S6: one mocked fix → exactly `{MOCK_LOCATION}`, metrics.mocked = 1 (Playwright S12 fixture flags it too) | ✅ DB · ⏳ device |
+| 7 | Force-stopped 30 min | `needs_review` `TRACKING_GAP`; admin can approve | pgTAP S7: seq continues after restart → exactly `{TRACKING_GAP}` (no `MISSING_POINTS`); admin approves → verified, stats +1 | ✅ DB · ⏳ device (resume after kill = M8) |
+| 8 | Never reconnects after end | sweeper 6 h → `MISSING_POINTS` | pgTAP S8: cron `*/15` scheduled; trip ended 7 h ago → `needs_review` + `MISSING_POINTS`; ended 5 h ago untouched; re-sweep idempotent. **Gap ND-25:** if `end_trip` itself never arrives the trip is stuck `in_progress` (TODO test S8b) | ⚠️ ND-25 |
+| 9 | Driver REST update of `trips.status` | 0 rows / RLS error | pgTAP `rls.test.sql` + Playwright over REST: PATCH → `[]`, stats POST → 403 `42501`, row unchanged | ✅ |
+| 10 | Two trips started | second `ANOTHER_TRIP_ACTIVE` | pgTAP S10 (sequential) + `test/db/start-trip-race.sh` (two concurrent sessions). **Was failing** under concurrency (raw `23505`) → fixed by `0004_start_trip_concurrency.sql` | ✅ (fixed) |
+| 11 | Console live view | ≤ 60 s behind phone | Playwright: point → C1 without refresh in **0.1–2.4 s** (cold realtime 1.9 s); with the realtime WebSocket **blocked**, polling catches up in **30.1 s**. **Was failing** on a cold realtime server (event lost, never refetched) → fixed. Real network: field script S11 | ✅ local · ⏳ field |
+| 12 | Admin approves flagged trip | `verified`, stats +1 once, event logged | pgTAP S12 (FORBIDDEN / NOTE_REQUIRED / TRIP_NOT_IN_REVIEW; stats +1 once; re-verify is a no-op; reject adds nothing) + Playwright C7 → C6 approve (note required, verified, "Approved by admin" + note shown, stats +1, one `approved` event) | ✅ |
+
+**Commands:** `npm run test:db` (pgTAP + race) · `npm run test:e2e` (Playwright; needs `npx supabase start`) · `npm run gpx:gen`.
 
 🧍 Run the field-test script on the brand matrix in doc 10 §3 (Xiaomi, Vivo/Oppo, Samsung A, Realme, iPhone per ND-3) and paste the results.
 
@@ -480,15 +486,15 @@ Design ref = current Stitch export folder in `SCREENS/` (to be renamed into `des
 | D6 | Trip Summary | Android + iOS | `app/(driver)/trips/[id]/summary.tsx` | M10 | `8._trip_summary` (verified only) | ☐ |
 | D7 | Trip History | Android + iOS | `app/(driver)/history.tsx` | M11 | `9._trip_history_tab` | ☐ |
 | D8 | My Profile | Android + iOS | `app/(driver)/profile.tsx` | M11 | `10._my_profile_tab` | ☐ |
-| C1 | Live Dashboard | web | `app/(console)/index.tsx` | M11 | — | ☐ |
-| C2 | Loads | web | `app/(console)/loads/index.tsx` | M7 | — | ☐ |
-| C3 | Create Load | web | `app/(console)/loads/new.tsx` | M7 | — | ☐ |
-| C4 | Load Detail & Assign | web | `app/(console)/loads/[id].tsx` | M7 | — | ☐ |
-| C5 | Trips | web | `app/(console)/trips/index.tsx` | M7 | — | ☐ |
-| C6 | Trip Detail & Review | web | `app/(console)/trips/[id].tsx` | M11 | — | ☐ |
-| C7 | Review Queue | web | `app/(console)/review/index.tsx` | M11 | — | ☐ |
-| C8 | Drivers | web | `app/(console)/drivers/index.tsx` | M6 | — | ☐ |
-| C9 | Vehicles | web | `app/(console)/vehicles/index.tsx` | M6 | — | ☐ |
+| C1 | Live Dashboard | web | `app/console/index.tsx` | M11 | — | ☐ |
+| C2 | Loads | web | `app/console/loads/index.tsx` | M7 | — | ☐ |
+| C3 | Create Load | web | `app/console/loads/new.tsx` | M7 | — | ☐ |
+| C4 | Load Detail & Assign | web | `app/console/loads/[id].tsx` | M7 | — | ☐ |
+| C5 | Trips | web | `app/console/trips/index.tsx` | M7 | — | ☐ |
+| C6 | Trip Detail & Review | web | `app/console/trips/[id].tsx` | M11 | — | ☐ |
+| C7 | Review Queue | web | `app/console/review/index.tsx` | M11 | — | ☐ |
+| C8 | Drivers | web | `app/console/drivers/index.tsx` | M6 | — | ☐ |
+| C9 | Vehicles | web | `app/console/vehicles/index.tsx` | M6 | — | ☐ |
 
 | Overlay | Used on | Milestone | Built |
 |---|---|---|---|
@@ -581,3 +587,9 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Fixed defects:** demo trips/drivers returned when queries failed or were empty; partial routes on a failed page; no session persistence on native; unmasked phone on D8; realtime resubscribe loop on `CLOSED`; full route refetch per realtime point; fake "Healthy" permission status.
 - **Left:** everything in `docs/HARDENING_REPORT.md` §8 — D4/D5 font scaling (M9/M10), background task (M8), edge functions (M6), real Mappls map (M3), M4 pgTAP remainder, translations, Sentry DSN + source maps (M12c). New CI `database` job not yet run on GitHub.
 - **Known issues:** ND-13 is a live gap (admin can write `trips.status` directly; pgTAP TODO fails by design). `npm audit`: 1 high (`react-server-dom-webpack` 19.2.4, RSC-server DoS, not reachable in static web export; bump with the Expo template) + 14 moderate build-tooling items. Migration numbering: ND-21 fixes, if approved, become `0004+`.
+
+### 2026-09-29 · M12b — acceptance scenarios (Prompt 14)
+- **Changed:** pgTAP `acceptance.test.sql` (scenarios 1–8, 10, 12 through the real RPCs and RLS along real routes), route helpers in `_helpers.psql`; `test/db/start-trip-race.sh` (scenario 10, two sessions); Playwright (`playwright.config.ts`, `e2e/`) for scenarios 9, 11 (+ realtime-blocked fallback) and 12, with test-OTP sign-in and keys read from `supabase status`; GPX generator + 2 routes; `docs/FIELD_TEST_SCRIPT.md`; CI: race step + `e2e` job (not yet run on GitHub). Verified from a clean `supabase db reset`: pgTAP 145 (2 expected TODO failures), race PASS, Playwright 4/4 (stable across 3 repeats), Jest 105, typecheck + lint clean.
+- **Failures found → fixed:** (1) seeded Hosur→Peenya planned distance of 41 km is shorter than any real road, so genuine trips were flagged `DISTANCE_TOO_LONG`; seed now 62 km (DESIGN.md's sample text still says 41 km). (2) Concurrent `start_trip` returned a raw `23505` instead of `ANOTHER_TRIP_ACTIVE` → migration `0004_start_trip_concurrency.sql` (per-driver advisory lock + mapping). (3) C1 was unreachable on web — `/` rendered S1 because doc 04's route groups collide → console moved to `app/console/` (ND-26). (4) Realtime changes made between SUBSCRIBED and "Subscribed to PostgreSQL" were lost and never refetched (C1 stayed empty on a cold server) → refetch on the postgres_changes ready message + 30 s polling on C1/C6 while a trip is open.
+- **Left:** everything marked ⏳ in the matrix needs M8–M10 and real devices; no Maestro flows (no driver screens to drive); field runs per `docs/FIELD_TEST_SCRIPT.md`.
+- **Known issues:** ND-25 (abandoned in-progress trips never close), ND-13 (admin direct trip writes), ND-26 remainder (S1 vs D3 both at `/`). Playwright runs leave fixture loads/trips in the local DB (`supabase db reset` clears them). The C1 "Map preview" is still not a Mappls map (M3).

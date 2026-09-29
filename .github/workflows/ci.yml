@@ -49,3 +49,23 @@ jobs:
 
       - name: pgTAP
         run: supabase test db
+
+      - name: Scenario 10 — concurrent start_trip (two sessions)
+        run: bash test/db/start-trip-race.sh
+
+  e2e:
+    # Web console acceptance (scenarios 9, 11, 12) against a full local stack.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.118.0
+      - run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - run: supabase start
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

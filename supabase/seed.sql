@@ -61,7 +61,10 @@ insert into public.loads (id, pickup_address, pickup_lat, pickup_lng, drop_addre
   ('b0000000-0000-4000-8000-000000000002',
    'SIPCOT Phase 1, Hosur, Tamil Nadu',                 12.7392, 77.8233,
    'Peenya Industrial Area, Bengaluru, Karnataka',     13.0329, 77.5273,
-   41000, 'Packaged FMCG', 4500, 'a0000000-0000-4000-8000-000000000001'),
+   -- DESIGN.md's sample says 41 km, but every real road is ~55–66 km: a genuine trip was
+   -- flagged DISTANCE_TOO_LONG (> 1.6 × 41 km). Found by M12b acceptance test S1c.
+   -- 62 km keeps both the NICE Road (~66 km) and city (~55 km) routes inside 0.8–1.6.
+   62000, 'Packaged FMCG', 4500, 'a0000000-0000-4000-8000-000000000001'),
   ('b0000000-0000-4000-8000-000000000003',
    'Ambattur Industrial Estate, Chennai, Tamil Nadu',  13.1009, 80.1629,
    'SIPCOT Ranipet, Tamil Nadu',                        12.9369, 79.3261,

@@ -53,6 +53,11 @@ import {
 import type { Trip, TripEvent, TripPoint, TripStatus } from './types';
 
 const STALE_MS = 15 * 60_000;
+/** Polling safety net under realtime (ND-15: ≤ 60 s behind, target ~30 s). */
+const POLL_MS = 30_000;
+/** Trip statuses that can still change on their own (tracking or verifying). */
+const isOpen = (status: TripStatus | undefined) =>
+  status === 'in_progress' || status === 'completed';
 
 /** Current time, re-rendering every 30 s so "last update" ages and stale flags keep moving. */
 function useNow(intervalMs = 30_000) {
@@ -183,7 +188,11 @@ export function LiveDashboardScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const live = useQuery({ queryKey: ['live-trips'], queryFn: fetchLiveTrips });
+  const live = useQuery({
+    queryKey: ['live-trips'],
+    queryFn: fetchLiveTrips,
+    refetchInterval: POLL_MS,
+  });
 
   useEffect(() => {
     const refresh = () => void queryClient.invalidateQueries({ queryKey: ['live-trips'] });
@@ -243,7 +252,7 @@ export function LiveDashboardScreen() {
               return (
                 <Pressable
                   key={trip.trip_id}
-                  onPress={() => router.push(`/trips/${trip.trip_id}`)}
+                  onPress={() => router.push(`/console/trips/${trip.trip_id}`)}
                   accessibilityRole="button"
                   accessibilityLabel={t('console.live.rowA11y', {
                     driver: trip.driver_name,
@@ -307,7 +316,7 @@ export function ReviewQueueScreen() {
           <ReviewQueueRow
             key={trip.id}
             trip={trip}
-            onOpen={() => router.push(`/trips/${trip.id}`)}
+            onOpen={() => router.push(`/console/trips/${trip.id}`)}
           />
         ))
       )}
@@ -386,16 +395,20 @@ export function TripDetailReviewScreen() {
     queryKey: ['trip', id],
     queryFn: () => fetchTrip(id),
     enabled: Boolean(id),
+    refetchInterval: (query) => (isOpen(query.state.data?.status) ? POLL_MS : false),
   });
+  const tripOpen = isOpen(tripQuery.data?.status);
   const pointsQuery = useQuery({
     queryKey: ['trip-points', id],
     queryFn: () => fetchTripPoints(id),
     enabled: Boolean(id),
+    refetchInterval: tripQuery.data?.status === 'in_progress' ? POLL_MS : false,
   });
   const eventsQuery = useQuery({
     queryKey: ['trip-events', id],
     queryFn: () => fetchTripEvents(id),
     enabled: Boolean(id),
+    refetchInterval: tripOpen ? POLL_MS : false,
   });
   const [replay, setReplay] = useState<number | null>(null); // null = show the whole route
   const [playing, setPlaying] = useState(false);

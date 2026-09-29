@@ -21,8 +21,10 @@ web-build/
 *.mobileprovision
 *.orig.*
 
-# --- jest ---
+# --- jest / playwright ---
 coverage/
+test-results/
+playwright-report/
 
 # --- mac / editor ---
 .DS_Store

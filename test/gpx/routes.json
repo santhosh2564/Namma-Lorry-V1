@@ -1,0 +1,58 @@
+{
+  "_comment": "Source of truth for the two acceptance routes (M12b). Waypoints are real towns/junctions along the highway, hand-picked from public place coordinates; segments between them are straight lines, so tracks follow the corridor, not every road bend. First/last waypoints equal the seeded load pickup/drop (supabase/seed.sql). scripts/gen-gpx.mjs builds the GPX files; supabase/tests/_helpers.psql embeds the same waypoints (checked by src/__tests__/gpxRoutes.test.ts).",
+  "routes": [
+    {
+      "id": "sriperumbudur-coimbatore",
+      "name": "Sriperumbudur SIPCOT → Coimbatore Kurichi (NH48 / NH44 / NH544)",
+      "loadCode": "NL-2026-000142",
+      "avgSpeedKmh": 55,
+      "intervalS": 10,
+      "waypoints": [
+        ["SIPCOT Industrial Park, Sriperumbudur", 12.9563, 79.9422],
+        ["Sriperumbudur (NH48)", 12.9675, 79.9419],
+        ["Sunguvarchatram", 12.9869, 79.8216],
+        ["Kaveripakkam", 12.9056, 79.4636],
+        ["Walajapet", 12.9254, 79.3667],
+        ["Vellore", 12.9165, 79.1325],
+        ["Pallikonda", 12.9061, 78.9431],
+        ["Ambur", 12.7904, 78.7166],
+        ["Vaniyambadi", 12.6820, 78.6208],
+        ["Krishnagiri", 12.5186, 78.2137],
+        ["Kaveripattinam", 12.4209, 78.2190],
+        ["Dharmapuri", 12.1277, 78.1579],
+        ["Thoppur", 11.9407, 78.0591],
+        ["Omalur", 11.7447, 78.0450],
+        ["Salem", 11.6643, 78.1460],
+        ["Sankagiri", 11.4745, 77.8688],
+        ["Kumarapalayam", 11.4404, 77.6887],
+        ["Perundurai", 11.2753, 77.5858],
+        ["Chengapalli", 11.1650, 77.4050],
+        ["Avinashi", 11.1929, 77.2684],
+        ["Neelambur", 11.0660, 77.0870],
+        ["Kurichi Industrial Estate, Coimbatore", 10.9608, 76.9656]
+      ]
+    },
+    {
+      "id": "hosur-peenya",
+      "name": "Hosur SIPCOT → Peenya Industrial Area (NH44 / NICE Road)",
+      "loadCode": "NL-2026-000143",
+      "avgSpeedKmh": 35,
+      "intervalS": 10,
+      "waypoints": [
+        ["SIPCOT Phase 1, Hosur", 12.7392, 77.8233],
+        ["Zuzuvadi", 12.7650, 77.7960],
+        ["Attibele", 12.7797, 77.7717],
+        ["Chandapura", 12.8027, 77.7074],
+        ["Bommasandra", 12.8150, 77.6930],
+        ["Electronic City", 12.8452, 77.6602],
+        ["NICE Rd x Bannerghatta Rd", 12.8510, 77.5960],
+        ["NICE Rd x Kanakapura Rd", 12.8710, 77.5430],
+        ["NICE Rd x Mysore Rd", 12.9120, 77.4870],
+        ["NICE Rd x Magadi Rd", 12.9690, 77.4540],
+        ["NICE Rd x Tumkur Rd (Madavara)", 13.0560, 77.4760],
+        ["Tumkur Rd, Jalahalli Cross", 13.0440, 77.5180],
+        ["Peenya Industrial Area, Bengaluru", 13.0329, 77.5273]
+      ]
+    }
+  ]
+}

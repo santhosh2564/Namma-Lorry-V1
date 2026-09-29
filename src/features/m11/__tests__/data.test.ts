@@ -9,6 +9,7 @@ import {
   fetchTrips,
   mergePoints,
   reviewTrip,
+  subscribe,
 } from '../data';
 
 const mockResult: { data: unknown; error: unknown } = { data: [], error: null };
@@ -23,8 +24,31 @@ function mockBuilder() {
 }
 
 const mockRpc = jest.fn(() => Promise.resolve({ error: null }));
+
+type Handler = (payload: Record<string, unknown>) => void;
+type FakeChannel = { handlers: Record<string, Handler>; status?: (status: string) => void };
+const mockChannels: FakeChannel[] = [];
+const mockRemoveChannel = jest.fn(() => Promise.resolve('ok'));
+function mockChannel() {
+  const record: FakeChannel = { handlers: {} };
+  mockChannels.push(record);
+  const api = {
+    on: (type: string, _filter: unknown, cb: Handler) => {
+      record.handlers[type] = cb;
+      return api;
+    },
+    subscribe: (cb: (status: string) => void) => {
+      record.status = cb;
+      return api;
+    },
+  };
+  return api;
+}
+
 jest.mock('@/lib/supabase', () => ({
   supabase: {
+    channel: jest.fn(() => mockChannel()),
+    removeChannel: (...args: unknown[]) => mockRemoveChannel(...(args as [])),
     from: jest.fn(() => mockBuilder()),
     rpc: (...args: unknown[]) => mockRpc(...(args as [])),
   },
@@ -80,5 +104,62 @@ describe('m11 data layer', () => {
       heading: null,
     });
     expect(mergePoints([p(1), p(2)], [p(2), p(4), p(3)]).map((x) => x.seq)).toEqual([1, 2, 3, 4]);
+  });
+
+  describe('subscribe (realtime)', () => {
+    beforeEach(() => {
+      mockChannels.length = 0;
+      mockRemoveChannel.mockClear();
+    });
+    const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+    it('refetches only once postgres_changes are actually being captured (M12b fix)', () => {
+      const onReconnect = jest.fn();
+      subscribe('trip_live', undefined, jest.fn(), onReconnect);
+      const ch = mockChannels[0]!;
+      ch.status!('SUBSCRIBED');
+      expect(onReconnect).not.toHaveBeenCalled(); // changes in this window are not delivered
+      ch.handlers.system!({
+        extension: 'postgres_changes',
+        status: 'ok',
+        message: 'Subscribed to PostgreSQL',
+      });
+      expect(onReconnect).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes new rows to onChange', () => {
+      const onChange = jest.fn();
+      subscribe('trip_points', 'trip_id=eq.t1', onChange);
+      mockChannels[0]!.handlers.postgres_changes!({ new: { seq: 7 } });
+      expect(onChange).toHaveBeenCalledWith({ seq: 7 });
+    });
+
+    it.each(['CHANNEL_ERROR', 'TIMED_OUT'])('resubscribes on %s', async (status) => {
+      subscribe('trips', 'id=eq.t1', jest.fn());
+      mockChannels[0]!.status!(status);
+      await flush();
+      expect(mockRemoveChannel).toHaveBeenCalledTimes(1);
+      expect(mockChannels).toHaveLength(2);
+    });
+
+    it('resubscribes when the server reports a postgres_changes error', async () => {
+      subscribe('trips', undefined, jest.fn());
+      mockChannels[0]!.handlers.system!({
+        extension: 'postgres_changes',
+        status: 'error',
+        message: 'boom',
+      });
+      await flush();
+      expect(mockChannels).toHaveLength(2);
+    });
+
+    it('does not reconnect on CLOSED (removeChannel itself emits it) or after unsubscribe', async () => {
+      const stop = subscribe('trips', undefined, jest.fn());
+      mockChannels[0]!.status!('CLOSED');
+      stop();
+      mockChannels[0]!.status!('CHANNEL_ERROR');
+      await flush();
+      expect(mockChannels).toHaveLength(1);
+    });
   });
 });

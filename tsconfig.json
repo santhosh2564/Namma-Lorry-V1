@@ -23,6 +23,8 @@
     "src/**/*.tsx",
     "plugins/**/*.ts",
     "app.config.ts",
+    "e2e/**/*.ts",
+    "playwright.config.ts",
     "babel.config.js",
     "eslint.config.js"
   ],

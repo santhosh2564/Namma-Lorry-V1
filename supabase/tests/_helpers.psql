@@ -112,4 +112,95 @@ begin
   return v_trip;
 end $$;
 
+-- ---------- Real routes (M12b acceptance) ----------
+-- Same waypoints as test/gpx/routes.json (checked by src/__tests__/gpxRoutes.test.ts).
+create function tests.route(p_id text) returns extensions.geometry language sql immutable as $$
+  select extensions.st_setsrid(extensions.st_makeline(case p_id
+    when 'sriperumbudur-coimbatore' then array[
+    extensions.st_makepoint(79.9422, 12.9563),
+    extensions.st_makepoint(79.9419, 12.9675),
+    extensions.st_makepoint(79.8216, 12.9869),
+    extensions.st_makepoint(79.4636, 12.9056),
+    extensions.st_makepoint(79.3667, 12.9254),
+    extensions.st_makepoint(79.1325, 12.9165),
+    extensions.st_makepoint(78.9431, 12.9061),
+    extensions.st_makepoint(78.7166, 12.7904),
+    extensions.st_makepoint(78.6208, 12.682),
+    extensions.st_makepoint(78.2137, 12.5186),
+    extensions.st_makepoint(78.219, 12.4209),
+    extensions.st_makepoint(78.1579, 12.1277),
+    extensions.st_makepoint(78.0591, 11.9407),
+    extensions.st_makepoint(78.045, 11.7447),
+    extensions.st_makepoint(78.146, 11.6643),
+    extensions.st_makepoint(77.8688, 11.4745),
+    extensions.st_makepoint(77.6887, 11.4404),
+    extensions.st_makepoint(77.5858, 11.2753),
+    extensions.st_makepoint(77.405, 11.165),
+    extensions.st_makepoint(77.2684, 11.1929),
+    extensions.st_makepoint(77.087, 11.066),
+    extensions.st_makepoint(76.9656, 10.9608)]
+    when 'hosur-peenya' then array[
+    extensions.st_makepoint(77.8233, 12.7392),
+    extensions.st_makepoint(77.796, 12.765),
+    extensions.st_makepoint(77.7717, 12.7797),
+    extensions.st_makepoint(77.7074, 12.8027),
+    extensions.st_makepoint(77.693, 12.815),
+    extensions.st_makepoint(77.6602, 12.8452),
+    extensions.st_makepoint(77.596, 12.851),
+    extensions.st_makepoint(77.543, 12.871),
+    extensions.st_makepoint(77.487, 12.912),
+    extensions.st_makepoint(77.454, 12.969),
+    extensions.st_makepoint(77.476, 13.056),
+    extensions.st_makepoint(77.518, 13.044),
+    extensions.st_makepoint(77.5273, 13.0329)]
+  end), 4326)
+$$;
+
+create function tests.route_length_m(p_id text) returns double precision language sql immutable as $$
+  select extensions.st_length(tests.route(p_id)::extensions.geography)
+$$;
+
+-- Load along a route: pickup/drop = first/last waypoint. planned_distance_m defaults to the
+-- route length (stand-in for the Mappls planned route).
+create function tests.route_load(p_id text, p_planned_m int default null) returns uuid language sql as $$
+  insert into public.loads (pickup_address, pickup_lat, pickup_lng, drop_address, drop_lat, drop_lng, planned_distance_m)
+  select 'Pickup ' || p_id, extensions.st_y(extensions.st_startpoint(r)), extensions.st_x(extensions.st_startpoint(r)),
+         'Drop ' || p_id,   extensions.st_y(extensions.st_endpoint(r)),   extensions.st_x(extensions.st_endpoint(r)),
+         coalesce(p_planned_m, round(tests.route_length_m(p_id))::int)
+  from tests.route(p_id) r
+  returning id
+$$;
+
+-- Position at fraction f (0..1) of a route, as (lat, lng).
+create function tests.route_at(p_id text, f double precision, out lat double precision, out lng double precision)
+language sql immutable as $$
+  select extensions.st_y(p), extensions.st_x(p)
+  from extensions.st_lineinterpolatepoint(tests.route(p_id), greatest(0, least(1, f))) p
+$$;
+
+-- Upload points the way the phone would (runs as the caller, so RLS applies to drivers).
+-- Point g of p_total is recorded at p_start + g*p_step at fraction (g/p_total)*p_end_fraction
+-- of the route; seqs p_from..p_to only; p_noise_m adds deterministic lateral GPS jitter;
+-- p_skip_from..p_skip_to are slots never uploaded; p_mock_seq marks one point mocked.
+-- p_seq_offset: seq = slot - offset. A killed app records nothing, so after a restart seq
+-- continues from where it stopped while time and position have moved on.
+create function tests.upload_route(
+  p_trip uuid, p_id text, p_start timestamptz, p_step interval, p_total int,
+  p_from int default 1, p_to int default null, p_noise_m double precision default 0,
+  p_end_fraction double precision default 1, p_skip_from int default null, p_skip_to int default null,
+  p_mock_seq int default null, p_accuracy real default 8, p_seq_offset int default 0)
+returns int language sql as $$
+  with ins as (
+    insert into public.trip_points (trip_id, seq, recorded_at, lat, lng, accuracy_m, speed_mps, heading, is_mocked)
+    select p_trip, g - p_seq_offset, p_start + g * p_step,
+           pos.lat + (p_noise_m / 111320.0) * sin(g * 12.9898),
+           pos.lng + (p_noise_m / 111320.0) * cos(g * 78.233),
+           p_accuracy, 11, 0, g - p_seq_offset = coalesce(p_mock_seq, -1)
+    from generate_series(p_from, coalesce(p_to, p_total)) g,
+         tests.route_at(p_id, g::double precision / p_total * p_end_fraction) pos
+    where g not between coalesce(p_skip_from, 0) and coalesce(p_skip_to, -1)
+    returning 1)
+  select count(*)::int from ins
+$$;
+
 grant execute on all functions in schema tests to authenticated, anon;
