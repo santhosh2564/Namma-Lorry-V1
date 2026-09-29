@@ -21,7 +21,8 @@ export function haversine([lat1, lng1], [lat2, lng2]) {
   const rad = Math.PI / 180;
   const dLat = (lat2 - lat1) * rad;
   const dLng = (lng2 - lng1) * rad;
-  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
+  const a =
+    Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
@@ -41,7 +42,9 @@ function build(route) {
     track.push({
       lat: a[0] + (b[0] - a[0]) * f,
       lng: a[1] + (b[1] - a[1]) * f,
-      time: new Date(START + Math.min(i * route.intervalS, (total / step) * route.intervalS) * 1000),
+      time: new Date(
+        START + Math.min(i * route.intervalS, (total / step) * route.intervalS) * 1000,
+      ),
     });
   }
   return { track, total };
@@ -58,13 +61,20 @@ for (const route of routes) {
     `  <metadata><name>${esc(route.name)}</name><desc>${esc(
       `Load ${route.loadCode} · ${(total / 1000).toFixed(1)} km waypoint-path · ${track.length} fixes every ${route.intervalS} s at ${route.avgSpeedKmh} km/h (${hours.toFixed(1)} h). Generated from test/gpx/routes.json.`,
     )}</desc></metadata>`,
-    ...route.waypoints.map(([name, lat, lng]) => `  <wpt lat="${lat}" lon="${lng}"><name>${esc(name)}</name></wpt>`),
+    ...route.waypoints.map(
+      ([name, lat, lng]) => `  <wpt lat="${lat}" lon="${lng}"><name>${esc(name)}</name></wpt>`,
+    ),
     `  <trk><name>${esc(route.name)}</name><trkseg>`,
-    ...track.map((p) => `    <trkpt lat="${p.lat.toFixed(6)}" lon="${p.lng.toFixed(6)}"><time>${p.time.toISOString()}</time></trkpt>`),
+    ...track.map(
+      (p) =>
+        `    <trkpt lat="${p.lat.toFixed(6)}" lon="${p.lng.toFixed(6)}"><time>${p.time.toISOString()}</time></trkpt>`,
+    ),
     '  </trkseg></trk>',
     '</gpx>',
     '',
   ].join('\n');
   writeFileSync(join(dir, `${route.id}.gpx`), gpx);
-  console.log(`${route.id}.gpx: ${(total / 1000).toFixed(1)} km, ${track.length} points, ${hours.toFixed(2)} h`);
+  console.log(
+    `${route.id}.gpx: ${(total / 1000).toFixed(1)} km, ${track.length} points, ${hours.toFixed(2)} h`,
+  );
 }
