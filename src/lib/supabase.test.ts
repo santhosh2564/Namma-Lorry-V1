@@ -1,9 +1,11 @@
 import * as SecureStore from "expo-secure-store";
 
+import type { AppConfig } from "@/lib/config";
 import {
   isConfigured,
   secureStoreSessionStorage,
   supabase,
+  supabaseCredentials,
   webSessionStorage,
 } from "@/lib/supabase";
 
@@ -132,5 +134,56 @@ describe("supabase client", () => {
       .eq("id", "00000000-0000-0000-0000-000000000000");
 
     expect(typeof query.then).toBe("function");
+  });
+});
+
+describe("supabaseCredentials (validation M2)", () => {
+  const configured = { supabaseUrl: "https://project.supabase.co", supabaseAnonKey: "key" };
+  const empty = { supabaseUrl: "", supabaseAnonKey: "" };
+
+  it.each(["development", "staging", "production"] as const)(
+    "%s: uses the configured project",
+    (appEnv) => {
+      expect(supabaseCredentials({ appEnv, ...configured })).toEqual({
+        url: "https://project.supabase.co",
+        key: "key",
+      });
+    },
+  );
+
+  it("development: an unconfigured build keeps the loud local placeholder", () => {
+    expect(supabaseCredentials({ appEnv: "development", ...empty })?.url).toBe(
+      "http://127.0.0.1:54321",
+    );
+  });
+
+  it.each(["staging", "production"] as const)(
+    "%s: never falls back to localhost, no credentials at all",
+    (appEnv) => {
+      expect(supabaseCredentials({ appEnv, ...empty })).toBeNull();
+    },
+  );
+});
+
+describe("supabase client in a misconfigured release", () => {
+  it("is never created, and any use fails loudly instead of reaching a guessed backend", () => {
+    const createClient = jest.fn();
+    let loaded: typeof import("@/lib/supabase") | undefined;
+    jest.isolateModules(() => {
+      jest.doMock("@supabase/supabase-js", () => ({ createClient }));
+      jest.doMock("@/lib/config", () => {
+        const config: Partial<AppConfig> = {
+          appEnv: "production",
+          supabaseUrl: "",
+          supabaseAnonKey: "",
+        };
+        return { config };
+      });
+      loaded = jest.requireActual<typeof import("@/lib/supabase")>("@/lib/supabase");
+    });
+
+    expect(createClient).not.toHaveBeenCalled();
+    expect(loaded!.isSupabaseConfigured).toBe(false);
+    expect(() => loaded!.supabase.from("trips")).toThrow(/not configured/);
   });
 });
