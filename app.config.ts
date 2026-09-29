@@ -17,8 +17,14 @@ const LOCATION_PERMISSION_WHEN_IN_USE =
 const LOCATION_PERMISSION_ALWAYS =
   "Namma Lorry records your route in the background only while a trip you started is in progress, so your driving experience can be verified.";
 
-const defineConfig = (): ExpoConfig => {
-  const appEnv = process.env.EXPO_PUBLIC_APP_ENV ?? "development";
+type Env = Record<string, string | undefined>;
+
+export function appEnvFrom(env: Env): string {
+  return env.EXPO_PUBLIC_APP_ENV ?? "development";
+}
+
+const defineConfig = (env: Env): ExpoConfig => {
+  const appEnv = appEnvFrom(env);
 
   return {
     name: "Namma Lorry",
@@ -69,11 +75,11 @@ const defineConfig = (): ExpoConfig => {
       ["./plugins/withMappls", { configDir: "mappls" }],
       // Sentry source-map upload at build time (B4). Only when the EAS secret
       // SENTRY_AUTH_TOKEN exists, so local and CI builds without it still work.
-      ...(process.env.SENTRY_AUTH_TOKEN
+      ...(env.SENTRY_AUTH_TOKEN
         ? [
             [
               "@sentry/react-native/expo",
-              { organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT },
+              { organization: env.SENTRY_ORG, project: env.SENTRY_PROJECT },
             ] as [string, Record<string, unknown>],
           ]
         : []),
@@ -100,4 +106,8 @@ const defineConfig = (): ExpoConfig => {
   } as ExpoConfig;
 };
 
-export default defineConfig();
+export function buildConfig(env: Env): ExpoConfig {
+  return defineConfig(env);
+}
+
+export default buildConfig(process.env);
