@@ -7,7 +7,8 @@ import { createChunkedSecureStorage, createWebStorage } from './sessionStorage';
 
 /**
  * Supabase client. Session: expo-secure-store on native (chunked), localStorage-safe
- * storage on web (docs/09 §4). Null when no anon key is configured (dev demo mode).
+ * storage on web (docs/09 §4). Null when no anon key is configured (dev demo mode) or the
+ * release env is invalid (config.ts fails closed with an empty URL/key; R0).
  * TODO(M4): type with the generated Database from src/lib/database.types.ts.
  */
 export const supabase: SupabaseClient | null = config.supabaseAnonKey

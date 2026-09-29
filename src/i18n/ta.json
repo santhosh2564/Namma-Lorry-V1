@@ -56,7 +56,9 @@
     "loadFailedTitle": "TODO: Couldn't load this screen",
     "boundaryTitle": "TODO: Something went wrong",
     "boundaryBody": "TODO: The app hit an unexpected problem. Your trip data on this phone is safe.",
-    "boundaryRetry": "TODO: Try again"
+    "boundaryRetry": "TODO: Try again",
+    "misconfiguredTitle": "TODO: App misconfigured",
+    "misconfiguredBody": "TODO: This version of the app was built with missing settings and can't connect safely. Please contact your transport office for an updated app."
   },
   "rpc": {
     "TRIP_NOT_FOUND": "TODO: Trip not found.",

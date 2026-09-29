@@ -13,14 +13,18 @@ import { AppState, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { Misconfigured } from '@/components/Misconfigured';
 import { restoreLanguage } from '@/i18n/language';
-import { initSentry, wrapWithSentry } from '@/lib/sentry';
+import { configError } from '@/lib/config';
+import { initSentry, reportError, wrapWithSentry } from '@/lib/sentry';
 
 // The tracking task (M8) must be imported here at module top level, first.
 // Placeholder note until src/tracking/task.ts exists.
 
 initSentry();
 void restoreLanguage();
+// Fail closed (R0): a release build with a broken env reports it and never starts the app.
+if (configError) reportError(new Error(configError), { kind: 'config' });
 
 // Native has no browser online/visibility events: feed TanStack Query from NetInfo and
 // AppState so data screens refetch after reconnect and when the app returns to the foreground.
@@ -38,6 +42,14 @@ const queryClient = new QueryClient({
 });
 
 function RootLayout() {
+  if (configError) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <Misconfigured />
+      </SafeAreaProvider>
+    );
+  }
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

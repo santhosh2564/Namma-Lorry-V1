@@ -56,7 +56,9 @@
     "loadFailedTitle": "Couldn't load this screen",
     "boundaryTitle": "Something went wrong",
     "boundaryBody": "The app hit an unexpected problem. Your trip data on this phone is safe.",
-    "boundaryRetry": "Try again"
+    "boundaryRetry": "Try again",
+    "misconfiguredTitle": "App misconfigured",
+    "misconfiguredBody": "This version of the app was built with missing settings and can't connect safely. Please contact your transport office for an updated app."
   },
   "rpc": {
     "TRIP_NOT_FOUND": "Trip not found.",
