@@ -4,7 +4,12 @@
     "tagline": "TODO: Your work, verified.",
     "offline": "TODO: You're offline — trip data is saved on your phone.",
     "retry": "TODO: Retry",
-    "cancel": "TODO: Cancel"
+    "cancel": "TODO: Cancel",
+    "errorBoundary": {
+      "title": "TODO: Something went wrong",
+      "body": "TODO: The app hit an unexpected problem. Your trip keeps recording in the background.",
+      "retry": "TODO: Try again"
+    }
   },
   "splash": {
     "restoringTrip": "TODO: Restoring your trip…",

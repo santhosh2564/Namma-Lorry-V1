@@ -4,7 +4,12 @@
     "tagline": "Your work, verified.",
     "offline": "You're offline — trip data is saved on your phone.",
     "retry": "Retry",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "errorBoundary": {
+      "title": "Something went wrong",
+      "body": "The app hit an unexpected problem. Your trip keeps recording in the background.",
+      "retry": "Try again"
+    }
   },
   "splash": {
     "restoringTrip": "Restoring your trip…",
