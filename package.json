@@ -14,7 +14,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:scripts": "node --test scripts/__tests__/",
+    "test:scripts": "node --test scripts/__tests__/ test/config/",
     "i18n:sync": "node scripts/i18n-sync.mjs",
     "gpx:gen": "node scripts/gen-gpx.mjs",
     "test:db": "supabase test db && bash test/db/start-trip-race.sh",

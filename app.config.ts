@@ -1,5 +1,5 @@
 import type { ExpoConfig } from 'expo/config';
-import { withInfoPlist, type ConfigPlugin } from 'expo/config-plugins';
+import { withAndroidManifest, withInfoPlist, type ConfigPlugin } from 'expo/config-plugins';
 
 /**
  * Namma Lorry — Expo app config (M12c release).
@@ -25,9 +25,27 @@ const LOCATION_WHEN_IN_USE =
 const LOCATION_ALWAYS =
   'Namma Lorry records your route in the background only while a trip you started is in progress, so your driving experience can be verified.';
 
-const defineConfig = (): ExpoConfig => {
-  const appEnv = (process.env.EXPO_PUBLIC_APP_ENV ?? 'development') as
-    'development' | 'preview' | 'production';
+export const APP_ENVS = ['development', 'preview', 'production'] as const;
+export type AppEnv = (typeof APP_ENVS)[number];
+
+type Env = Record<string, string | undefined>;
+
+/** Unset → development (local `expo start`); anything else must be one of APP_ENVS (R0). */
+export function appEnvFrom(env: Env): AppEnv {
+  const value = env.EXPO_PUBLIC_APP_ENV;
+  if (value === undefined || value === '') return 'development';
+  if (!(APP_ENVS as readonly string[]).includes(value)) {
+    throw new Error(
+      `[app.config] EXPO_PUBLIC_APP_ENV must be one of ${APP_ENVS.join(', ')} (got "${value}")`,
+    );
+  }
+  return value as AppEnv;
+}
+
+// `env` is passed in rather than read as process.env.EXPO_PUBLIC_* (which babel inlines),
+// so tests can vary it.
+const defineConfig = (env: Env): ExpoConfig => {
+  const appEnv = appEnvFrom(env);
 
   // Same bundle id / package for every profile (one store listing; preview builds go to
   // Play internal testing + TestFlight). Only the display name tells testers apart.
@@ -168,11 +186,11 @@ const defineConfig = (): ExpoConfig => {
       ],
       // Sentry source-map upload at build time (M12a). Only when the token exists
       // (EAS secret SENTRY_AUTH_TOKEN), so local/CI builds without it still succeed.
-      ...(process.env.SENTRY_AUTH_TOKEN
+      ...(env.SENTRY_AUTH_TOKEN
         ? [
             [
               '@sentry/react-native/expo',
-              { organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT },
+              { organization: env.SENTRY_ORG, project: env.SENTRY_PROJECT },
             ] as [string, Record<string, unknown>],
           ]
         : []),
@@ -200,4 +218,25 @@ const withoutBackgroundFetch: ConfigPlugin = (config) =>
     return c;
   });
 
-export default withoutBackgroundFetch(defineConfig());
+/**
+ * docs/09 §4 "HTTPS only": release builds must not allow cleartext HTTP. Android 9+ already
+ * defaults to false, but a library manifest can flip it on in the merge, so set it explicitly
+ * on the app's <application> (R0). Development keeps the default so the dev client can reach
+ * Metro over http.
+ */
+const withNoCleartextInRelease =
+  (appEnv: AppEnv): ConfigPlugin =>
+  (config) =>
+    appEnv === 'development'
+      ? config
+      : withAndroidManifest(config, (c) => {
+          const app = c.modResults.manifest.application?.[0];
+          if (app) app.$['android:usesCleartextTraffic'] = 'false';
+          return c;
+        });
+
+export function buildConfig(env: Env): ExpoConfig {
+  return withNoCleartextInRelease(appEnvFrom(env))(withoutBackgroundFetch(defineConfig(env)));
+}
+
+export default buildConfig(process.env);
