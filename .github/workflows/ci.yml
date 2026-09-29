@@ -39,6 +39,15 @@ jobs:
       - name: App config (introspect)
         run: bun run test:config
 
+      # Operator scripts (B5c): eas-update, provision-user, check-release-assets.
+      - name: Script tests
+        run: bun run test:scripts
+
+      # Reports missing store icons without failing until the brand assets exist
+      # (docs/release/ASSETS.md); release runs it with --strict.
+      - name: Release assets (report only)
+        run: bun run release:assets
+
       # The console ships as a static web export. It broke on main without CI
       # noticing (validation report B1: expo-sqlite's wasm was unresolvable),
       # so build it on every PR.
