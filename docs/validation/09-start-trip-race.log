@@ -1,0 +1,5 @@
+# script copied from r0-stabilise@7ab472d (not present on origin/main)
+session B said: {"sub":"7ace0000-0000-4000-8000-0000000000d1","role":"authenticated"} ERROR:  duplicate key value violates unique constraint "trips_one_active_per_driver" DETAIL:  Key (driver_id)=(7ace0000-0000-4000-8000-0000000000d1) already exists. CONTEXT:  SQL statement "update public.trips set status = 'in_progress', started_at = now(),     start_lat = p_lat, start_lng = p_lng, start_accuracy_m = p_accuracy_m, device_info = p_device_info   where id = p_trip_id returning *" PL/pgSQL function start_trip(uuid,double precision,double precision,real,jsonb) line 17 at SQL statement 
+in_progress trips: 1 · trip B: assigned
+FAIL: second start must return ANOTHER_TRIP_ACTIVE
+race=1

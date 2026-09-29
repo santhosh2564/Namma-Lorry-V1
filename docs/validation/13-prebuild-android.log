@@ -1,0 +1,13 @@
+- Creating native directory (./android)
+✔ Created native directory
+- Updating package.json
+✔ Updated package.json | no changes
+- Running prebuild
+[withMappls] missing .a.olf file in mappls\android — download it from the Mappls console and place it there
+- Running prebuild
+[withMappls] missing .a.conf file in mappls\android — download it from the Mappls console and place it there
+- Running prebuild
+» android: userInterfaceStyle: Install expo-system-ui in your project to enable this feature.
+- Running prebuild
+✔ Finished prebuild
+prebuild=0

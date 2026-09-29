@@ -1,0 +1,56 @@
+Resolving dependencies
+Resolved, downloaded and extracted [17]
+Saved lockfile
+[0m[32mCheck[0m admin-create-driver/driver_test.ts
+[0m[32mCheck[0m mappls-proxy/proxy_test.ts
+[0m[32mCheck[0m mappls-proxy/proxy_wire_test.ts
+[0m[38;5;245mrunning 14 tests from ./admin-create-driver/driver_test.ts[0m
+a request without a bearer token is 401 and creates nothing ... [0m[32mok[0m [0m[38;5;245m(16ms)[0m
+an invalid session is 401 ... [0m[32mok[0m [0m[38;5;245m(685µs)[0m
+a non-admin JWT is 403 and never touches the service role ... [0m[32mok[0m [0m[38;5;245m(327µs)[0m
+an inactive admin (is_admin() false because is_active is false) is 403 ... [0m[32mok[0m [0m[38;5;245m(216µs)[0m
+a non-POST method is refused and a preflight is answered ... [0m[32mok[0m [0m[38;5;245m(340µs)[0m
+an admin creates the auth user and a driver profile ... [0m[32mok[0m [0m[38;5;245m(607µs)[0m
+the profile is always a driver, whatever the request says ... [0m[32mok[0m [0m[38;5;245m(318µs)[0m
+bad input is rejected before the service role is used ... [0m[32mok[0m [0m[38;5;245m(844µs)[0m
+the phone is normalised from anything a dispatcher might type ... [0m[32mok[0m [0m[38;5;245m(85µs)[0m
+validateInput is total: every failure is a 400-shaped response ... [0m[32mok[0m [0m[38;5;245m(169µs)[0m
+a number that already has an account is 409, not a new user ... [0m[32mok[0m [0m[38;5;245m(266µs)[0m
+any other auth failure is a 500 that does not leak the message ... [0m[32mok[0m [0m[38;5;245m(243µs)[0m
+a failed profile update is reported, not swallowed ... [0m[32mok[0m [0m[38;5;245m(175µs)[0m
+a body that is not JSON is 400 ... [0m[32mok[0m [0m[38;5;245m(317µs)[0m
+[0m[38;5;245mrunning 21 tests from ./mappls-proxy/proxy_test.ts[0m
+autosuggest normalises suggestedLocations into docs/06 §4 shape ... [0m[32mok[0m [0m[38;5;245m(18ms)[0m
+autosuggest includes the key and omits the bias when no point is given ... [0m[32mok[0m [0m[38;5;245m(438µs)[0m
+geocode normalises copResults ... [0m[32mok[0m [0m[38;5;245m(466µs)[0m
+geocode accepts the array form of copResults and 404s when there is no match ... [0m[32mok[0m [0m[38;5;245m(613µs)[0m
+reverse normalises results[0].formatted_address ... [0m[32mok[0m [0m[38;5;245m(466µs)[0m
+distance reads the source-to-destination cell and flips lng,lat in the path ... [0m[32mok[0m [0m[38;5;245m(434µs)[0m
+a request without a bearer token is 401 and never calls Mappls ... [0m[32mok[0m [0m[38;5;245m(210µs)[0m
+an invalid session is 401 ... [0m[32mok[0m [0m[38;5;245m(196µs)[0m
+a non-admin JWT is 403 and never calls Mappls (docs/06 §4) ... [0m[32mok[0m [0m[38;5;245m(235µs)[0m
+a non-POST method is refused ... [0m[32mok[0m [0m[38;5;245m(129µs)[0m
+a CORS preflight is answered without touching Supabase ... [0m[32mok[0m [0m[38;5;245m(175µs)[0m
+an unknown action is 400 ... [0m[32mok[0m [0m[38;5;245m(143µs)[0m
+missing or malformed parameters are 400 before any upstream call ... [0m[32mok[0m [0m[38;5;245m(436µs)[0m
+a search longer than Mappls' 45 characters is refused locally ... [0m[32mok[0m [0m[38;5;245m(159µs)[0m
+a body that is not JSON is 400 ... [0m[32mok[0m [0m[38;5;245m(244µs)[0m
+an unauthorised Mappls key is reported as a server-side config problem ... [0m[32mok[0m [0m[38;5;245m(338µs)[0m
+a missing Mappls key is 503 and the payload never echoes it ... [0m[32mok[0m [0m[38;5;245m(180µs)[0m
+a network failure or unparseable body is 502 ... [0m[32mok[0m [0m[38;5;245m(521µs)[0m
+the limiter allows `limit` calls in the window and then 429s ... [0m[32mok[0m [0m[38;5;245m(108µs)[0m
+the handler returns 429 with Retry-After once the budget is gone ... [0m[32mok[0m [0m[38;5;245m(353µs)[0m
+the normalisers tolerate junk instead of throwing ... [0m[32mok[0m [0m[38;5;245m(93µs)[0m
+[0m[38;5;245mrunning 8 tests from ./mappls-proxy/proxy_wire_test.ts[0m
+autosuggest: the real request carries the path, the key and lat,lng ... [0m[32mok[0m [0m[38;5;245m(29ms)[0m
+geocode: address in, one normalised point out ... [0m[32mok[0m [0m[38;5;245m(3ms)[0m
+reverse: Mappls answers in snake_case and the proxy normalises it ... [0m[32mok[0m [0m[38;5;245m(1ms)[0m
+geocode: 204 means 'no match', not 'Mappls is broken' ... [0m[32mok[0m [0m[38;5;245m(1ms)[0m
+a restricted suggestion has no coordinates at all, not a point at 0,0 ... [0m[32mok[0m [0m[38;5;245m(1ms)[0m
+distance: the trucking path segment is lng,lat — the opposite of `location` ... [0m[32mok[0m [0m[38;5;245m(1ms)[0m
+a rejected Mappls key is an operator problem, and the key never leaks ... [0m[32mok[0m [0m[38;5;245m(1ms)[0m
+a transport failure is a 502, not a stack trace ... [0m[32mok[0m [0m[38;5;245m(538µs)[0m
+
+[0m[32mok[0m | 43 passed | 0 failed [0m[38;5;245m(192ms)[0m
+
+deno=0
