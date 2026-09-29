@@ -1,0 +1,17 @@
+Connecting to local database...
+psql:/dev/nl-validate/supabase/tests/_helpers.psql:5: NOTICE:  extension "pgtap" already exists, skipping
+/dev/nl-validate/supabase/tests/01_rls_policies.test.sql ........... ok
+psql:/dev/nl-validate/supabase/tests/_helpers.psql:5: NOTICE:  extension "pgtap" already exists, skipping
+/dev/nl-validate/supabase/tests/02_rpc_errors.test.sql ............. ok
+psql:/dev/nl-validate/supabase/tests/_helpers.psql:5: NOTICE:  extension "pgtap" already exists, skipping
+/dev/nl-validate/supabase/tests/03_verification_reasons.test.sql ... ok
+psql:/dev/nl-validate/supabase/tests/_helpers.psql:5: NOTICE:  extension "pgtap" already exists, skipping
+/dev/nl-validate/supabase/tests/04_verification_triggers.test.sql .. ok
+psql:/dev/nl-validate/supabase/tests/_helpers.psql:5: NOTICE:  extension "pgtap" already exists, skipping
+/dev/nl-validate/supabase/tests/05_realtime_publication.test.sql ... ok
+psql:/dev/nl-validate/supabase/tests/_helpers.psql:5: NOTICE:  extension "pgtap" already exists, skipping
+/dev/nl-validate/supabase/tests/06_realtime_points.test.sql ........ ok
+All tests successful.
+Files=6, Tests=139,  1 wallclock secs ( 0.03 usr  0.03 sys +  0.06 cusr  0.08 csys =  0.20 CPU)
+Result: PASS
+pgtap=0

@@ -1,0 +1,4 @@
+⚠️  Skipping generating the iOS native project files. Run npx expo prebuild again from macOS or Linux to generate the iOS project.
+
+CommandError: At least one platform must be enabled when syncing
+prebuild_ios=1

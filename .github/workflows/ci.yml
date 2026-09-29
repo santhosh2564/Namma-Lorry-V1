@@ -34,6 +34,14 @@ jobs:
       - name: Unit tests
         run: bun run test
 
+      # The console ships as a static web export. It broke on main without CI
+      # noticing (validation report B1: expo-sqlite's wasm was unresolvable),
+      # so build it on every PR.
+      - name: Web export (production)
+        run: bun run export:web
+        env:
+          EXPO_PUBLIC_APP_ENV: production
+
       # The Supabase Edge Functions have their own Deno test suite, including a
       # wire-format suite that starts a loopback HTTP server (`--allow-net`).
       # It needs no secrets, so it belongs here: two real `mappls-proxy` bugs

@@ -1,0 +1,16 @@
+bun audit v1.4.2 (744846f84)
+
+decode-uri-component@0.2.2
+  expo-router > query-string > decode-uri-component
+  moderate: decode-uri-component: Denial of service via exponential decoding of malformed percent-encoded input (<=0.4.2) - https://github.com/advisories/GHSA-vcc3-ghjq-m6fr
+
+uuid@7.0.3
+  expo > @expo/config > @expo/config-plugins > xcode > uuid
+  expo-splash-screen > @expo/config-plugins > xcode > uuid
+  moderate: uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided (<11.1.1) - https://github.com/advisories/GHSA-w5hq-g745-h8pq
+
+2 vulnerabilities (2 moderate)
+
+  bun audit fix           upgrade the vulnerable packages within their ranges
+  bun audit fix --latest  also cross major versions
+audit=1
