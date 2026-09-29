@@ -38,6 +38,11 @@ const publicEnvSchema = z.object({
 
 export type AppEnv = z.infer<typeof appEnvSchema>;
 
+export type ConfigProblem = {
+  key: string;
+  reason: "missing" | "invalid" | "insecure";
+};
+
 export type AppConfig = {
   appEnv: AppEnv;
   supabaseUrl: string;
@@ -58,6 +63,25 @@ export function resolveSupabaseKey(env: {
   EXPO_PUBLIC_SUPABASE_KEY?: string;
 }): string {
   return env.EXPO_PUBLIC_SUPABASE_ANON_KEY || env.EXPO_PUBLIC_SUPABASE_KEY || "";
+}
+
+export function resolveConfig(
+  env: Record<string, string | undefined>,
+  _devBuild: boolean,
+): { config: AppConfig; problems: ConfigProblem[] } {
+  const parsed = publicEnvSchema.parse(env);
+  return {
+    config: {
+      appEnv: parsed.EXPO_PUBLIC_APP_ENV,
+      supabaseUrl: parsed.EXPO_PUBLIC_SUPABASE_URL,
+      supabaseAnonKey: resolveSupabaseKey(parsed),
+      mapplsMapSdkKey: parsed.EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY,
+      androidStoreUrl: parsed.EXPO_PUBLIC_ANDROID_STORE_URL,
+      iosStoreUrl: parsed.EXPO_PUBLIC_IOS_STORE_URL,
+      sentryDsn: parsed.EXPO_PUBLIC_SENTRY_DSN,
+    },
+    problems: [],
+  };
 }
 
 function loadConfig(): AppConfig {
@@ -97,6 +121,7 @@ function loadConfig(): AppConfig {
 }
 
 export const config: AppConfig = loadConfig();
+export const configProblems: readonly ConfigProblem[] = [];
 
 export const isDev = config.appEnv === "development";
 export const isProd = config.appEnv === "production";

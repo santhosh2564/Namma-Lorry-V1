@@ -9,6 +9,11 @@
       "title": "Something went wrong",
       "body": "The app hit an unexpected problem. Your trip keeps recording in the background.",
       "retry": "Try again"
+    },
+    "misconfigured": {
+      "title": "This app is not set up correctly",
+      "body": "This build cannot connect to Namma Lorry. Please install the latest version or contact your transporter.",
+      "details": "Settings to fix: {{keys}}"
     }
   },
   "splash": {

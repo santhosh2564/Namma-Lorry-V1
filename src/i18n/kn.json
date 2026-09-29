@@ -9,6 +9,11 @@
       "title": "TODO: Something went wrong",
       "body": "TODO: The app hit an unexpected problem. Your trip keeps recording in the background.",
       "retry": "TODO: Try again"
+    },
+    "misconfigured": {
+      "title": "TODO: This app is not set up correctly",
+      "body": "TODO: This build cannot connect to Namma Lorry. Please install the latest version or contact your transporter.",
+      "details": "TODO: Settings to fix: {{keys}}"
     }
   },
   "splash": {

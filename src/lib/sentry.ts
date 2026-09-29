@@ -17,7 +17,7 @@ import * as Application from "expo-application";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-import { config, isProd } from "@/lib/config";
+import { config, isProd, type ConfigProblem } from "@/lib/config";
 import { scrubEvent, scrubValue } from "@/lib/scrub";
 
 export function sentryRelease(): string {
@@ -68,5 +68,7 @@ export function setSentryUser(id: string | null): void {
   }
   Sentry.setUser(id ? { id } : null);
 }
+
+export function reportMisconfigured(_problems: readonly ConfigProblem[]): void {}
 
 export const wrapWithSentry = Sentry.wrap;

@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-import { config } from "@/lib/config";
+import { config, type AppConfig } from "@/lib/config";
 import type { Database } from "@/lib/database.types";
 
 export type { Database } from "@/lib/database.types";
@@ -99,6 +99,15 @@ export const isSupabaseConfigured = isConfigured(config.supabaseUrl, config.supa
 // Sentry as a network error instead of a white screen on the splash route.
 const PLACEHOLDER_URL = "http://127.0.0.1:54321";
 const PLACEHOLDER_KEY = "supabase-anon-key-not-configured";
+
+export function supabaseCredentials(
+  cfg: Pick<AppConfig, "appEnv" | "supabaseUrl" | "supabaseAnonKey">,
+): { url: string; key: string } | null {
+  if (isConfigured(cfg.supabaseUrl, cfg.supabaseAnonKey)) {
+    return { url: cfg.supabaseUrl, key: cfg.supabaseAnonKey };
+  }
+  return { url: PLACEHOLDER_URL, key: PLACEHOLDER_KEY };
+}
 
 function credentials(): { url: string; key: string } {
   if (isSupabaseConfigured) {

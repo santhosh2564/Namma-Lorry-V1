@@ -42,10 +42,20 @@ jobs:
       # The console ships as a static web export. It broke on main without CI
       # noticing (validation report B1: expo-sqlite's wasm was unresolvable),
       # so build it on every PR.
+      # Probe values, not real ones: the next step checks Metro inlined them
+      # (validation M2 — main's config read `process.env` as a whole object,
+      # which a production bundle never fills, so every release fell back).
       - name: Web export (production)
         run: bun run export:web
         env:
           EXPO_PUBLIC_APP_ENV: production
+          EXPO_PUBLIC_SUPABASE_URL: https://ci-probe.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-probe-anon-key
+
+      - name: Web export carries the EXPO_PUBLIC_* values
+        run: |
+          grep -rqF "https://ci-probe.supabase.co" dist || { echo "::error::SUPABASE_URL not inlined"; exit 1; }
+          grep -rqF "ci-probe-anon-key" dist || { echo "::error::SUPABASE_ANON_KEY not inlined"; exit 1; }
 
       # The Supabase Edge Functions have their own Deno test suite, including a
       # wire-format suite that starts a loopback HTTP server (`--allow-net`).
