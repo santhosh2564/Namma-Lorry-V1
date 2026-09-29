@@ -3,9 +3,7 @@ import { PlaceholderScreen } from '../PlaceholderScreen';
 
 describe('PlaceholderScreen', () => {
   it('renders the screen ID, title and milestone', async () => {
-    const screen = await render(
-      <PlaceholderScreen screenId="S2" title="Sign in" milestone="M5" />,
-    );
+    const screen = await render(<PlaceholderScreen screenId="S2" title="Sign in" milestone="M5" />);
 
     expect(screen.getByTestId('placeholder-S2')).toBeTruthy();
     expect(screen.getByText('S2')).toBeTruthy();

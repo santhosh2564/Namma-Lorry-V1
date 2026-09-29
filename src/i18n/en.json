@@ -1,0 +1,219 @@
+{
+  "common": {
+    "appName": "Namma Lorry",
+    "loading": "Loading…",
+    "refreshing": "Refreshing from server…",
+    "retry": "Retry",
+    "offline": "You are offline",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "none": "--",
+    "separator": " · "
+  },
+  "units": {
+    "km": "{{value}} km",
+    "kmh": "{{value}} km/h",
+    "minutes": "{{value}} min"
+  },
+  "time": {
+    "now": "now",
+    "minutesAgo": "{{minutes}}m ago",
+    "hoursAgo": "{{hours}}h {{minutes}}m ago"
+  },
+  "placeholder": {
+    "comingSoon": "Coming in a later milestone ({{milestone}})."
+  },
+  "screens": {
+    "S1": "Splash",
+    "S2": "Sign in",
+    "S3": "Verify OTP",
+    "S4": "Access Notice",
+    "D1": "Location Permission",
+    "D2": "Battery Setup",
+    "D3": "My Trips",
+    "D4": "Trip Detail & Start",
+    "D5": "Active Trip",
+    "D6": "Trip Summary",
+    "D7": "Trip History",
+    "D8": "My Profile",
+    "C1": "Live Dashboard",
+    "C2": "Loads",
+    "C3": "Create Load",
+    "C4": "Load Detail & Assign",
+    "C5": "Trips",
+    "C6": "Trip Detail & Review",
+    "C7": "Review Queue",
+    "C8": "Drivers",
+    "C9": "Vehicles"
+  },
+  "errors": {
+    "network": "Can't reach the server. Check your internet connection and try again.",
+    "generic": "Something went wrong. Please try again.",
+    "forbidden": "You don't have permission to do that.",
+    "notConfigured": "The app isn't connected to a server yet.",
+    "sessionExpired": "Your session has expired. Please sign in again.",
+    "loadFailedTitle": "Couldn't load this screen",
+    "boundaryTitle": "Something went wrong",
+    "boundaryBody": "The app hit an unexpected problem. Your trip data on this phone is safe.",
+    "boundaryRetry": "Try again"
+  },
+  "rpc": {
+    "TRIP_NOT_FOUND": "Trip not found.",
+    "TRIP_NOT_STARTABLE": "This trip can't be started any more. Refresh your trip list.",
+    "ANOTHER_TRIP_ACTIVE": "You already have a trip in progress. Open it to continue.",
+    "GPS_ACCURACY_TOO_LOW": "Waiting for a better GPS signal. Move to an open area and try again.",
+    "OUTSIDE_PICKUP": "You are {{km}} km from the pickup. Go to the pickup location to start.",
+    "TRIP_NOT_ACTIVE": "This trip has already ended.",
+    "FORBIDDEN": "You don't have permission to do that.",
+    "NOTE_REQUIRED": "Add a note before submitting the decision.",
+    "TRIP_NOT_IN_REVIEW": "This trip is no longer waiting for review.",
+    "VERSION_REQUIRED": "Consent could not be recorded. Please try again.",
+    "PROFILE_NOT_FOUND": "Your account could not be found. Contact Namma Lorry.",
+    "LANGUAGE_NOT_SUPPORTED": "That language isn't available yet."
+  },
+  "reasons": {
+    "START_OUTSIDE_PICKUP": "Trip didn't start at the pickup location",
+    "END_OUTSIDE_DROP": "Trip didn't end at the delivery location",
+    "MOCK_LOCATION": "Fake GPS app detected",
+    "TRACKING_GAP": "Tracking stopped for a long time",
+    "LOW_COVERAGE": "Not enough GPS data was recorded",
+    "MISSING_POINTS": "Some trip data never uploaded",
+    "SPEED_IMPLAUSIBLE": "Trip speed looks unusual",
+    "GPS_JUMPS": "GPS signal jumped around",
+    "DISTANCE_TOO_SHORT": "Distance is much shorter than the route",
+    "DISTANCE_TOO_LONG": "Distance is much longer than the route",
+    "unknown": "Needs a manual check"
+  },
+  "status": {
+    "driver": {
+      "assigned": "Ready to start",
+      "in_progress": "Trip in progress",
+      "completed": "Verifying…",
+      "verified": "Verified",
+      "needs_review": "Under review",
+      "rejected": "Not verified",
+      "cancelled": "Cancelled"
+    },
+    "console": {
+      "assigned": "Assigned",
+      "in_progress": "Live",
+      "completed": "Awaiting data",
+      "verified": "Verified",
+      "needs_review": "Needs review",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    }
+  },
+  "events": {
+    "started": "Trip started",
+    "ended": "Trip ended",
+    "verified": "Verified automatically",
+    "needs_review": "Flagged for review",
+    "approved": "Approved by admin",
+    "rejected": "Rejected by admin",
+    "unknown": "Trip updated"
+  },
+  "map": {
+    "preview": "MAP PREVIEW",
+    "a11yLabel": "Map with {{markers}} markers and {{points}} route points",
+    "start": "Start",
+    "end": "End"
+  },
+  "console": {
+    "live": {
+      "eyebrow": "C1 · OPERATIONS",
+      "title": "Live dashboard",
+      "liveCount": "{{count}} live",
+      "kpiInProgress": "In progress",
+      "kpiStale": "Stale >15m",
+      "kpiAvgSpeed": "Avg speed",
+      "activeTrips": "Active trips",
+      "autoUpdates": "Auto-updates live",
+      "emptyTitle": "No active trips",
+      "emptyBody": "The dashboard will populate when a driver starts a trip.",
+      "rowA11y": "{{driver}}, load {{load}}, last update {{age}}. Opens trip detail."
+    },
+    "review": {
+      "eyebrow": "C7 · NEEDS REVIEW",
+      "title": "Review queue",
+      "waitingCount": "{{count}} waiting",
+      "emptyTitle": "All caught up",
+      "emptyBody": "There are no trips waiting for a review.",
+      "endedOn": "{{driver}} · ended {{date}}",
+      "open": "Open trip review →",
+      "rowA11y": "Load {{load}}, driver {{driver}}, ended {{date}}. Opens trip review."
+    },
+    "trip": {
+      "eyebrow": "C6 · TRIP DETAIL & REVIEW",
+      "title": "Trip detail",
+      "notFound": "Trip not found",
+      "replay": "Replay",
+      "replayCount": "{{current}} / {{total}}",
+      "noPoints": "No points",
+      "play": "Play replay",
+      "pause": "Pause replay",
+      "stepBack": "Previous point",
+      "stepForward": "Next point",
+      "sliderA11y": "Replay position",
+      "sliderValue": "Point {{current}} of {{total}}",
+      "kpiPoints": "Points",
+      "kpiAvgSpeed": "Avg speed",
+      "kpiMaxGap": "Max gap",
+      "flags": "Verification flags",
+      "timeline": "Event timeline",
+      "reviewTitle": "Admin review",
+      "reviewHint": "This trip remains unchanged until the server confirms your decision.",
+      "notePlaceholder": "Mandatory review note",
+      "noteA11y": "Review note, required",
+      "approve": "Approve",
+      "reject": "Reject",
+      "noteRequiredTitle": "Note required",
+      "reviewFailedTitle": "Review failed"
+    }
+  },
+  "driver": {
+    "history": {
+      "eyebrow": "D7 · YOUR TRIPS",
+      "title": "Trip history",
+      "all": "All trips",
+      "active": "Active",
+      "emptyTitle": "No trips yet",
+      "emptyBody": "Trips you drive will appear here.",
+      "filterA11y": "Show {{filter}}",
+      "rowA11y": "Load {{load}}, {{status}}, {{distance}}. Opens trip summary."
+    },
+    "profile": {
+      "eyebrow": "D8 · ACCOUNT",
+      "title": "My profile",
+      "readOnly": "Your profile and verified stats can't be edited in the app.",
+      "verifiedTrips": "Verified trips",
+      "distance": "Distance",
+      "since": "Since",
+      "preferences": "Preferences",
+      "language": "Language",
+      "permissions": "Permissions",
+      "permissionsStatus": "Checked before each trip",
+      "permissionsBody": "Location and notification permissions are checked every time you start a trip.",
+      "battery": "Battery health",
+      "batteryStatus": "Checked before each trip",
+      "batteryBody": "Background tracking checks run before an active trip.",
+      "privacy": "Privacy policy",
+      "privacyBody": "Namma Lorry only uses trip location to verify completed trips.",
+      "open": "Read ›",
+      "signOut": "Sign out",
+      "signedOut": "Signed out",
+      "signOutBlocked": "Finish active trip to sign out",
+      "signOutFailed": "Sign out failed",
+      "chooseLanguage": "Choose language",
+      "selected": "Selected",
+      "languageSaveFailed": "Couldn't save your language"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "ta": "தமிழ்",
+    "kn": "ಕನ್ನಡ",
+    "hi": "हिन्दी"
+  }
+}

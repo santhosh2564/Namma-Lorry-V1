@@ -1,11 +1,5 @@
 export type TripStatus =
-  | 'assigned'
-  | 'in_progress'
-  | 'completed'
-  | 'verified'
-  | 'needs_review'
-  | 'rejected'
-  | 'cancelled';
+  'assigned' | 'in_progress' | 'completed' | 'verified' | 'needs_review' | 'rejected' | 'cancelled';
 
 export type LiveTrip = {
   trip_id: string;
@@ -69,7 +63,3 @@ export type DriverStats = {
   first_verified_at: string | null;
   last_verified_at: string | null;
 };
-
-export const reasonLabel = (reason: string) =>
-  reason.replaceAll('_', ' ').toLowerCase().replace(/^./, (letter) => letter.toUpperCase());
-

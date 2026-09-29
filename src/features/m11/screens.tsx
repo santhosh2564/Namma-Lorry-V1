@@ -1,65 +1,1074 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/purity, react-hooks/exhaustive-deps, react/no-unescaped-entities */
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+/**
+ * M11 screens: C1 Live Dashboard, C7 Review Queue, C6 Trip Detail & Review,
+ * D7 Trip History, D8 My Profile.
+ * M12a: all text via i18n, TanStack Query loading/error/retry states, accessibility
+ * labels + 48 px targets, colours from src/theme/tokens.ts, memoised map inputs.
+ */
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type ViewStyle,
+} from 'react-native';
 
 import { MapplsMap } from '@/components/map/MapplsMap';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui';
+import { SUPPORTED_LANGUAGES, type AppLanguage } from '@/i18n';
+import { applyProfileLanguage, setAppLanguage } from '@/i18n/language';
+import { errorMessage } from '@/lib/errors';
+import {
+  eventText,
+  formatAge,
+  formatDate,
+  formatKm,
+  formatMonth,
+  formatTime,
+  maskPhone,
+  reasonText,
+  statusText,
+} from '@/lib/format';
+import { colors, sizes } from '@/theme/tokens';
 
-import { fetchDriverProfile, fetchLiveTrips, fetchTrip, fetchTripEvents, fetchTripPoints, fetchTrips, reviewTrip, signOut, subscribe } from './data';
-import type { DriverStats, LiveTrip, Trip, TripEvent, TripPoint } from './types';
-import { reasonLabel } from './types';
+import {
+  fetchDriverProfile,
+  fetchLiveTrips,
+  fetchTrip,
+  fetchTripEvents,
+  fetchTripPoints,
+  fetchTrips,
+  mergePoints,
+  reviewTrip,
+  signOut,
+  subscribe,
+} from './data';
+import type { Trip, TripEvent, TripPoint, TripStatus } from './types';
 
-const palette = { ink: '#18343c', muted: '#60767a', teal: '#0b7d70', orange: '#e56544', gold: '#e6a13a', line: '#d9e3e1', paper: '#f6f8f7', white: '#fff', danger: '#c5413d' };
-const age = (date: string) => { const minutes = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 60000)); return minutes < 1 ? 'now' : minutes < 60 ? `${minutes}m ago` : `${Math.floor(minutes / 60)}h ${minutes % 60}m ago`; };
-const km = (meters: number | null | undefined) => meters == null ? '--' : `${(meters / 1000).toFixed(1)} km`;
-const day = (date: string | null) => date ? new Date(date).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '--';
+const STALE_MS = 15 * 60_000;
 
-function Shell({ title, eyebrow, children, right }: { title: string; eyebrow?: string; children: React.ReactNode; right?: React.ReactNode }) { return <ScrollView style={styles.screen} contentContainerStyle={styles.content}><View style={styles.header}><View>{eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}<Text style={styles.title}>{title}</Text></View>{right}</View>{children}</ScrollView>; }
-function Card({ children, style }: { children: React.ReactNode; style?: object }) { return <View style={[styles.card, style]}>{children}</View>; }
-function Button({ label, onPress, tone = 'primary', disabled = false }: { label: string; onPress: () => void; tone?: 'primary' | 'quiet' | 'danger'; disabled?: boolean }) { return <Pressable disabled={disabled} onPress={onPress} style={[styles.button, tone === 'quiet' && styles.quietButton, tone === 'danger' && styles.dangerButton, disabled && styles.disabled]}><Text style={[styles.buttonText, tone === 'quiet' && styles.quietText]}>{label}</Text></Pressable>; }
-function Chip({ children, danger = false }: { children: React.ReactNode; danger?: boolean }) { return <View style={[styles.chip, danger && styles.dangerChip]}><Text style={[styles.chipText, danger && styles.dangerChipText]}>{children}</Text></View>; }
-function Kpi({ label, value, tone }: { label: string; value: string; tone?: 'danger' | 'accent' }) { return <View style={styles.kpi}><Text style={styles.kpiLabel}>{label}</Text><Text style={[styles.kpiValue, tone === 'danger' && { color: palette.danger }, tone === 'accent' && { color: palette.teal }]}>{value}</Text></View>; }
-function Loader() { return <View style={styles.loader}><ActivityIndicator color={palette.teal} /><Text style={styles.muted}>Refreshing from server...</Text></View>; }
+/** Current time, re-rendering every 30 s so "last update" ages and stale flags keep moving. */
+function useNow(intervalMs = 30_000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(timer);
+  }, [intervalMs]);
+  return now;
+}
+
+// ---------- small building blocks ----------
+
+function Shell({
+  title,
+  eyebrow,
+  right,
+  children,
+}: {
+  title: string;
+  eyebrow?: string;
+  right?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <View style={styles.header}>
+        <View style={styles.flex}>
+          {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+          <Text style={styles.title} accessibilityRole="header">
+            {title}
+          </Text>
+        </View>
+        {right}
+      </View>
+      {children}
+    </ScrollView>
+  );
+}
+
+function Card({ children, style }: { children: ReactNode; style?: ViewStyle }) {
+  return <View style={[styles.card, style]}>{children}</View>;
+}
+
+function Button({
+  label,
+  a11yLabel,
+  onPress,
+  tone = 'primary',
+  disabled = false,
+}: {
+  label: string;
+  a11yLabel?: string;
+  onPress: () => void;
+  tone?: 'primary' | 'quiet' | 'danger';
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      disabled={disabled}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel ?? label}
+      accessibilityState={{ disabled }}
+      style={({ pressed }) => [
+        styles.button,
+        tone === 'quiet' && styles.quietButton,
+        tone === 'danger' && styles.dangerButton,
+        disabled && styles.disabled,
+        pressed && !disabled && styles.pressed,
+      ]}
+    >
+      <Text style={[styles.buttonText, tone === 'quiet' && styles.quietText]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+type ChipTone = 'neutral' | 'danger' | 'success' | 'live';
+function Chip({ children, tone = 'neutral' }: { children: ReactNode; tone?: ChipTone }) {
+  return (
+    <View style={[styles.chip, chipTone[tone].box]}>
+      <Text style={[styles.chipText, chipTone[tone].text]}>{children}</Text>
+    </View>
+  );
+}
+
+const toneFor = (status: TripStatus): ChipTone =>
+  status === 'verified'
+    ? 'success'
+    : status === 'in_progress'
+      ? 'live'
+      : status === 'needs_review' || status === 'rejected'
+        ? 'danger'
+        : 'neutral';
+
+function Kpi({ label, value, tone }: { label: string; value: string; tone?: 'danger' | 'accent' }) {
+  return (
+    <View style={styles.kpi} accessible accessibilityLabel={`${label}: ${value}`}>
+      <Text style={styles.kpiLabel}>{label}</Text>
+      <Text
+        style={[
+          styles.kpiValue,
+          tone === 'danger' && { color: colors.dangerText },
+          tone === 'accent' && { color: colors.liveText },
+        ]}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function ReasonChips({ reasons }: { reasons: string[] }) {
+  return (
+    <View style={styles.chips}>
+      {reasons.map((reason) => (
+        <Chip key={reason} tone="danger">
+          {reasonText(reason)}
+        </Chip>
+      ))}
+    </View>
+  );
+}
+
+// ---------- C1 Live Dashboard ----------
 
 export function LiveDashboardScreen() {
-  const [trips, setTrips] = useState<LiveTrip[]>([]); const [loading, setLoading] = useState(true); const router = useRouter();
-  const refresh = async () => { setTrips(await fetchLiveTrips()); setLoading(false); };
-  useEffect(() => { void refresh(); const stop = subscribe('trip_live', undefined, () => void refresh(), () => void refresh()); const onOnline = () => void refresh(); if (typeof window !== 'undefined') window.addEventListener('online', onOnline); return () => { stop(); if (typeof window !== 'undefined') window.removeEventListener('online', onOnline); }; }, []);
-  return <Shell title="Live dashboard" eyebrow="C1 · OPERATIONS" right={<Chip>{trips.length} live</Chip>}><View style={styles.kpiRow}><Kpi label="In progress" value={`${trips.length}`} tone="accent" /><Kpi label="Stale >15m" value={`${trips.filter((trip) => (Date.now() - new Date(trip.updated_at).getTime()) > 15 * 60000).length}`} tone="danger" /><Kpi label="Avg speed" value={trips.length ? `${Math.round(trips.reduce((sum, trip) => sum + (trip.speed_mps ?? 0) * 3.6, 0) / trips.length)} km/h` : '--'} /></View>{loading ? <Loader /> : <><MapplsMap markers={trips.map((trip) => ({ id: trip.trip_id, lat: trip.lat, lng: trip.lng, heading: trip.heading, label: trip.driver_name }))} /><View style={styles.sectionHead}><Text style={styles.sectionTitle}>Active trips</Text><Text style={styles.muted}>Auto-updates live</Text></View>{trips.length ? trips.map((trip) => { const stale = Date.now() - new Date(trip.updated_at).getTime() > 15 * 60000; return <Pressable key={trip.trip_id} onPress={() => router.push(`/trips/${trip.trip_id}`)}><Card style={styles.listItem}><View style={[styles.statusDot, stale && { backgroundColor: palette.danger }]} /><View style={styles.flex}><Text style={styles.itemTitle}>{trip.driver_name}</Text><Text style={styles.muted}>{trip.load_code} · {Math.round((trip.speed_mps ?? 0) * 3.6)} km/h</Text></View><Text style={[styles.age, stale && { color: palette.danger }]}>{age(trip.updated_at)}</Text></Card></Pressable>; }) : <Card><Text style={styles.itemTitle}>No active trips</Text><Text style={styles.muted}>The dashboard will populate when a driver starts a trip.</Text></Card>}</>}</Shell>;
+  const { t } = useTranslation();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const live = useQuery({ queryKey: ['live-trips'], queryFn: fetchLiveTrips });
+
+  useEffect(() => {
+    const refresh = () => void queryClient.invalidateQueries({ queryKey: ['live-trips'] });
+    return subscribe('trip_live', undefined, refresh, refresh);
+  }, [queryClient]);
+
+  const trips = useMemo(() => live.data ?? [], [live.data]);
+  const markers = useMemo(
+    () =>
+      trips.map((trip) => ({
+        id: trip.trip_id,
+        lat: trip.lat,
+        lng: trip.lng,
+        heading: trip.heading,
+        label: trip.driver_name,
+      })),
+    [trips],
+  );
+  const now = useNow();
+  const stale = trips.filter((trip) => now - new Date(trip.updated_at).getTime() > STALE_MS).length;
+  const avgSpeed = trips.length
+    ? t('units.kmh', {
+        value: Math.round(
+          trips.reduce((sum, trip) => sum + (trip.speed_mps ?? 0) * 3.6, 0) / trips.length,
+        ),
+      })
+    : t('common.none');
+
+  return (
+    <Shell
+      title={t('console.live.title')}
+      eyebrow={t('console.live.eyebrow')}
+      right={<Chip tone="live">{t('console.live.liveCount', { count: trips.length })}</Chip>}
+    >
+      <View style={styles.kpiRow}>
+        <Kpi label={t('console.live.kpiInProgress')} value={String(trips.length)} tone="accent" />
+        <Kpi label={t('console.live.kpiStale')} value={String(stale)} tone="danger" />
+        <Kpi label={t('console.live.kpiAvgSpeed')} value={avgSpeed} />
+      </View>
+      {live.isPending ? (
+        <LoadingState />
+      ) : live.isError ? (
+        <ErrorState error={live.error} onRetry={() => void live.refetch()} />
+      ) : (
+        <>
+          <MapplsMap markers={markers} />
+          <View style={styles.sectionHead}>
+            <Text style={styles.sectionTitle}>{t('console.live.activeTrips')}</Text>
+            <Text style={styles.muted}>{t('console.live.autoUpdates')}</Text>
+          </View>
+          {trips.length === 0 ? (
+            <EmptyState title={t('console.live.emptyTitle')} body={t('console.live.emptyBody')} />
+          ) : (
+            trips.map((trip) => {
+              const isStale = now - new Date(trip.updated_at).getTime() > STALE_MS;
+              const age = formatAge(trip.updated_at, now);
+              return (
+                <Pressable
+                  key={trip.trip_id}
+                  onPress={() => router.push(`/trips/${trip.trip_id}`)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('console.live.rowA11y', {
+                    driver: trip.driver_name,
+                    load: trip.load_code,
+                    age,
+                  })}
+                  style={styles.touchRow}
+                >
+                  <Card style={styles.listItem}>
+                    <View
+                      style={[styles.statusDot, isStale && { backgroundColor: colors.danger }]}
+                    />
+                    <View style={styles.flex}>
+                      <Text style={styles.itemTitle}>{trip.driver_name}</Text>
+                      <Text style={styles.muted}>
+                        {trip.load_code}
+                        {t('common.separator')}
+                        {t('units.kmh', { value: Math.round((trip.speed_mps ?? 0) * 3.6) })}
+                      </Text>
+                    </View>
+                    <Text style={[styles.age, isStale && { color: colors.dangerText }]}>{age}</Text>
+                  </Card>
+                </Pressable>
+              );
+            })
+          )}
+        </>
+      )}
+    </Shell>
+  );
 }
 
-function reasonChips(reasons: string[]) { return <View style={styles.chips}>{reasons.map((reason) => <Chip key={reason} danger>{reasonLabel(reason)}</Chip>)}</View>; }
+// ---------- C7 Review Queue ----------
 
 export function ReviewQueueScreen() {
-  const [trips, setTrips] = useState<Trip[]>([]); const [loading, setLoading] = useState(true); const router = useRouter();
-  useEffect(() => { void fetchTrips('needs_review').then((items) => { setTrips(items.sort((a, b) => new Date(a.ended_at ?? '').getTime() - new Date(b.ended_at ?? '').getTime())); setLoading(false); }); }, []);
-  return <Shell title="Review queue" eyebrow="C7 · NEEDS REVIEW" right={<Chip danger>{trips.length} waiting</Chip>}>{loading ? <Loader /> : trips.length === 0 ? <Card style={styles.empty}><Text style={styles.emptyTitle}>All caught up</Text><Text style={styles.muted}>There are no trips waiting for a review.</Text></Card> : trips.map((trip) => <Pressable key={trip.id} onPress={() => router.push(`/trips/${trip.id}`)}><Card style={styles.queueItem}><View style={styles.queueMap}><MapplsMap compact planned={[{ lat: trip.pickup_lat, lng: trip.pickup_lng }, { lat: trip.drop_lat, lng: trip.drop_lng }]} /></View><View style={styles.flex}><Text style={styles.itemTitle}>{trip.load_code}</Text><Text style={styles.muted}>{trip.driver_name} · ended {day(trip.ended_at)}</Text>{reasonChips(trip.verification_reasons)}<Text style={styles.link}>Open trip review →</Text></View></Card></Pressable>)}</Shell>;
+  const { t } = useTranslation();
+  const router = useRouter();
+  const queue = useQuery({
+    queryKey: ['trips', 'needs_review'],
+    queryFn: async () =>
+      (await fetchTrips('needs_review')).sort(
+        (a, b) => new Date(a.ended_at ?? 0).getTime() - new Date(b.ended_at ?? 0).getTime(),
+      ),
+  });
+  const trips = queue.data ?? [];
+
+  return (
+    <Shell
+      title={t('console.review.title')}
+      eyebrow={t('console.review.eyebrow')}
+      right={<Chip tone="danger">{t('console.review.waitingCount', { count: trips.length })}</Chip>}
+    >
+      {queue.isPending ? (
+        <LoadingState />
+      ) : queue.isError ? (
+        <ErrorState error={queue.error} onRetry={() => void queue.refetch()} />
+      ) : trips.length === 0 ? (
+        <EmptyState title={t('console.review.emptyTitle')} body={t('console.review.emptyBody')} />
+      ) : (
+        trips.map((trip) => (
+          <ReviewQueueRow
+            key={trip.id}
+            trip={trip}
+            onOpen={() => router.push(`/trips/${trip.id}`)}
+          />
+        ))
+      )}
+    </Shell>
+  );
 }
 
-function EventTimeline({ events }: { events: TripEvent[] }) { return <View>{events.map((event, index) => <View key={event.id} style={styles.event}><View style={styles.eventRail}><View style={styles.eventDot} />{index < events.length - 1 ? <View style={styles.eventLine} /> : null}</View><View><Text style={styles.itemTitle}>{reasonLabel(event.type)}</Text><Text style={styles.muted}>{day(event.created_at)} · {new Date(event.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>{typeof event.payload?.note === 'string' ? <Text style={styles.eventNote}>“{event.payload.note}”</Text> : null}</View></View>)}</View>; }
+function ReviewQueueRow({ trip, onOpen }: { trip: Trip; onOpen: () => void }) {
+  const { t } = useTranslation();
+  const planned = useMemo(
+    () => [
+      { lat: trip.pickup_lat, lng: trip.pickup_lng },
+      { lat: trip.drop_lat, lng: trip.drop_lng },
+    ],
+    [trip.pickup_lat, trip.pickup_lng, trip.drop_lat, trip.drop_lng],
+  );
+  const date = formatDate(trip.ended_at);
+  return (
+    <Pressable
+      onPress={onOpen}
+      accessibilityRole="button"
+      accessibilityLabel={t('console.review.rowA11y', {
+        load: trip.load_code,
+        driver: trip.driver_name,
+        date,
+      })}
+    >
+      <Card style={styles.queueItem}>
+        <View style={styles.queueMap}>
+          <MapplsMap compact planned={planned} />
+        </View>
+        <View style={styles.flex}>
+          <Text style={styles.itemTitle}>{trip.load_code}</Text>
+          <Text style={styles.muted}>
+            {t('console.review.endedOn', { driver: trip.driver_name, date })}
+          </Text>
+          <ReasonChips reasons={trip.verification_reasons} />
+          <Text style={styles.link}>{t('console.review.open')}</Text>
+        </View>
+      </Card>
+    </Pressable>
+  );
+}
+
+// ---------- C6 Trip Detail & Review ----------
+
+function EventTimeline({ events }: { events: TripEvent[] }) {
+  return (
+    <View>
+      {events.map((event, index) => (
+        <View key={event.id} style={styles.event}>
+          <View style={styles.eventRail}>
+            <View style={styles.eventDot} />
+            {index < events.length - 1 ? <View style={styles.eventLine} /> : null}
+          </View>
+          <View style={styles.flex}>
+            <Text style={styles.itemTitle}>{eventText(event.type)}</Text>
+            <Text style={styles.muted}>
+              {formatDate(event.created_at)} · {formatTime(event.created_at)}
+            </Text>
+            {typeof event.payload?.note === 'string' ? (
+              <Text style={styles.eventNote}>“{event.payload.note}”</Text>
+            ) : null}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export function TripDetailReviewScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>(); const [trip, setTrip] = useState<Trip | null>(null); const [points, setPoints] = useState<TripPoint[]>([]); const [events, setEvents] = useState<TripEvent[]>([]); const [loading, setLoading] = useState(true); const [replay, setReplay] = useState(0); const [playing, setPlaying] = useState(false); const [note, setNote] = useState(''); const [decision, setDecision] = useState(false);
-  const refresh = async () => { if (!id) return; const [nextTrip, nextPoints, nextEvents] = await Promise.all([fetchTrip(id), fetchTripPoints(id), fetchTripEvents(id)]); setTrip(nextTrip); setPoints(nextPoints); setEvents(nextEvents); setLoading(false); };
-  useEffect(() => { void refresh(); if (!id) return; const stopPoints = subscribe('trip_points', `trip_id=eq.${id}`, () => void refresh(), () => void refresh()); const stopTrips = subscribe('trips', `id=eq.${id}`, () => void refresh(), () => void refresh()); return () => { stopPoints(); stopTrips(); }; }, [id]);
-  useEffect(() => { if (!playing || !points.length) return; const timer = setInterval(() => setReplay((current) => current >= points.length - 1 ? (setPlaying(false), current) : current + 1), 700); return () => clearInterval(timer); }, [playing, points.length]);
-  const recorded = points.slice(0, replay + 1); const planned: [{ lat: number; lng: number }, { lat: number; lng: number }] = trip ? [{ lat: trip.pickup_lat, lng: trip.pickup_lng }, { lat: trip.drop_lat, lng: trip.drop_lng }] : [{ lat: 0, lng: 0 }, { lat: 0, lng: 0 }];
-  const decide = async (approve: boolean) => { if (!note.trim()) { Alert.alert('Note required', 'Add a note before submitting the decision.'); return; } setDecision(true); try { await reviewTrip(id ?? '', approve, note); await refresh(); setNote(''); } catch (error) { Alert.alert('Review failed', error instanceof Error ? error.message : 'Please try again.'); } finally { setDecision(false); } };
-  if (loading) return <Shell title="Trip detail"><Loader /></Shell>; if (!trip) return <Shell title="Trip detail"><Card><Text style={styles.itemTitle}>Trip not found</Text></Card></Shell>;
+  const { t } = useTranslation();
+  const { id = '' } = useLocalSearchParams<{ id: string }>();
+  const queryClient = useQueryClient();
+  const tripQuery = useQuery({
+    queryKey: ['trip', id],
+    queryFn: () => fetchTrip(id),
+    enabled: Boolean(id),
+  });
+  const pointsQuery = useQuery({
+    queryKey: ['trip-points', id],
+    queryFn: () => fetchTripPoints(id),
+    enabled: Boolean(id),
+  });
+  const eventsQuery = useQuery({
+    queryKey: ['trip-events', id],
+    queryFn: () => fetchTripEvents(id),
+    enabled: Boolean(id),
+  });
+  const [replay, setReplay] = useState<number | null>(null); // null = show the whole route
+  const [playing, setPlaying] = useState(false);
+  const [note, setNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!id) return;
+    const refetchTrip = () => {
+      void queryClient.invalidateQueries({ queryKey: ['trip', id] });
+      void queryClient.invalidateQueries({ queryKey: ['trip-events', id] });
+    };
+    // New points are appended from the realtime payload instead of re-downloading the route.
+    const stopPoints = subscribe(
+      'trip_points',
+      `trip_id=eq.${id}`,
+      (row) => {
+        if (row)
+          queryClient.setQueryData<TripPoint[]>(['trip-points', id], (current = []) =>
+            mergePoints(current, [row as TripPoint]),
+          );
+      },
+      () => void queryClient.invalidateQueries({ queryKey: ['trip-points', id] }),
+    );
+    const stopTrip = subscribe('trips', `id=eq.${id}`, refetchTrip, refetchTrip);
+    return () => {
+      stopPoints();
+      stopTrip();
+    };
+  }, [id, queryClient]);
+
+  const points = useMemo(() => pointsQuery.data ?? [], [pointsQuery.data]);
+  const position = replay ?? Math.max(points.length - 1, 0);
+
+  useEffect(() => {
+    if (!playing || !points.length) return;
+    const timer = setInterval(() => {
+      setReplay((current) => {
+        const next = (current ?? -1) + 1;
+        if (next >= points.length - 1) setPlaying(false);
+        return Math.min(next, points.length - 1);
+      });
+    }, 700);
+    return () => clearInterval(timer);
+  }, [playing, points.length]);
+
+  const trip = tripQuery.data;
+  const planned = useMemo(
+    () =>
+      trip
+        ? [
+            { lat: trip.pickup_lat, lng: trip.pickup_lng },
+            { lat: trip.drop_lat, lng: trip.drop_lng },
+          ]
+        : [],
+    [trip],
+  );
+  const markers = useMemo(
+    () =>
+      trip
+        ? [
+            { id: 'start', lat: trip.pickup_lat, lng: trip.pickup_lng, label: t('map.start') },
+            { id: 'end', lat: trip.drop_lat, lng: trip.drop_lng, label: t('map.end') },
+          ]
+        : [],
+    [trip, t],
+  );
+  const recorded = useMemo(() => points.slice(0, position + 1), [points, position]);
+
+  const decide = async (approve: boolean) => {
+    if (!note.trim()) {
+      Alert.alert(t('console.trip.noteRequiredTitle'), t('rpc.NOTE_REQUIRED'));
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await reviewTrip(id, approve, note);
+      setNote('');
+      // No optimistic UI: show exactly what the server decided.
+      await Promise.all([tripQuery.refetch(), eventsQuery.refetch()]);
+    } catch (error) {
+      Alert.alert(t('console.trip.reviewFailedTitle'), errorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const failed = [tripQuery, pointsQuery, eventsQuery].find((query) => query.isError);
+  if (tripQuery.isPending) {
+    return (
+      <Shell title={t('console.trip.title')}>
+        <LoadingState />
+      </Shell>
+    );
+  }
+  if (failed) {
+    return (
+      <Shell title={t('console.trip.title')}>
+        <ErrorState error={failed.error} onRetry={() => void failed.refetch()} />
+      </Shell>
+    );
+  }
+  if (!trip) {
+    return (
+      <Shell title={t('console.trip.title')}>
+        <EmptyState title={t('console.trip.notFound')} body={t('rpc.TRIP_NOT_FOUND')} />
+      </Shell>
+    );
+  }
+
   const metrics = trip.verification_metrics ?? {};
-  return <Shell title={trip.load_code} eyebrow="C6 · TRIP DETAIL & REVIEW" right={<Chip danger={trip.status === 'needs_review'}>{reasonLabel(trip.status)}</Chip>}><Card><Text style={styles.routeText}>{trip.pickup_address}</Text><Text style={styles.routeArrow}>↓</Text><Text style={styles.routeText}>{trip.drop_address}</Text><Text style={styles.muted}>{trip.driver_name} · {day(trip.started_at)} · {km(trip.tracked_distance_m ?? trip.planned_distance_m)}</Text></Card><MapplsMap planned={planned} points={recorded} markers={[{ id: 'start', ...planned[0], label: 'Start' }, { id: 'end', ...planned[1], label: 'End' }]} /><Card><View style={styles.rowBetween}><Text style={styles.sectionTitle}>Replay</Text><Text style={styles.muted}>{points.length ? `${replay + 1} / ${points.length}` : 'No points'}</Text></View><View style={styles.sliderTrack}><View style={[styles.sliderFill, { width: `${points.length ? ((replay + 1) / points.length) * 100 : 0}%` }]} /><Pressable onPress={() => setReplay((current) => Math.min(points.length - 1, current + 1))} style={[styles.sliderThumb, { left: `${points.length ? ((replay + 1) / points.length) * 100 : 0}%` }]} /></View><Button label={playing ? 'Pause replay' : 'Play replay'} onPress={() => setPlaying((value) => !value)} tone="quiet" disabled={!points.length} /></Card><View style={styles.kpiRow}><Kpi label="Points" value={String(metrics.points ?? points.length)} /><Kpi label="Avg speed" value={metrics.avg_kmh ? `${metrics.avg_kmh} km/h` : '--'} /><Kpi label="Max gap" value={metrics.max_gap_s ? `${Math.round(metrics.max_gap_s / 60)} min` : '--'} /></View>{trip.verification_reasons.length ? <Card><Text style={styles.sectionTitle}>Verification flags</Text>{reasonChips(trip.verification_reasons)}</Card> : null}<Card><Text style={styles.sectionTitle}>Event timeline</Text><EventTimeline events={events} /></Card>{trip.status === 'needs_review' ? <Card><Text style={styles.sectionTitle}>Admin review</Text><Text style={styles.muted}>This trip remains unchanged until the server confirms your decision.</Text>{reasonChips(trip.verification_reasons)}<TextInput value={note} onChangeText={setNote} multiline placeholder="Mandatory review note" style={styles.note} /><View style={styles.actionRow}><Button label="Reject" tone="danger" disabled={decision} onPress={() => void decide(false)} /><Button label="Approve" disabled={decision} onPress={() => void decide(true)} /></View></Card> : null}</Shell>;
+  const total = points.length;
+  const step = (delta: number) => {
+    setPlaying(false);
+    setReplay(Math.max(0, Math.min(total - 1, position + delta)));
+  };
+
+  return (
+    <Shell
+      title={trip.load_code}
+      eyebrow={t('console.trip.eyebrow')}
+      right={<Chip tone={toneFor(trip.status)}>{statusText(trip.status, 'console')}</Chip>}
+    >
+      <Card>
+        <Text style={styles.routeText}>{trip.pickup_address}</Text>
+        <Text style={styles.routeArrow} accessibilityElementsHidden importantForAccessibility="no">
+          ↓
+        </Text>
+        <Text style={styles.routeText}>{trip.drop_address}</Text>
+        <Text style={styles.muted}>
+          {trip.driver_name} · {formatDate(trip.started_at)} ·{' '}
+          {formatKm(trip.tracked_distance_m ?? trip.planned_distance_m)}
+        </Text>
+      </Card>
+      <MapplsMap planned={planned} points={recorded} markers={markers} />
+      <Card>
+        <View style={styles.rowBetween}>
+          <Text style={styles.sectionTitle}>{t('console.trip.replay')}</Text>
+          <Text style={styles.muted}>
+            {total
+              ? t('console.trip.replayCount', { current: position + 1, total })
+              : t('console.trip.noPoints')}
+          </Text>
+        </View>
+        <View
+          style={styles.sliderHit}
+          accessible
+          accessibilityRole="adjustable"
+          accessibilityLabel={t('console.trip.sliderA11y')}
+          accessibilityValue={{
+            text: total
+              ? t('console.trip.sliderValue', { current: position + 1, total })
+              : t('console.trip.noPoints'),
+          }}
+          accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+          onAccessibilityAction={(event) =>
+            step(event.nativeEvent.actionName === 'increment' ? 1 : -1)
+          }
+        >
+          <View style={styles.sliderTrack}>
+            <View
+              style={[
+                styles.sliderFill,
+                { width: `${total ? ((position + 1) / total) * 100 : 0}%` },
+              ]}
+            />
+          </View>
+        </View>
+        <View style={styles.actionRow}>
+          <Button
+            label="‹"
+            a11yLabel={t('console.trip.stepBack')}
+            tone="quiet"
+            disabled={!total || position === 0}
+            onPress={() => step(-1)}
+          />
+          <View style={styles.flex}>
+            <Button
+              label={playing ? t('console.trip.pause') : t('console.trip.play')}
+              tone="quiet"
+              disabled={!total}
+              onPress={() => {
+                if (!playing && position >= total - 1) setReplay(0);
+                setPlaying((value) => !value);
+              }}
+            />
+          </View>
+          <Button
+            label="›"
+            a11yLabel={t('console.trip.stepForward')}
+            tone="quiet"
+            disabled={!total || position >= total - 1}
+            onPress={() => step(1)}
+          />
+        </View>
+      </Card>
+      <View style={styles.kpiRow}>
+        <Kpi label={t('console.trip.kpiPoints')} value={String(metrics.points ?? total)} />
+        <Kpi
+          label={t('console.trip.kpiAvgSpeed')}
+          value={
+            metrics.avg_kmh != null ? t('units.kmh', { value: metrics.avg_kmh }) : t('common.none')
+          }
+        />
+        <Kpi
+          label={t('console.trip.kpiMaxGap')}
+          value={
+            metrics.max_gap_s != null
+              ? t('units.minutes', { value: Math.round(metrics.max_gap_s / 60) })
+              : t('common.none')
+          }
+        />
+      </View>
+      {trip.verification_reasons.length ? (
+        <Card>
+          <Text style={styles.sectionTitle}>{t('console.trip.flags')}</Text>
+          <ReasonChips reasons={trip.verification_reasons} />
+        </Card>
+      ) : null}
+      <Card>
+        <Text style={styles.sectionTitle}>{t('console.trip.timeline')}</Text>
+        <EventTimeline events={eventsQuery.data ?? []} />
+      </Card>
+      {trip.status === 'needs_review' ? (
+        <Card>
+          <Text style={styles.sectionTitle}>{t('console.trip.reviewTitle')}</Text>
+          <Text style={styles.muted}>{t('console.trip.reviewHint')}</Text>
+          <ReasonChips reasons={trip.verification_reasons} />
+          <TextInput
+            value={note}
+            onChangeText={setNote}
+            multiline
+            placeholder={t('console.trip.notePlaceholder')}
+            placeholderTextColor={colors.textSecondary}
+            accessibilityLabel={t('console.trip.noteA11y')}
+            style={styles.note}
+          />
+          <View style={styles.actionRow}>
+            <View style={styles.flex}>
+              <Button
+                label={t('console.trip.reject')}
+                tone="danger"
+                disabled={submitting}
+                onPress={() => void decide(false)}
+              />
+            </View>
+            <View style={styles.flex}>
+              <Button
+                label={t('console.trip.approve')}
+                disabled={submitting}
+                onPress={() => void decide(true)}
+              />
+            </View>
+          </View>
+        </Card>
+      ) : null}
+    </Shell>
+  );
 }
+
+// ---------- D7 Trip History ----------
+
+const HISTORY_FILTERS = ['all', 'in_progress', 'verified', 'needs_review', 'rejected'] as const;
 
 export function TripHistoryScreen() {
-  const [status, setStatus] = useState('all'); const [trips, setTrips] = useState<Trip[]>([]); const router = useRouter();
-  useEffect(() => { void fetchTrips().then(setTrips); }, []); const filtered = status === 'all' ? trips : trips.filter((trip) => trip.status === status); const grouped = useMemo(() => filtered.reduce<Record<string, Trip[]>>((acc, trip) => { const key = trip.ended_at ? new Date(trip.ended_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : 'Active'; (acc[key] ??= []).push(trip); return acc; }, {}), [filtered]);
-  return <Shell title="Trip history" eyebrow="D7 · YOUR TRIPS"><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>{['all', 'in_progress', 'verified', 'needs_review', 'rejected'].map((value) => <Pressable key={value} onPress={() => setStatus(value)} style={[styles.filter, status === value && styles.filterActive]}><Text style={[styles.filterText, status === value && styles.filterTextActive]}>{value === 'all' ? 'All trips' : reasonLabel(value)}</Text></Pressable>)}</ScrollView>{Object.entries(grouped).map(([month, items]) => <View key={month}><Text style={styles.month}>{month}</Text>{items.map((trip) => <Pressable key={trip.id} onPress={() => router.push(`/trips/${trip.id}`)}><Card style={styles.historyRow}><View style={styles.flex}><Text style={styles.itemTitle}>{trip.load_code}</Text><Text style={styles.muted}>{trip.pickup_address} → {trip.drop_address}</Text><Text style={styles.muted}>{day(trip.ended_at)} · {km(trip.tracked_distance_m ?? trip.planned_distance_m)}</Text></View><Chip danger={trip.status === 'needs_review'}>{reasonLabel(trip.status)}</Chip></Card></Pressable>)}</View>)}</Shell>;
+  const { t } = useTranslation();
+  const router = useRouter();
+  const [filter, setFilter] = useState<(typeof HISTORY_FILTERS)[number]>('all');
+  const history = useQuery({ queryKey: ['trips', 'mine'], queryFn: () => fetchTrips() });
+
+  const grouped = useMemo(() => {
+    const trips = (history.data ?? []).filter((trip) => filter === 'all' || trip.status === filter);
+    return trips.reduce<Record<string, Trip[]>>((acc, trip) => {
+      const key = trip.ended_at ? formatMonth(trip.ended_at) : t('driver.history.active');
+      (acc[key] ??= []).push(trip);
+      return acc;
+    }, {});
+  }, [history.data, filter, t]);
+
+  const filterLabel = (value: (typeof HISTORY_FILTERS)[number]) =>
+    value === 'all' ? t('driver.history.all') : statusText(value, 'driver');
+
+  return (
+    <Shell title={t('driver.history.title')} eyebrow={t('driver.history.eyebrow')}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+      >
+        {HISTORY_FILTERS.map((value) => (
+          <Pressable
+            key={value}
+            onPress={() => setFilter(value)}
+            accessibilityRole="button"
+            accessibilityLabel={t('driver.history.filterA11y', { filter: filterLabel(value) })}
+            accessibilityState={{ selected: filter === value }}
+            style={[styles.filter, filter === value && styles.filterActive]}
+          >
+            <Text style={[styles.filterText, filter === value && styles.filterTextActive]}>
+              {filterLabel(value)}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+      {history.isPending ? (
+        <LoadingState />
+      ) : history.isError ? (
+        <ErrorState error={history.error} onRetry={() => void history.refetch()} />
+      ) : Object.keys(grouped).length === 0 ? (
+        <EmptyState title={t('driver.history.emptyTitle')} body={t('driver.history.emptyBody')} />
+      ) : (
+        Object.entries(grouped).map(([month, trips]) => (
+          <View key={month}>
+            <Text style={styles.month} accessibilityRole="header">
+              {month}
+            </Text>
+            {trips.map((trip) => {
+              const distance = formatKm(trip.tracked_distance_m ?? trip.planned_distance_m);
+              const status = statusText(trip.status, 'driver');
+              return (
+                <Pressable
+                  key={trip.id}
+                  onPress={() => router.push(`/trips/${trip.id}/summary`)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('driver.history.rowA11y', {
+                    load: trip.load_code,
+                    status,
+                    distance,
+                  })}
+                >
+                  <Card style={styles.historyRow}>
+                    <View style={styles.flex}>
+                      <Text style={styles.itemTitle}>{trip.load_code}</Text>
+                      <Text style={styles.muted}>
+                        {trip.pickup_address} → {trip.drop_address}
+                      </Text>
+                      <Text style={styles.muted}>
+                        {formatDate(trip.ended_at)} · {distance}
+                      </Text>
+                    </View>
+                    <Chip tone={toneFor(trip.status)}>{status}</Chip>
+                  </Card>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))
+      )}
+    </Shell>
+  );
 }
+
+// ---------- D8 My Profile ----------
 
 export function ProfileScreen() {
-  const [profile, setProfile] = useState<{ name: string; phone: string; language: string; stats: DriverStats; active: boolean } | null>(null); const [languageOpen, setLanguageOpen] = useState(false); const [signedOut, setSignedOut] = useState(false);
-  useEffect(() => { void fetchDriverProfile().then(setProfile); }, []); if (!profile) return <Shell title="My profile"><Loader /></Shell>;
-  return <Shell title="My profile" eyebrow="D8 · ACCOUNT"><Card><Text style={styles.profileName}>{profile.name}</Text><Text style={styles.muted}>{profile.phone}</Text><Text style={styles.caption}>Your profile and verified stats can't be edited in the app.</Text></Card><View style={styles.kpiRow}><Kpi label="Verified trips" value={String(profile.stats.verified_trips)} tone="accent" /><Kpi label="Distance" value={km(profile.stats.verified_distance_m)} /><Kpi label="Since" value={profile.stats.first_verified_at ? day(profile.stats.first_verified_at) : '--'} /></View><Card><Text style={styles.sectionTitle}>Preferences</Text><Pressable style={styles.settingRow} onPress={() => setLanguageOpen(true)}><Text style={styles.itemTitle}>Language</Text><Text style={styles.muted}>{profile.language} ›</Text></Pressable><Pressable style={styles.settingRow} onPress={() => Alert.alert('Permissions', 'Location permission is ready for the next trip.')}><Text style={styles.itemTitle}>Permissions</Text><Text style={styles.good}>Healthy</Text></Pressable><Pressable style={styles.settingRow} onPress={() => Alert.alert('Battery health', 'Background tracking checks will run before an active trip.')}><Text style={styles.itemTitle}>Battery health</Text><Text style={styles.good}>Ready</Text></Pressable><Pressable style={styles.settingRow} onPress={() => Alert.alert('Privacy policy', 'Namma Lorry only uses trip location to verify completed trips.')}><Text style={styles.itemTitle}>Privacy policy</Text><Text style={styles.muted}>Read ›</Text></Pressable></Card><Button label={signedOut ? 'Signed out' : profile.active ? 'Finish active trip to sign out' : 'Sign out'} tone="danger" disabled={profile.active || signedOut} onPress={() => { void signOut().then(() => setSignedOut(true)).catch((error: unknown) => Alert.alert('Sign out failed', error instanceof Error ? error.message : 'Please try again.')); }} /><Modal visible={languageOpen} transparent animationType="slide" onRequestClose={() => setLanguageOpen(false)}><Pressable style={styles.sheetBackdrop} onPress={() => setLanguageOpen(false)}><View style={styles.sheet}><Text style={styles.sectionTitle}>Choose language</Text>{['English', 'ಕನ್ನಡ', 'தமிழ்', 'हिन्दी'].map((language) => <Pressable key={language} style={styles.languageRow} onPress={() => { setLanguageOpen(false); setProfile({ ...profile, language }); }}><Text style={styles.itemTitle}>{language}</Text>{profile.language === language ? <Text style={styles.good}>Selected</Text> : null}</Pressable>)}</View></Pressable></Modal></Shell>;
+  const { t, i18n } = useTranslation();
+  const queryClient = useQueryClient();
+  const profile = useQuery({ queryKey: ['driver-profile'], queryFn: fetchDriverProfile });
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
+
+  useEffect(() => {
+    if (profile.data) void applyProfileLanguage(profile.data.language);
+  }, [profile.data]);
+
+  const chooseLanguage = async (language: AppLanguage) => {
+    setLanguageOpen(false);
+    try {
+      await setAppLanguage(language);
+      await queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
+    } catch (error) {
+      Alert.alert(t('driver.profile.languageSaveFailed'), errorMessage(error));
+    }
+  };
+
+  if (profile.isPending) {
+    return (
+      <Shell title={t('driver.profile.title')}>
+        <LoadingState />
+      </Shell>
+    );
+  }
+  if (profile.isError) {
+    return (
+      <Shell title={t('driver.profile.title')}>
+        <ErrorState error={profile.error} onRetry={() => void profile.refetch()} />
+      </Shell>
+    );
+  }
+
+  const { name, phone, stats, active } = profile.data;
+  const currentLanguage = (SUPPORTED_LANGUAGES as readonly string[]).includes(i18n.language)
+    ? i18n.language
+    : 'en';
+  const settingRow = (label: string, value: string, onPress: () => void, good = false) => (
+    <Pressable
+      style={styles.settingRow}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}`}
+    >
+      <Text style={styles.itemTitle}>{label}</Text>
+      <Text style={good ? styles.good : styles.muted}>{value}</Text>
+    </Pressable>
+  );
+
+  return (
+    <Shell title={t('driver.profile.title')} eyebrow={t('driver.profile.eyebrow')}>
+      <Card>
+        <Text style={styles.profileName}>{name}</Text>
+        <Text style={styles.muted}>{maskPhone(phone)}</Text>
+        <Text style={styles.caption}>{t('driver.profile.readOnly')}</Text>
+      </Card>
+      <View style={styles.kpiRow}>
+        <Kpi
+          label={t('driver.profile.verifiedTrips')}
+          value={String(stats.verified_trips)}
+          tone="accent"
+        />
+        <Kpi label={t('driver.profile.distance')} value={formatKm(stats.verified_distance_m)} />
+        <Kpi label={t('driver.profile.since')} value={formatDate(stats.first_verified_at)} />
+      </View>
+      <Card>
+        <Text style={styles.sectionTitle}>{t('driver.profile.preferences')}</Text>
+        {settingRow(t('driver.profile.language'), `${t(`languages.${currentLanguage}`)} ›`, () =>
+          setLanguageOpen(true),
+        )}
+        {settingRow(t('driver.profile.permissions'), t('driver.profile.permissionsStatus'), () =>
+          Alert.alert(t('driver.profile.permissions'), t('driver.profile.permissionsBody')),
+        )}
+        {settingRow(t('driver.profile.battery'), t('driver.profile.batteryStatus'), () =>
+          Alert.alert(t('driver.profile.battery'), t('driver.profile.batteryBody')),
+        )}
+        {settingRow(t('driver.profile.privacy'), t('driver.profile.open'), () =>
+          Alert.alert(t('driver.profile.privacy'), t('driver.profile.privacyBody')),
+        )}
+      </Card>
+      <Button
+        label={
+          signedOut
+            ? t('driver.profile.signedOut')
+            : active
+              ? t('driver.profile.signOutBlocked')
+              : t('driver.profile.signOut')
+        }
+        tone="danger"
+        disabled={active || signedOut}
+        onPress={() => {
+          signOut()
+            .then(() => setSignedOut(true))
+            .catch((error: unknown) =>
+              Alert.alert(t('driver.profile.signOutFailed'), errorMessage(error)),
+            );
+        }}
+      />
+      <Modal
+        visible={languageOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLanguageOpen(false)}
+      >
+        <Pressable
+          style={styles.sheetBackdrop}
+          onPress={() => setLanguageOpen(false)}
+          accessibilityLabel={t('common.close')}
+        >
+          <View style={styles.sheet}>
+            <Text style={styles.sectionTitle} accessibilityRole="header">
+              {t('driver.profile.chooseLanguage')}
+            </Text>
+            {SUPPORTED_LANGUAGES.map((language) => (
+              <Pressable
+                key={language}
+                style={styles.languageRow}
+                onPress={() => void chooseLanguage(language)}
+                accessibilityRole="button"
+                accessibilityLabel={t(`languages.${language}`)}
+                accessibilityState={{ selected: currentLanguage === language }}
+              >
+                <Text style={styles.itemTitle}>{t(`languages.${language}`)}</Text>
+                {currentLanguage === language ? (
+                  <Text style={styles.good}>{t('driver.profile.selected')}</Text>
+                ) : null}
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+    </Shell>
+  );
 }
 
-const styles = StyleSheet.create({ screen: { flex: 1, backgroundColor: palette.paper }, content: { width: '100%', maxWidth: 1180, alignSelf: 'center', padding: 20, paddingBottom: 48 }, header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18 }, eyebrow: { color: palette.teal, fontSize: 11, fontWeight: '800', letterSpacing: 1.1, marginBottom: 4 }, title: { color: palette.ink, fontSize: 28, fontWeight: '800' }, card: { backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, borderRadius: 8, padding: 16, marginBottom: 14 }, kpiRow: { flexDirection: 'row', gap: 10, marginBottom: 14 }, kpi: { flex: 1, backgroundColor: palette.white, borderColor: palette.line, borderWidth: 1, borderRadius: 8, padding: 13, minHeight: 70 }, kpiLabel: { color: palette.muted, fontSize: 11 }, kpiValue: { color: palette.ink, fontSize: 21, fontWeight: '800', marginTop: 7 }, map: { marginBottom: 14 }, sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, marginBottom: 8 }, sectionTitle: { color: palette.ink, fontSize: 16, fontWeight: '800' }, muted: { color: palette.muted, fontSize: 13, lineHeight: 19 }, listItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, paddingVertical: 13 }, statusDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: palette.teal, marginRight: 12 }, flex: { flex: 1 }, itemTitle: { color: palette.ink, fontWeight: '700', fontSize: 14, marginBottom: 3 }, age: { color: palette.muted, fontSize: 12 }, chip: { alignSelf: 'flex-start', backgroundColor: '#e3f1ed', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 20, marginRight: 6, marginBottom: 6 }, chipText: { color: palette.teal, fontSize: 11, fontWeight: '800' }, dangerChip: { backgroundColor: '#fbe8e3' }, dangerChipText: { color: palette.danger }, chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 9 }, queueItem: { flexDirection: 'row', gap: 14, padding: 12 }, queueMap: { width: 160 }, link: { color: palette.teal, fontWeight: '800', fontSize: 12, marginTop: 5 }, empty: { alignItems: 'center', paddingVertical: 56 }, emptyTitle: { color: palette.teal, fontWeight: '800', fontSize: 22, marginBottom: 8 }, loader: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 }, routeText: { color: palette.ink, fontWeight: '700', fontSize: 15 }, routeArrow: { color: palette.gold, fontSize: 20, marginVertical: 3 }, sliderTrack: { height: 6, backgroundColor: palette.line, borderRadius: 3, marginVertical: 16, position: 'relative' }, sliderFill: { height: 6, backgroundColor: palette.teal, borderRadius: 3 }, sliderThumb: { position: 'absolute', top: -5, marginLeft: -7, width: 16, height: 16, borderRadius: 8, backgroundColor: palette.orange }, rowBetween: { flexDirection: 'row', justifyContent: 'space-between' }, button: { alignItems: 'center', justifyContent: 'center', backgroundColor: palette.teal, borderRadius: 6, paddingVertical: 12, paddingHorizontal: 18, minHeight: 44 }, quietButton: { backgroundColor: '#e8f2ef', marginTop: 6 }, dangerButton: { backgroundColor: palette.danger }, buttonText: { color: palette.white, fontWeight: '800' }, quietText: { color: palette.teal }, disabled: { opacity: 0.45 }, event: { flexDirection: 'row', gap: 12, minHeight: 58 }, eventRail: { width: 12, alignItems: 'center' }, eventDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: palette.teal, marginTop: 3 }, eventLine: { flex: 1, width: 1, backgroundColor: palette.line, marginVertical: 3 }, eventNote: { color: palette.ink, fontStyle: 'italic', marginTop: 4 }, note: { minHeight: 88, borderWidth: 1, borderColor: palette.line, borderRadius: 6, padding: 12, marginTop: 12, textAlignVertical: 'top', color: palette.ink }, actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 }, filterRow: { gap: 8, paddingBottom: 14 }, filter: { borderWidth: 1, borderColor: palette.line, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, backgroundColor: palette.white }, filterActive: { backgroundColor: palette.teal, borderColor: palette.teal }, filterText: { color: palette.muted, fontSize: 12 }, filterTextActive: { color: palette.white, fontWeight: '800' }, month: { color: palette.muted, fontWeight: '800', marginVertical: 7 }, historyRow: { flexDirection: 'row', alignItems: 'center' }, profileName: { color: palette.ink, fontSize: 22, fontWeight: '800', marginBottom: 4 }, caption: { color: palette.muted, fontSize: 12, marginTop: 14 }, settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 15, borderTopWidth: 1, borderTopColor: palette.line }, good: { color: palette.teal, fontWeight: '800', fontSize: 12 }, sheetBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#18343c66' }, sheet: { backgroundColor: palette.white, padding: 20, borderTopLeftRadius: 14, borderTopRightRadius: 14 }, languageRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: palette.line } });
+// ---------- styles ----------
+
+const chipTone: Record<ChipTone, { box: ViewStyle; text: { color: string } }> = {
+  neutral: { box: { backgroundColor: colors.primarySoft }, text: { color: colors.primary } },
+  danger: { box: { backgroundColor: colors.reviewSoft }, text: { color: colors.reviewText } },
+  success: { box: { backgroundColor: colors.verifiedSoft }, text: { color: colors.verifiedText } },
+  live: { box: { backgroundColor: colors.liveSoft }, text: { color: colors.liveText } },
+};
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
+  content: { width: '100%', maxWidth: 1180, alignSelf: 'center', padding: 20, paddingBottom: 48 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 18,
+  },
+  eyebrow: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.1,
+    marginBottom: 4,
+  },
+  title: { color: colors.primary, fontSize: 28, fontWeight: '800' },
+  card: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+  },
+  kpiRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
+  kpi: {
+    flexGrow: 1,
+    flexBasis: 100,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 13,
+  },
+  kpiLabel: { color: colors.textSecondary, fontSize: 13 },
+  kpiValue: {
+    color: colors.text,
+    fontSize: 21,
+    fontWeight: '800',
+    marginTop: 7,
+    fontVariant: ['tabular-nums'],
+  },
+  sectionHead: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  muted: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
+  touchRow: { minHeight: sizes.minTouch },
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingVertical: 13,
+    minHeight: sizes.minTouch,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.live,
+    marginRight: 12,
+  },
+  flex: { flex: 1 },
+  itemTitle: { color: colors.text, fontWeight: '700', fontSize: 15, marginBottom: 3 },
+  age: { color: colors.textSecondary, fontSize: 13 },
+  chip: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  chipText: { fontSize: 12, fontWeight: '800' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 9 },
+  queueItem: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, padding: 12 },
+  queueMap: { width: 160, flexGrow: 1, maxWidth: 240 },
+  link: { color: colors.liveText, fontWeight: '800', fontSize: 13, marginTop: 5 },
+  routeText: { color: colors.text, fontWeight: '700', fontSize: 15 },
+  routeArrow: { color: colors.textSecondary, fontSize: 20, marginVertical: 3 },
+  sliderHit: { minHeight: sizes.minTouch, justifyContent: 'center' },
+  sliderTrack: { height: 6, backgroundColor: colors.border, borderRadius: 3 },
+  sliderFill: { height: 6, backgroundColor: colors.primary, borderRadius: 3 },
+  rowBetween: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8 },
+  button: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    minHeight: sizes.minTouch,
+    minWidth: sizes.minTouch,
+  },
+  quietButton: { backgroundColor: colors.primarySoft },
+  dangerButton: { backgroundColor: colors.dangerText },
+  buttonText: { color: colors.onPrimary, fontWeight: '800', fontSize: 16, textAlign: 'center' },
+  quietText: { color: colors.primary },
+  disabled: { opacity: 0.45 },
+  pressed: { opacity: 0.85 },
+  event: { flexDirection: 'row', gap: 12, minHeight: 58 },
+  eventRail: { width: 12, alignItems: 'center' },
+  eventDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+    marginTop: 4,
+  },
+  eventLine: { flex: 1, width: 1, backgroundColor: colors.border, marginVertical: 3 },
+  eventNote: { color: colors.text, fontStyle: 'italic', marginTop: 4 },
+  note: {
+    minHeight: 88,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+    textAlignVertical: 'top',
+    color: colors.text,
+    fontSize: 16,
+  },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 12, alignItems: 'center' },
+  filterRow: { gap: 8, paddingBottom: 14 },
+  filter: {
+    minHeight: sizes.minTouch,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+  },
+  filterActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  filterText: { color: colors.textSecondary, fontSize: 14 },
+  filterTextActive: { color: colors.onPrimary, fontWeight: '800' },
+  month: { color: colors.textSecondary, fontWeight: '800', marginVertical: 7 },
+  historyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  profileName: { color: colors.text, fontSize: 22, fontWeight: '800', marginBottom: 4 },
+  caption: { color: colors.textSecondary, fontSize: 13, marginTop: 14 },
+  settingRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    minHeight: sizes.minTouch + 8,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  good: { color: colors.verifiedText, fontWeight: '800', fontSize: 13 },
+  sheetBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.scrim },
+  sheet: {
+    backgroundColor: colors.surface,
+    padding: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  languageRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: sizes.driverPrimary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+});

@@ -56,7 +56,20 @@ const defineConfig = (): ExpoConfig => {
     // it ships no app.plugin.js, and on Node >=22 loading its TS main entry
     // fails (`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`). Its optional
     // keep-awake setting lands in M10 and needs no plugin.
-    plugins: ['expo-router', 'expo-font'],
+    plugins: [
+      'expo-router',
+      'expo-font',
+      // Sentry source-map upload at build time (M12a). Only when the token exists
+      // (EAS secret SENTRY_AUTH_TOKEN), so local/CI builds without it still succeed.
+      ...(process.env.SENTRY_AUTH_TOKEN
+        ? [
+            [
+              '@sentry/react-native/expo',
+              { organization: process.env.SENTRY_ORG, project: process.env.SENTRY_PROJECT },
+            ] as [string, Record<string, unknown>],
+          ]
+        : []),
+    ],
 
     experiments: {
       typedRoutes: false,

@@ -198,7 +198,7 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 - [x] `0002_consent.sql`: `profiles.consent_version`, `profiles.consent_at`, SECURITY DEFINER `record_consent(p_version text)` for the current user only — applied
 - [ ] *(Pending ND-21)* `0003_phase1_fixes.sql`: ND-8 point-upload handling, ND-12 registration, ND-13 admin trip writes + `cancel_trip`, ND-14 trips realtime, `GPS_JUMPS` threshold into `app_settings`, `admin_review_trip` not-found, `setting()` search_path
 - [ ] *(Pending ND-6)* Verification change for stationary gaps, if chosen server-side
-- [~] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql` — **helpers done** (`_helpers.psql`: as_user/as_anon/as_postgres, create_user/vehicle/load/trip, insert_track, completed_trip); the `*.test.sql` files and the pgTAP extension itself are still missing:
+- [~] pgTAP tests in `supabase/tests/` converted from `smoke_phase1.sql` — **M12a added `rls.test.sql` (every RLS policy, all 9 tables, coverage guard) and `profile_rpcs.test.sql`; `supabase db reset && supabase test db` passes (84 tests, 1 expected ND-13 TODO).** Still missing: RPC error codes, reason codes, late upload, sweeper, review stats. Earlier note: **helpers done** (`_helpers.psql`: as_user/as_anon/as_postgres, create_user/vehicle/load/trip, insert_track, completed_trip); the `*.test.sql` files and the pgTAP extension itself are still missing:
   - every RLS policy
   - every RPC error code (doc 06)
   - every reason code (doc 08)
@@ -394,6 +394,8 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 - [x] D7 Trip History: status filters, grouped by month, → D6
 - [x] D8 My Profile: read-only `driver_stats` with the "can't be edited" caption, language picker sheet, permission/battery health check, privacy policy link, sign out (blocked during an active trip)
 
+> **Correction (M12a, 29 Sep 2026):** the ticks above overstate what shipped. `MapplsMap` loads the Mappls script but never creates a map (it is a schematic preview, now labelled "Map preview"); loaders returned demo data on any error or empty result; the D8 language picker and permission/battery "health" were cosmetic; no tests were added. M12a fixed the data, language and error-state issues — see `docs/HARDENING_REPORT.md` §0. A real Mappls map still depends on M3.
+
 **Files expected:** `app/(console)/index.tsx`, `app/(console)/trips/[id].tsx`, `app/(console)/review/index.tsx`, `app/(driver)/{history,profile}.tsx`, `src/features/{live-map,review}/*`, `src/features/trips/ReplaySlider.tsx`, `LanguageSheet.tsx`.
 
 **Acceptance (PRD P0-8, P0-11, P0-12)**
@@ -408,14 +410,14 @@ Doc 13 mapping: Prompt 0 = audit (done), Prompt 1 = this plan (done), then **M1�
 ### M12 — Hardening, acceptance, release (Prompts 13–15)
 
 #### M12a — Hardening, i18n, observability (Prompt 13)
-- [ ] All strings → `src/i18n/en.json`; `ta.json`, `kn.json`, `hi.json` with the same keys (values prefixed `TODO`); language persisted per user (`profiles.preferred_language`)
-- [ ] Global error boundary; network error states on every data screen; a message for every RPC error code
-- [ ] Sentry native + web with release tagging; scrub phone numbers and coordinates (ND-11)
-- [ ] Accessibility: labels, ≥ 48 px, font scaling on D4/D5, contrast against tokens
-- [ ] Performance: memoised map layers, Douglas-Peucker simplification for display only, no network I/O in the background task
-- [ ] Security review vs doc 09 §4–§5: secrets grep, no client writes to `trips`/`driver_stats`, service role only in functions, RLS tests cover every table
-- [ ] Dev routes behind `__DEV__`
-- [ ] `docs/HARDENING_REPORT.md`
+- [x] All strings → `src/i18n/en.json`; `ta.json`, `kn.json`, `hi.json` with the same keys (values prefixed `TODO`, dropped at runtime → English fallback; `npm run i18n:sync`); language persisted per user via **`0003_preferred_language.sql`** `set_preferred_language` RPC + device cache. *Only built screens exist to translate; placeholder titles are keyed.*
+- [x] Global error boundary; network error states (TanStack Query + retry, NetInfo/AppState managers) on every **existing** data screen; a message for every RPC error code (`src/lib/errors.ts`)
+- [~] Sentry native + web with release/dist/environment tagging; PII scrubber for phones + coordinates (tested); source-map plugin gated on `SENTRY_AUTH_TOKEN` (ND-11 closed in `.env.example`). **Not verified end to end** — no DSN/project yet (M12c)
+- [~] Accessibility: roles + labels on every touch target, ≥ 48 px, adjustable replay slider, wrap-safe layouts, token contrast test (brief status colours fail AA as text → `*Text` variants). **D4/D5 font scaling not checkable** (screens not built)
+- [~] Performance: memoised `MapplsMap`, Douglas–Peucker display cap 500 pts, realtime point append instead of full refetch. **Background task doesn't exist** — ESLint guard forbids network I/O in `src/tracking/task*.ts` ahead of M8
+- [x] Security review vs doc 09 §4–§5 — see report §6. Found + fixed: **no RLS tests existed** (added `rls.test.sql` covering all 9 tables/policies + `profile_rpcs.test.sql`), no secure-store session, demo data shown on query failure, unmasked phone, no HTTPS guard. Open: ND-13 (pgTAP TODO), `react-server-dom-webpack` high (not reachable, pinned by M1)
+- [x] Dev routes behind `__DEV__` (`app/dev/_layout.tsx` redirects in release; tested)
+- [x] `docs/HARDENING_REPORT.md`
 
 **Files expected:** `src/i18n/*.json`, `src/lib/sentry.ts`, `src/components/ErrorBoundary.tsx`, `docs/HARDENING_REPORT.md`.
 
@@ -573,3 +575,9 @@ Dev-only routes (not counted, hidden behind `__DEV__` in M12a): `/dev/kitchen-si
 - **Changed:** Full Expo SDK 57 app scaffolded at the repo root: 34 deps + 13 devDeps pinned; app.config.ts / tsconfig / babel / eslint / prettier / jest / eas.json / CI; `src/lib/config.ts` zod env validation; src/i18n bootstrap; PlaceholderScreen + 21 routes + 4 group layouts + root layout + 3 dev routes; tests for config and PlaceholderScreen. **ND-11 applied:** `EXPO_PUBLIC_SENTRY_DSN` added to `.env.example`. Verified: `tsc --noEmit` clean, ESLint 0 errors/0 warnings (max-warnings 0), Jest 3/3, `expo export --platform web` succeeds, dev server serves the S2 route (HTTP 200 + bundle compiles).
 - **Left:** ND-9 layout doc updates (CLAUDE.md/TRD) still gated on approval; pre-flight restructure (ND-1) still pending; `eas.json` projectId placeholder until first `eas build` (M3); brand assets are 1×1 placeholder PNGs.
 - **Known issues:** (1) **RN pinned to 0.86.3 (template), not npm-latest 0.87.1** — 0.87.1 breaks Metro web bundling (`rn-get-polyfills` not exported); ND-7's fallback is effectively in force, doc 13 P2 wording should say "SDK 57 template matrix". (2) **expo-env.d.ts is hand-written and deliberately omits `expo/types/react-native-web`** — that augmentation collapses RN 0.87-generated `TextStyle`/`ViewStyle` type *aliases* (only interface members merge; aliases get overwritten), losing `fontSize` etc. under strict TS. Re-check when Expo/RN update either side. (3) jest-expo 57 + RNTL 14 have undeclared peers that had to be pinned (`@react-native/jest-preset`, `@react-native/assets-registry`, `test-renderer`). (4) Node 26 + `expo-keep-awake` as config plugin crashes (`ERR_UNSUPPORTED_NODE_MODULES_TYPE_STRIPPING`) — keep-awake stays dep-only until M10. (5) `npx expo start` rewrites tsconfig `include` on boot — the added `.expo/types` entry is expected and committed.
+
+### 2026-09-29 · M12a — hardening (Prompt 13)
+- **Changed:** i18n for all built screens (`en/ta/kn/hi.json`, TODO fallback, `i18n:sync`, parity tests); per-user language via migration **`0003_preferred_language.sql`**; global ErrorBoundary; TanStack Query error/retry states on C1/C6/C7/D7/D8; RPC-code → message map; Sentry (release tagging, PII scrubber); secure-store chunked session + web-safe storage; design tokens + WCAG contrast test; 48 px targets + labels; Douglas–Peucker display cap; lint guard against network I/O in the future background task; `/dev/*` guarded by `__DEV__`; HTTPS guard outside dev; CI `npm audit` (critical) + pgTAP job; pgTAP `rls.test.sql` + `profile_rpcs.test.sql`. Verified: typecheck, lint 0 warnings, Jest 13 suites / 93 tests, `supabase db reset && supabase test db` 84 tests, `expo export --platform web`.
+- **Fixed defects:** demo trips/drivers returned when queries failed or were empty; partial routes on a failed page; no session persistence on native; unmasked phone on D8; realtime resubscribe loop on `CLOSED`; full route refetch per realtime point; fake "Healthy" permission status.
+- **Left:** everything in `docs/HARDENING_REPORT.md` §8 — D4/D5 font scaling (M9/M10), background task (M8), edge functions (M6), real Mappls map (M3), M4 pgTAP remainder, translations, Sentry DSN + source maps (M12c). New CI `database` job not yet run on GitHub.
+- **Known issues:** ND-13 is a live gap (admin can write `trips.status` directly; pgTAP TODO fails by design). `npm audit`: 1 high (`react-server-dom-webpack` 19.2.4, RSC-server DoS, not reachable in static web export; bump with the Expo template) + 14 moderate build-tooling items. Migration numbering: ND-21 fixes, if approved, become `0004+`.
