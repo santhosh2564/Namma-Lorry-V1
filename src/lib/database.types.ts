@@ -472,6 +472,13 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      admin_force_end: {
+        Args: {
+          p_trip_id: string;
+          p_note: string;
+        };
+        Returns: Database["public"]["Tables"]["trips"]["Row"];
+      };
       admin_review_trip: {
         Args: {
           p_trip_id: string;
@@ -491,6 +498,13 @@ export type Database = {
           p_trip_id: string;
         };
         Returns: boolean;
+      };
+      cancel_trip: {
+        Args: {
+          p_trip_id: string;
+          p_note: string;
+        };
+        Returns: Database["public"]["Tables"]["trips"]["Row"];
       };
       end_trip: {
         Args: {
@@ -603,8 +617,9 @@ export type Enums<T extends keyof Database["public"]["Enums"]> = Database["publi
 export type UserRole = Enums<"user_role">;
 
 /**
- * Trip status. Only `start_trip`, `end_trip` and `admin_review_trip` move a
- * trip between these — the client never updates `trips` directly.
+ * Trip status. Only `start_trip`, `end_trip`, `admin_review_trip`, `cancel_trip`
+ * and `admin_force_end` move a trip between these — the client never updates
+ * `trips` directly (admins may only insert a fresh `assigned` trip).
  */
 export type TripStatus = Enums<"trip_status">;
 
