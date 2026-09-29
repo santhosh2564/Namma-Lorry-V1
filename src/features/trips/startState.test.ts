@@ -103,7 +103,15 @@ describe("startErrorText", () => {
 
   it("carries the OUTSIDE_PICKUP distance in km", () => {
     expect(
-      startErrorText({ code: "OUTSIDE_PICKUP", message: "OUTSIDE_PICKUP:3210", outsidePickupM: 3210 }),
-    ).toEqual({ key: "driver.trip.errors.outsidePickup", params: { km: 3.2 }, reviewConsent: false });
+      startErrorText({
+        code: "OUTSIDE_PICKUP",
+        message: "OUTSIDE_PICKUP:3210",
+        outsidePickupM: 3210,
+      }),
+    ).toEqual({
+      key: "driver.trip.errors.outsidePickup",
+      params: { km: 3.2 },
+      reviewConsent: false,
+    });
   });
 });
