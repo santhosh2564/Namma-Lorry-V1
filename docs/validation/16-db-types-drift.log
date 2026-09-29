@@ -1,0 +1,6 @@
+check.ts(11,7): error TS2322: Type 'true' is not assignable to type 'Bad'.
+check.ts(15,7): error TS2322: Type 'true' is not assignable to type 'FnExtra'.
+tsc=2
+check.ts(15,7): error TS2322: Type 'true' is not assignable to type 'FnExtra'.
+check.ts(21,7): error TS2739: Type '{}' is missing the following properties from type 'Record<Bad, 1>': "loads.Row", "trip_events.Insert", "trip_points.Row"
+check.ts(22,7): error TS2739: Type '{}' is missing the following properties from type 'Record<FnExtra, 1>': handle_new_user, on_trip_point_insert

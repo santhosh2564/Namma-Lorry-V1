@@ -1,0 +1,9 @@
+app_settings | t | f | 2
+driver_stats | t | f | 2
+loads | t | f | 3
+profiles | t | f | 2
+trip_events | t | f | 1
+trip_live | t | f | 1
+trip_points | t | f | 2
+trips | t | f | 4
+vehicles | t | f | 3

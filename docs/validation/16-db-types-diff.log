@@ -1,0 +1,216 @@
+1,2d0
+<  | CompositeTypes: { [_ in never]: never }
+<  | Views: { [_ in never]: never }
+12a11
+>  | isOneToOne: true
+18a18
+> CompositeTypes | [_ in never]: never
+28,36c28,63
+< Functions.admin_review_trip | Returns: Database["public"]["Tables"]["trips"]["Row"]
+< Functions.admin_review_trip.Args | p_approve: boolean
+< Functions.admin_review_trip.Args | p_note: string
+< Functions.admin_review_trip.Args | p_trip_id: string
+< Functions.apply_verified_stats | Returns: undefined
+< Functions.apply_verified_stats.Args | p_trip_id: string
+< Functions.can_read_trip | Returns: boolean
+< Functions.can_read_trip.Args | p_trip_id: string
+< Functions.end_trip | Returns: Database["public"]["Tables"]["trips"]["Row"]
+---
+> Functions | apply_verified_stats: { Args: { p_trip_id: string }; Returns: undefined }
+> Functions | can_read_trip: { Args: { p_trip_id: string }; Returns: boolean }
+> Functions | is_admin: { Args: Record<PropertyKey, never>; Returns: boolean }
+> Functions | is_load_shipper: { Args: { p_load_id: string }; Returns: boolean }
+> Functions | is_trip_driver_for_load: { Args: { p_load_id: string }; Returns: boolean }
+> Functions | is_trip_driver_for_vehicle: { Args: { p_vehicle_id: string }; Returns: boolean }
+> Functions | is_vehicle_owner: { Args: { p_vehicle_id: string }; Returns: boolean }
+> Functions | setting: { Args: { p_key: string }; Returns: number }
+> Functions | sweep_unverified_trips: { Args: Record<PropertyKey, never>; Returns: undefined }
+> Functions.admin_review_trip | Args: { p_approve: boolean; p_note: string; p_trip_id: string }
+> Functions.admin_review_trip.Returns | created_at: string
+> Functions.admin_review_trip.Returns | device_info: Json | null
+> Functions.admin_review_trip.Returns | driver_id: string
+> Functions.admin_review_trip.Returns | end_accuracy_m: number | null
+> Functions.admin_review_trip.Returns | end_lat: number | null
+> Functions.admin_review_trip.Returns | end_lng: number | null
+> Functions.admin_review_trip.Returns | ended_at: string | null
+> Functions.admin_review_trip.Returns | expected_points: number | null
+> Functions.admin_review_trip.Returns | id: string
+> Functions.admin_review_trip.Returns | load_id: string
+> Functions.admin_review_trip.Returns | review_note: string | null
+> Functions.admin_review_trip.Returns | reviewed_by: string | null
+> Functions.admin_review_trip.Returns | start_accuracy_m: number | null
+> Functions.admin_review_trip.Returns | start_lat: number | null
+> Functions.admin_review_trip.Returns | start_lng: number | null
+> Functions.admin_review_trip.Returns | started_at: string | null
+> Functions.admin_review_trip.Returns | status: Database["public"]["Enums"]["trip_status"]
+> Functions.admin_review_trip.Returns | tracked_distance_m: number | null
+> Functions.admin_review_trip.Returns | vehicle_id: string
+> Functions.admin_review_trip.Returns | verification_metrics: Json | null
+> Functions.admin_review_trip.Returns | verification_reasons: string[]
+> Functions.admin_review_trip.Returns | verified_at: string | null
+> Functions.admin_review_trip.SetofOptions | from: "*"
+> Functions.admin_review_trip.SetofOptions | isOneToOne: true
+> Functions.admin_review_trip.SetofOptions | isSetofReturn: false
+> Functions.admin_review_trip.SetofOptions | to: "trips"
+43,54c70,95
+< Functions.handle_new_user | Args: Record<PropertyKey, never>
+< Functions.handle_new_user | Returns: undefined
+< Functions.is_admin | Args: Record<PropertyKey, never>
+< Functions.is_admin | Returns: boolean
+< Functions.is_load_shipper | Returns: boolean
+< Functions.is_load_shipper.Args | p_load_id: string
+< Functions.is_trip_driver_for_load | Returns: boolean
+< Functions.is_trip_driver_for_load.Args | p_load_id: string
+< Functions.is_trip_driver_for_vehicle | Returns: boolean
+< Functions.is_trip_driver_for_vehicle.Args | p_vehicle_id: string
+< Functions.is_vehicle_owner | Returns: boolean
+< Functions.is_vehicle_owner.Args | p_vehicle_id: string
+---
+> Functions.end_trip.Returns | created_at: string
+> Functions.end_trip.Returns | device_info: Json | null
+> Functions.end_trip.Returns | driver_id: string
+> Functions.end_trip.Returns | end_accuracy_m: number | null
+> Functions.end_trip.Returns | end_lat: number | null
+> Functions.end_trip.Returns | end_lng: number | null
+> Functions.end_trip.Returns | ended_at: string | null
+> Functions.end_trip.Returns | expected_points: number | null
+> Functions.end_trip.Returns | id: string
+> Functions.end_trip.Returns | load_id: string
+> Functions.end_trip.Returns | review_note: string | null
+> Functions.end_trip.Returns | reviewed_by: string | null
+> Functions.end_trip.Returns | start_accuracy_m: number | null
+> Functions.end_trip.Returns | start_lat: number | null
+> Functions.end_trip.Returns | start_lng: number | null
+> Functions.end_trip.Returns | started_at: string | null
+> Functions.end_trip.Returns | status: Database["public"]["Enums"]["trip_status"]
+> Functions.end_trip.Returns | tracked_distance_m: number | null
+> Functions.end_trip.Returns | vehicle_id: string
+> Functions.end_trip.Returns | verification_metrics: Json | null
+> Functions.end_trip.Returns | verification_reasons: string[]
+> Functions.end_trip.Returns | verified_at: string | null
+> Functions.end_trip.SetofOptions | from: "*"
+> Functions.end_trip.SetofOptions | isOneToOne: true
+> Functions.end_trip.SetofOptions | isSetofReturn: false
+> Functions.end_trip.SetofOptions | to: "trips"
+57,63c98,111
+< Functions.on_trip_point_insert | Args: Record<PropertyKey, never>
+< Functions.on_trip_point_insert | Returns: undefined
+< Functions.record_consent | Returns: Database["public"]["Tables"]["profiles"]["Row"]
+< Functions.record_consent.Args | p_version: string
+< Functions.setting | Returns: number
+< Functions.setting.Args | p_key: string
+< Functions.start_trip | Returns: Database["public"]["Tables"]["trips"]["Row"]
+---
+> Functions.record_consent | Args: { p_version: string }
+> Functions.record_consent.Returns | consent_at: string | null
+> Functions.record_consent.Returns | consent_version: string | null
+> Functions.record_consent.Returns | created_at: string
+> Functions.record_consent.Returns | full_name: string
+> Functions.record_consent.Returns | id: string
+> Functions.record_consent.Returns | is_active: boolean
+> Functions.record_consent.Returns | phone: string | null
+> Functions.record_consent.Returns | preferred_language: string | null
+> Functions.record_consent.Returns | role: Database["public"]["Enums"]["user_role"]
+> Functions.record_consent.SetofOptions | from: "*"
+> Functions.record_consent.SetofOptions | isOneToOne: true
+> Functions.record_consent.SetofOptions | isSetofReturn: false
+> Functions.record_consent.SetofOptions | to: "profiles"
+69,70c117,143
+< Functions.sweep_unverified_trips | Args: Record<PropertyKey, never>
+< Functions.sweep_unverified_trips | Returns: undefined
+---
+> Functions.start_trip.Returns | created_at: string
+> Functions.start_trip.Returns | device_info: Json | null
+> Functions.start_trip.Returns | driver_id: string
+> Functions.start_trip.Returns | end_accuracy_m: number | null
+> Functions.start_trip.Returns | end_lat: number | null
+> Functions.start_trip.Returns | end_lng: number | null
+> Functions.start_trip.Returns | ended_at: string | null
+> Functions.start_trip.Returns | expected_points: number | null
+> Functions.start_trip.Returns | id: string
+> Functions.start_trip.Returns | load_id: string
+> Functions.start_trip.Returns | review_note: string | null
+> Functions.start_trip.Returns | reviewed_by: string | null
+> Functions.start_trip.Returns | start_accuracy_m: number | null
+> Functions.start_trip.Returns | start_lat: number | null
+> Functions.start_trip.Returns | start_lng: number | null
+> Functions.start_trip.Returns | started_at: string | null
+> Functions.start_trip.Returns | status: Database["public"]["Enums"]["trip_status"]
+> Functions.start_trip.Returns | tracked_distance_m: number | null
+> Functions.start_trip.Returns | vehicle_id: string
+> Functions.start_trip.Returns | verification_metrics: Json | null
+> Functions.start_trip.Returns | verification_reasons: string[]
+> Functions.start_trip.Returns | verified_at: string | null
+> Functions.start_trip.SetofOptions | from: "*"
+> Functions.start_trip.SetofOptions | isOneToOne: true
+> Functions.start_trip.SetofOptions | isSetofReturn: false
+> Functions.start_trip.SetofOptions | to: "trips"
+> Functions.verify_trip | Args: { p_trip_id: string }
+72,79c145,146
+< Functions.verify_trip.Args | p_trip_id: string
+< profiles | Relationships: [
+< profiles | columns: ["id"]
+< profiles | foreignKeyName: "profiles_id_fkey"
+< profiles | isOneToOne: false
+< profiles | referencedColumns: ["id"]
+< profiles | referencedRelation: "users"
+< profiles | {
+---
+> Views | [_ in never]: never
+> profiles | Relationships: []
+127c194
+< public.Tables.driver_stats | isOneToOne: false
+---
+> public.Tables.driver_stats | isOneToOne: true
+159c226
+< public.loads.Insert | drop_geog?: Json | null
+---
+> public.loads.Insert | drop_geog?: never
+168c235
+< public.loads.Insert | pickup_geog?: Json | null
+---
+> public.loads.Insert | pickup_geog?: never
+178c245
+< public.loads.Row | drop_geog: Json | null
+---
+> public.loads.Row | drop_geog: unknown
+187c254
+< public.loads.Row | pickup_geog: Json | null
+---
+> public.loads.Row | pickup_geog: unknown
+197c264
+< public.loads.Update | drop_geog?: Json | null
+---
+> public.loads.Update | drop_geog?: never
+206c273
+< public.loads.Update | pickup_geog?: Json | null
+---
+> public.loads.Update | pickup_geog?: never
+222c289
+< trip_events.Insert | id?: number
+---
+> trip_events.Insert | id?: never
+234c301
+< trip_events.Update | id?: number
+---
+> trip_events.Update | id?: never
+281c348
+< trip_points.Insert | geog?: Json | null
+---
+> trip_points.Insert | geog?: never
+283c350
+< trip_points.Insert | id?: number
+---
+> trip_points.Insert | id?: never
+294c361
+< trip_points.Row | geog: Json | null
+---
+> trip_points.Row | geog: unknown
+307c374
+< trip_points.Update | geog?: Json | null
+---
+> trip_points.Update | geog?: never
+309c376
+< trip_points.Update | id?: number
+---
+> trip_points.Update | id?: never

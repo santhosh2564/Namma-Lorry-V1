@@ -1,0 +1,85 @@
+$ jest --ci
+PASS src/tracking/queue.test.ts (28.891 s)
+PASS src/features/console/liveState.test.ts (28.67 s)
+PASS src/features/trips/liveState.test.ts (28.844 s)
+PASS src/features/console/verificationState.test.ts (28.875 s)
+PASS src/features/auth/routing.test.ts (28.724 s)
+PASS src/features/trips/historyState.test.ts (28.74 s)
+PASS src/features/loads/schemas.test.ts (31.682 s)
+PASS src/features/console/replayState.test.ts (28.66 s)
+(node:23708) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/lib/supabase.test.ts (32.457 s)
+  ● Console
+
+    console.error
+      Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env — see docs/DEV_SETUP.md.
+
+    [0m [90m 110 |[39m   [90m// is a far better failure than throwing while the module is being imported[39m
+     [90m 111 |[39m   [90m// and blanking the splash (M5).[39m
+    [31m[1m>[22m[39m[90m 112 |[39m   console[33m.[39merror(
+     [90m     |[39m           [31m[1m^[22m[39m
+     [90m 113 |[39m     [32m"Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and "[39m [33m+[39m
+     [90m 114 |[39m       [32m"EXPO_PUBLIC_SUPABASE_ANON_KEY in .env — see docs/DEV_SETUP.md."[39m[33m,[39m
+     [90m 115 |[39m   )[33m;[39m[0m
+
+      at error (src/lib/supabase.ts:112:11)
+      at Object.credentials (src/lib/supabase.ts:119:22)
+      at Object.require (src/lib/supabase.test.ts:3:1)
+
+PASS src/tracking/errors.test.ts
+PASS src/lib/geo.test.ts
+PASS src/features/trips/summaryState.test.ts
+PASS src/features/driver/health.test.ts
+PASS src/features/vehicles/schemas.test.ts
+PASS src/features/onboarding/battery.test.ts
+PASS src/features/auth/schemas.test.ts
+PASS src/features/console/reviewState.test.ts
+PASS src/features/auth/errors.test.ts
+PASS src/i18n/i18n.test.ts (16.312 s)
+PASS src/features/drivers/schemas.test.ts (16.359 s)
+PASS src/features/trips/useTrips.test.ts (25.655 s)
+  ● Console
+
+    console.error
+      Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env — see docs/DEV_SETUP.md.
+
+    [0m [90m 110 |[39m   [90m// is a far better failure than throwing while the module is being imported[39m
+     [90m 111 |[39m   [90m// and blanking the splash (M5).[39m
+    [31m[1m>[22m[39m[90m 112 |[39m   console[33m.[39merror(
+     [90m     |[39m           [31m[1m^[22m[39m
+     [90m 113 |[39m     [32m"Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and "[39m [33m+[39m
+     [90m 114 |[39m       [32m"EXPO_PUBLIC_SUPABASE_ANON_KEY in .env — see docs/DEV_SETUP.md."[39m[33m,[39m
+     [90m 115 |[39m   )[33m;[39m[0m
+
+      at error (src/lib/supabase.ts:112:11)
+      at Object.credentials (src/lib/supabase.ts:119:22)
+      at Object.require (src/features/loads/useLoads.ts:36:1)
+      at Object.require (src/features/trips/useTrips.ts:25:1)
+      at Object.<anonymous> (src/features/trips/useTrips.test.ts:9:1)
+
+PASS src/tracking/config.test.ts (25.906 s)
+PASS src/features/trips/startState.test.ts (25.824 s)
+PASS src/features/onboarding/permissions.test.ts (27.417 s)
+PASS src/tracking/stateMachine.test.ts (61.405 s)
+PASS src/theme/status.test.ts
+PASS src/tracking/uploader.test.ts (61.602 s)
+PASS src/lib/screens.test.ts
+PASS src/theme/tokens.test.ts
+PASS src/lib/config.test.ts
+PASS src/features/driver/profile.test.tsx (18.051 s)
+PASS src/features/auth/splash.test.tsx (28.865 s)
+PASS src/components/PlaceholderScreen.test.tsx
+PASS src/components/ui/Button.test.tsx
+PASS src/features/trips/TripSummaryPanel.test.tsx (62.988 s)
+PASS src/features/trips/LiveTripSheet.test.tsx (63.067 s)
+PASS src/features/console/ReviewPanel.test.tsx (65.023 s)
+PASS src/features/trips/HistoryList.test.tsx (33.035 s)
+PASS src/features/console/LiveTripList.test.tsx (67.045 s)
+
+Test Suites: 39 passed, 39 total
+Tests:       476 passed, 476 total
+Snapshots:   0 total
+Time:        69.528 s
+Ran all test suites.
+jest=0

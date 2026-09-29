@@ -1,0 +1,8 @@
+[WebServer] $ expo start --web
+
+Running 1 test using 1 worker
+
+  -  1 [console] › e2e\create-load.spec.ts:31:7 › create a load and assign it › an admin creates a load with two geocoded ends and assigns a driver
+
+  1 skipped
+playwright=0

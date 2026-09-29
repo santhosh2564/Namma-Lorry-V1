@@ -1,0 +1,42 @@
+ trips_total | verified | needs_review | rejected | awaiting_points | still_in_progress | cancelled 
+-------------+----------+--------------+----------+-----------------+-------------------+-----------
+           2 |        2 |            0 |        0 |               0 |                 0 |         0
+(1 row)
+
+ ended_trips | mean_completeness_pct | pct_trips_all_points | pct_trips_complete_track_target_95 
+-------------+-----------------------+----------------------+------------------------------------
+           2 |                 100.0 |                100.0 |                              100.0
+(1 row)
+
+ genuine_trips | auto_verified | auto_verify_pct_target_80 
+---------------+---------------+---------------------------
+             2 |             1 |                      50.0
+(1 row)
+
+                  id                  |  status  | verification_reasons |                              review_note                               
+--------------------------------------+----------+----------------------+------------------------------------------------------------------------
+ eca2dff0-0001-4ac1-813b-7aa8350b26d7 | verified | {END_OUTSIDE_DROP}   | Validation run: yard gate is 800 m before the drop pin; route matches.
+(1 row)
+
+              driver_id               | verified_trips | verified_distance_m | verified_trips_from_trips | verified_m_from_trips | drift 
+--------------------------------------+----------------+---------------------+---------------------------+-----------------------+-------
+ d0000000-0000-4000-8000-000000000001 |              1 |                5974 |                         1 |                  5974 | f
+ d0000000-0000-4000-8000-000000000002 |              1 |                5177 |                         1 |                  5177 | f
+(2 rows)
+
+ median_delay_s_target_60 |    p90_delay_s     | points 
+--------------------------+--------------------+--------
+                 0.014668 | 0.0508625000000001 |     68
+(1 row)
+
+ pilot_drivers | with_3_verified_30d | pct_target_70 
+---------------+---------------------+---------------
+             2 |                   0 |           0.0
+(1 row)
+
+   load_code    |   driver   |  status  | expected_points | received | max_gap_min | tracked_km | planned_km | verification_reasons |     device     |                              review_note                               
+----------------+------------+----------+-----------------+----------+-------------+------------+------------+----------------------+----------------+------------------------------------------------------------------------
+ NL-2026-000146 | Murugan S  | verified |              36 |       36 |         0.3 |        6.0 |        6.0 | {}                   | validation-sim | 
+ NL-2026-000147 | Ravi Kumar | verified |              32 |       32 |         0.3 |        5.2 |        6.0 | {END_OUTSIDE_DROP}   |                | Validation run: yard gate is 800 m before the drop pin; route matches.
+(2 rows)
+
