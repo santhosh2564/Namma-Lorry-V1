@@ -13,7 +13,7 @@ begin;
 
 \ir _helpers.psql
 
-select plan(24);
+select plan(27);
 
 -- ---- fixtures --------------------------------------------------------
 select tests.create_user('da000000-0000-4000-8000-000000000001', '919000001001', 'driver', 'Driver A');
@@ -138,6 +138,18 @@ select throws_ok(
 select throws_ok(
   $$select public.start_trip('fa000000-0000-4000-8000-000000000001'::uuid, 12.9563, 79.9422, null::real)$$,
   'P0001', 'GPS_ACCURACY_TOO_LOW', 'a fix with no accuracy is refused');
+-- A fix with no POSITION is the 0011 case. st_makepoint(NULL, NULL)::geography
+-- is NULL, st_distance(NULL, geog) is NULL, and `NULL > x` is not true, so the
+-- geofence comparison used to pass and the trip started anywhere with no start
+-- position recorded. The app never sends these (lat/lng are non-nullable
+-- numbers on StartTripRpcArgs), but the RPC is the boundary a client with a JWT
+-- talks to, so it refuses them itself.
+select throws_ok(
+  $$select public.start_trip('fa000000-0000-4000-8000-000000000001'::uuid, null, 79.9422, 10::real)$$,
+  'P0001', 'GPS_ACCURACY_TOO_LOW', 'a fix with no latitude is refused');
+select throws_ok(
+  $$select public.start_trip('fa000000-0000-4000-8000-000000000001'::uuid, 12.9563, null, 10::real)$$,
+  'P0001', 'GPS_ACCURACY_TOO_LOW', 'a fix with no longitude is refused');
 select throws_ok(
   format($$select public.start_trip('%s'::uuid, %s, %s, 10::real)$$,
          'fa000000-0000-4000-8000-000000000001', 12.9290, 79.9422),
@@ -146,6 +158,9 @@ select throws_ok(
     extensions.st_setsrid(extensions.st_makepoint(79.9422, 12.9290), 4326)::extensions.geography,
     (select pickup_geog from public.loads where id = 'ba000000-0000-4000-8000-000000000001'))),
   'a fix 3 km from the pickup is refused with the distance');
+select is((select (start_lat is null and start_lng is null and status = 'assigned')::int
+             from public.trips where id = 'fa000000-0000-4000-8000-000000000001'), 1,
+  'a position-less start attempt writes no start position and leaves the trip assigned');
 select lives_ok(
   $$select public.start_trip('fa000000-0000-4000-8000-000000000001'::uuid, 12.9563, 79.9422, 10::real)$$,
   'Driver A starts trip 1 inside the pickup radius');

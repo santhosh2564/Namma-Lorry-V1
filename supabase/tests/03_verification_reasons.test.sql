@@ -10,7 +10,7 @@ begin;
 
 \ir _helpers.psql
 
-select plan(26);
+select plan(28);
 
 -- ---- fixtures --------------------------------------------------------
 select tests.create_user('d3000000-0000-4000-8000-000000000001', '919000000921', 'driver', 'D3');
@@ -31,6 +31,11 @@ begin
   case p_mutation
     when 'start_outside' then
       update public.trips set start_lat = 12.9000, start_lng = 79.9422 where id = v;
+    when 'start_missing' then
+      -- 0011: no recorded start position. v_start_d is NULL, and the check
+      -- only compared it, so START_OUTSIDE_PICKUP never fired and the trip
+      -- auto-verified with no evidence the driver reached the pickup.
+      update public.trips set start_lat = null, start_lng = null where id = v;
     when 'end_outside' then
       update public.trips set end_lat = 10.9878, end_lng = 76.9558 where id = v;
     when 'mocked' then
@@ -84,6 +89,12 @@ select is((select status::text from public.trips where id = :'trip'::uuid), 'nee
   'START_OUTSIDE_PICKUP: held for review');
 select is((select array_to_string(verification_reasons, ',') from public.trips where id = :'trip'::uuid),
   'START_OUTSIDE_PICKUP', 'START_OUTSIDE_PICKUP: is the only reason');
+
+select tests.reason_case(interval '2 hours', 240, 'start_missing') as trip \gset
+select is((select status::text from public.trips where id = :'trip'::uuid), 'needs_review',
+  'START_OUTSIDE_PICKUP: a trip with no recorded start position is held for review');
+select is((select array_to_string(verification_reasons, ',') from public.trips where id = :'trip'::uuid),
+  'START_OUTSIDE_PICKUP', 'a missing start position raises START_OUTSIDE_PICKUP, the same as a distant one');
 
 select tests.reason_case(interval '2 hours', 240, 'end_outside') as trip \gset
 select is((select status::text from public.trips where id = :'trip'::uuid), 'needs_review',
