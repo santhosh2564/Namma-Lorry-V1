@@ -36,6 +36,6 @@ Record per trip: points expected vs received, max gap, battery % used, data used
 | 7 | App force-stopped for 30 min | `needs_review` with `TRACKING_GAP`; admin can approve |
 | 8 | Phone never reconnects after end | Sweeper after 6 h → `needs_review` with `MISSING_POINTS` |
 | 9 | Driver calls REST API to update `trips.status` | 0 rows / RLS error |
-| 10 | Two trips started simultaneously | Second gets `ANOTHER_TRIP_ACTIVE` |
+| 10 | Two trips started simultaneously | Second gets `ANOTHER_TRIP_ACTIVE` (sequential: pgTAP 02/10; concurrent: `test/db/start-trip-race.sh`) |
 | 11 | Console live view | Marker updates ≤ 60 s behind phone |
 | 12 | Admin approves a flagged trip | Status `verified`, stats incremented once, event logged |
