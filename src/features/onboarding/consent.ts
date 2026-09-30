@@ -6,10 +6,12 @@
  * DEFINER RPC `record_consent(p_version)` — the only write path a non-admin
  * has to those two columns, and only on their own row.
  *
- * The version is a build-time constant recorded with each agreement. Nothing
- * re-prompts yet when it changes: the launch gate does not compare versions and
- * `start_trip` only requires a non-null `consent_version` (0006). Until such a
- * check exists, a bump reaches only drivers who have not agreed before.
+ * The version is a build-time constant recorded with each agreement. The
+ * database holds the current one (`current_consent_version()`, 0009): it
+ * accepts that version or a newer one here (the app ships first),
+ * `start_trip` refuses an older one, and the launch gate sends a driver whose
+ * stored version isn't this build's back to D1.
+ * Changing it: docs/RUNBOOK.md §Changing the policy version (app first).
  */
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
@@ -44,6 +46,11 @@ export async function recordConsent(): Promise<ConsentResult> {
   }
   // The RPC refuses an anonymous caller (auth.uid() is null there), which is
   // how a dropped session shows up on this screen.
+  // The server wants a different policy version than this build shows: only
+  // an app update helps (docs/RUNBOOK.md §Changing the policy version).
+  if (error.message.includes("CONSENT_VERSION_OUTDATED")) {
+    return { ok: false, kind: "outdated", message: error.message };
+  }
   const message = error.message.toLowerCase();
   if (
     message.includes("permission") ||

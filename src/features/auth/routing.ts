@@ -20,6 +20,10 @@
  *   - a deactivated account is refused before the role is read;
  *   - a signed-in user with no profile row gets a "not set up" notice instead
  *     of a screen that would crash on a null role.
+ *
+ * A native driver whose stored consent is not this build's CONSENT_VERSION
+ * (never agreed, or agreed to an earlier policy) goes back to D1 to agree
+ * again; start_trip refuses them anyway (0009). Only drivers see D1.
  */
 import type { Href } from "expo-router";
 
@@ -95,7 +99,7 @@ export type RouteDecision =
  * Decide where the app goes from here. Pure: same input, same output, no I/O.
  */
 export function decideRoute(input: RouteInput): RouteDecision {
-  const { session, platform, profile, profileSettled, activeTripId } = input;
+  const { session, platform, profile, profileSettled, activeTripId, consentVersion } = input;
 
   // Still finding out who the user is — stay on the splash.
   if (session === "initialising") {
@@ -131,7 +135,7 @@ export function decideRoute(input: RouteInput): RouteDecision {
       if (platform === "web") {
         return { destination: "access_notice", variant: "driver_on_web" };
       }
-      return profile.permissionsGranted
+      return profile.permissionsGranted && profile.consentVersion === consentVersion
         ? { destination: "driver_home" }
         : { destination: "onboarding" };
     case "owner":

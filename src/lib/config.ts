@@ -123,7 +123,9 @@ export function resolveConfig(
       iosStoreUrl: env.EXPO_PUBLIC_IOS_STORE_URL ?? "",
       // Kept when misconfigured, so the failure can still be reported.
       sentryDsn: env.EXPO_PUBLIC_SENTRY_DSN ?? "",
-      privacyPolicyUrl: "",
+      // D1's policy link (docs/09 §1). Empty until the policy is published;
+      // D1 hides the link while unset.
+      privacyPolicyUrl: env.EXPO_PUBLIC_PRIVACY_POLICY_URL ?? "",
     },
     problems,
   };
@@ -142,6 +144,7 @@ const resolved = resolveConfig(
     EXPO_PUBLIC_ANDROID_STORE_URL: process.env.EXPO_PUBLIC_ANDROID_STORE_URL,
     EXPO_PUBLIC_IOS_STORE_URL: process.env.EXPO_PUBLIC_IOS_STORE_URL,
     EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    EXPO_PUBLIC_PRIVACY_POLICY_URL: process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL,
   },
   __DEV__,
 );

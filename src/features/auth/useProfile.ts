@@ -8,14 +8,13 @@
  */
 import { useQuery } from "@tanstack/react-query";
 
+import { PROFILE_QUERY_KEY } from "@/features/auth/queryKeys";
 import type { AuthProfile } from "@/features/auth/routing";
 import { useAuthStore } from "@/features/auth/store";
 import type { Tables } from "@/lib/database.types";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 type ProfileRow = Tables<"profiles">;
-
-const PROFILE_QUERY_KEY = ["auth", "profile"] as const;
 
 /**
  * Map a `profiles` row onto the shape the gate reads.

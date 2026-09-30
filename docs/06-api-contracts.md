@@ -14,7 +14,7 @@ supabase.rpc('start_trip', {
 |---|---|---|
 | `FORBIDDEN` | the caller's profile is inactive (0007, M4); `end_trip` stays open so a trip can still be finished | generic error; the launch gate already shows "Your account is not active" |
 | `TRIP_NOT_FOUND` | not yours / doesn't exist | "Trip not found" |
-| `CONSENT_REQUIRED` | driver has no recorded consent (`profiles.consent_version` is null; 0006) | "Agree to the location notice" + **Review notice** → D1 |
+| `CONSENT_REQUIRED` | driver has not agreed to the current policy version (`profiles.consent_version` is null (0006) or older than `current_consent_version()` (0009)) | "Agree to the location notice" + **Review notice** → D1 |
 | `TRIP_NOT_STARTABLE` | not in `assigned` | refresh list |
 | `ANOTHER_TRIP_ACTIVE` | driver already tracking | open active trip |
 | `GPS_ACCURACY_TOO_LOW` | accuracy > 50 m | "Waiting for better GPS signal" |
@@ -31,6 +31,12 @@ supabase.rpc('end_trip', {
 }) // → trips row: 'verified' | 'needs_review' | 'completed' (still waiting for points)
 ```
 **Client order:** stop location updates → save `ENDING` state with `endedAt`, `lastSeq` → flush queue → call RPC. If offline, save `ENDED_PENDING_SYNC`; the uploader flushes and calls `end_trip` later. Errors: `TRIP_NOT_FOUND`, `TRIP_NOT_ACTIVE` (already ended → treat as success and refresh).
+
+### `record_consent`
+```ts
+supabase.rpc('record_consent', { p_version: CONSENT_VERSION }) // → profiles row
+```
+Called by D1's Continue. Errors: `FORBIDDEN` (no session), `VERSION_REQUIRED` (blank), `VERSION_INVALID` (not `YYYY-MM-DD`, 0009), `CONSENT_VERSION_OUTDATED` (older than `current_consent_version()`, 0009: an old app build; D1 shows "update the app"; the current or a newer version is accepted, because the app ships before the migration), `PROFILE_NOT_FOUND` (inactive or missing profile).
 
 ### `admin_review_trip` (admin)
 ```ts

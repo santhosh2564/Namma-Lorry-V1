@@ -183,6 +183,23 @@ where start_time > now() - interval '1 day' group by 1;   -- all succeeded
 select public.sweep_unverified_trips();                    -- catch up by hand
 ```
 
+## Changing the policy version
+
+When the privacy policy or the D1 notice changes materially, every driver must agree again. The version exists in two places that must match (`test/config/consent-version.test.mjs` fails otherwise): `CONSENT_VERSION` in `src/features/onboarding/consent.ts` (with the **Version:** line in `docs/release/PRIVACY_POLICY.md`), and `public.current_consent_version()` in the database.
+
+The database counts a consent to its current version **or a newer one** (versions are `YYYY-MM-DD` and compare as text); an older one is refused.
+
+**Order matters: app first, then the database.**
+- _App first (correct):_ the new build sends its drivers to D1, which records the new version. The database accepts it because it is newer than its current one, and trips start as before. Drivers still on the old build carry on until the migration.
+- _Migration first (wrong):_ drivers on an installed build are refused at Start (`CONSENT_REQUIRED`), D1 records their old version, gets `CONSENT_VERSION_OUTDATED`, and says "update the app". Nobody on the old build can start a trip until they update.
+
+1. In one PR: bump `CONSENT_VERSION` and the policy's **Version:** line, and add a migration that redefines `public.current_consent_version()` to return the new version. Merge it, but hold the migration.
+2. Ship the app: a native build or an EAS Update (§Deploy), and wait until drivers have it (store rollout, or `eas update` reaching devices).
+3. Apply the migration (`supabase db push`, §Deploy › Database). From then on `start_trip` returns `CONSENT_REQUIRED` for anyone whose consent is older than the new version, and D1 tells a driver still on an old build to update.
+4. Check: `select public.current_consent_version();` returns the new version, and `select count(*) filter (where consent_version = public.current_consent_version()), count(*) from public.profiles where role = 'driver' and is_active;` shows drivers re-agreeing.
+
+A driver in the middle of a trip is not interrupted: the launch gate resumes an active trip first, and `end_trip` does not check consent.
+
 ## Data incident
 
 A suspected leak, unauthorised access, or lost data. Keep a timestamped log from the first minute: notification deadlines run from when you became aware.

@@ -380,7 +380,8 @@
       "disclosure": {
         "onlyDuringTrips": "Only during trips — tracking starts when you tap Start and stops when you tap End.",
         "verifiedExperience": "Builds your verified experience — kilometres and trips count only from real GPS.",
-        "sharedWithOps": "Shared with Namma Lorry operations for this load."
+        "sharedWithOps": "Shared with Namma Lorry operations for this load.",
+        "retention": "Trip GPS points are kept for 12 months after the trip is final, then only a simplified route and the trip result."
       },
       "rowForeground": "Precise location",
       "rowBackground": "Allow all the time",
@@ -394,6 +395,8 @@
       "continue": "Continue",
       "pendingHint": "Allow each item above to continue.",
       "consentFailed": "Couldn't save your agreement. Check your connection and try again.",
+      "privacyPolicy": "Read the privacy policy",
+      "consentOutdated": "This version of the app is out of date. Update Namma Lorry from the store to continue.",
       "webNote": "Trips run on the Namma Lorry mobile app. This web page is for the operations team."
     },
     "battery": {

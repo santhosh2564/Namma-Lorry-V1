@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import * as Linking from "expo-linking";
 import { Stack, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -6,6 +7,7 @@ import { AppState, Platform, ScrollView, StyleSheet, Text, View } from "react-na
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Banner, Button, Card, Icon } from "@/components/ui";
+import { PROFILE_QUERY_KEY } from "@/features/auth/queryKeys";
 import { useAuthStore } from "@/features/auth/store";
 import { recordConsent } from "@/features/onboarding/consent";
 import {
@@ -18,6 +20,7 @@ import {
   type PermissionRowState,
   type PermissionSnapshot,
 } from "@/features/onboarding/permissions";
+import { config } from "@/lib/config";
 import { colors, fonts, fontSize, spacing } from "@/theme/tokens";
 
 /**
@@ -34,6 +37,11 @@ import { colors, fonts, fontSize, spacing } from "@/theme/tokens";
  * is granted, so a background-first dialog could never succeed. A permanently
  * denied row swaps its Allow button for "Open settings" — re-asking a blocked
  * permission only resolves to denied again.
+ *
+ * The notice also states how long trip GPS is kept and links the privacy
+ * policy (docs/09 §1); the link shows once EXPO_PUBLIC_PRIVACY_POLICY_URL is
+ * set. A driver whose stored consent is for another policy version is sent
+ * back here by the launch gate to agree again (0009).
  *
  * Permissions are re-read on every foreground (docs/12 D1: "permission later
  * revoked"); the launch gate sends a driver whose background grant vanished
@@ -60,15 +68,17 @@ const DISCLOSURE: [string, string][] = [
   ["onlyDuringTrips", "route"],
   ["verifiedExperience", "verified"],
   ["sharedWithOps", "groups"],
+  ["retention", "schedule"],
 ];
 
 export default function PermissionsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
   const [snapshot, setSnapshot] = useState<PermissionSnapshot | null>(null);
   const [busyRow, setBusyRow] = useState<PermissionRowName | null>(null);
   const [continuing, setContinuing] = useState(false);
-  const [consentError, setConsentError] = useState(false);
+  const [consentError, setConsentError] = useState<"failed" | "outdated" | null>(null);
 
   const refresh = useCallback(() => {
     void readPermissionSnapshot().then((next) => {
@@ -108,23 +118,30 @@ export default function PermissionsScreen() {
 
   const continueTapped = useCallback(async () => {
     setContinuing(true);
-    setConsentError(false);
+    setConsentError(null);
     try {
       // Record who agreed to what, when (docs/09 §1). Failure blocks the flow:
       // an unrecorded consent must not let a driver sail into tracking.
       // recordConsent reports failure by returning { ok: false }, not throwing.
       const result = await recordConsent();
       if (!result.ok) {
-        setConsentError(true);
+        setConsentError(result.kind === "outdated" ? "outdated" : "failed");
         return;
       }
+      // The cached profile still holds the previous version; without this the
+      // next pass through the gate would send the driver back here.
+      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
       router.replace("/(onboarding)/battery");
     } catch {
-      setConsentError(true);
+      setConsentError("failed");
     } finally {
       setContinuing(false);
     }
-  }, [router]);
+  }, [queryClient, router]);
+
+  const openPrivacyPolicy = useCallback(() => {
+    void Linking.openURL(config.privacyPolicyUrl);
+  }, []);
 
   if (Platform.OS === "web") {
     return <WebNote />;
@@ -150,6 +167,16 @@ export default function PermissionsScreen() {
               </Text>
             </View>
           ))}
+          {config.privacyPolicyUrl !== "" ? (
+            <Text
+              accessibilityRole="link"
+              onPress={openPrivacyPolicy}
+              style={styles.policyLink}
+              testID="onboarding-privacy-policy"
+            >
+              {t("onboarding.permissions.privacyPolicy")}
+            </Text>
+          ) : null}
         </Card>
 
         <View style={styles.rows}>
@@ -165,12 +192,20 @@ export default function PermissionsScreen() {
           ))}
         </View>
 
-        {consentError ? (
+        {consentError === "failed" ? (
           <Banner
             message={t("onboarding.permissions.consentFailed")}
-            onDismiss={() => setConsentError(false)}
+            onDismiss={() => setConsentError(null)}
             testID="onboarding-consent-error"
             variant="error"
+          />
+        ) : null}
+        {consentError === "outdated" ? (
+          <Banner
+            message={t("onboarding.permissions.consentOutdated")}
+            onDismiss={() => setConsentError(null)}
+            testID="onboarding-consent-outdated"
+            variant="warning"
           />
         ) : null}
 
@@ -319,6 +354,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: fontSize.caption,
     color: colors.text,
+  },
+  policyLink: {
+    fontFamily: fonts.medium,
+    fontSize: fontSize.caption,
+    color: colors.primary,
+    textDecorationLine: "underline",
   },
   rows: { gap: spacing.sm },
   rowCard: { flexDirection: "row", alignItems: "center", gap: spacing.sm },

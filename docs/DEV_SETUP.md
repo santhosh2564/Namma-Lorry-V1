@@ -209,6 +209,7 @@ bundles.
 | `EXPO_PUBLIC_APP_ENV` | `development` \| `staging` \| `production` |
 | `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY` | Mappls console (web SDK only — see the M3 notes) |
 | `EXPO_PUBLIC_SENTRY_DSN` | Sentry (M12a) |
+| `EXPO_PUBLIC_PRIVACY_POLICY_URL` | The published privacy policy, linked from D1. Empty hides the link |
 
 Copy the template to your env file — the repo ships it as `env.example` (no
 leading dot, so it is committed) and you save it as `.env`:
@@ -262,6 +263,8 @@ npx eas-cli@latest env:create --environment preview --visibility plaintext \
   --name EXPO_PUBLIC_SENTRY_DSN --value <Sentry DSN>
 npx eas-cli@latest env:create --environment preview --visibility plaintext \
   --name EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY --value <Mappls map SDK key>
+npx eas-cli@latest env:create --environment preview --visibility plaintext \
+  --name EXPO_PUBLIC_PRIVACY_POLICY_URL --value <published policy URL>
 
 # production (production Supabase project)
 npx eas-cli@latest env:create --environment production --visibility plaintext \
@@ -272,6 +275,8 @@ npx eas-cli@latest env:create --environment production --visibility plaintext \
   --name EXPO_PUBLIC_SENTRY_DSN --value <Sentry DSN>
 npx eas-cli@latest env:create --environment production --visibility plaintext \
   --name EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY --value <Mappls map SDK key>
+npx eas-cli@latest env:create --environment production --visibility plaintext \
+  --name EXPO_PUBLIC_PRIVACY_POLICY_URL --value <published policy URL>
 
 # Sentry source-map upload (B4), both environments
 npx eas-cli@latest env:create --environment preview --environment production \

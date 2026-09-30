@@ -18,7 +18,7 @@ Do each step on **staging** (EAS `preview`, the staging Supabase project, Vercel
 
 ### 1. Environment variables
 
-- [ ] EAS environments `preview` and `production`: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (the publishable key), `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY`, `EXPO_PUBLIC_SENTRY_DSN`; secret `SENTRY_AUTH_TOKEN` plus `SENTRY_ORG`, `SENTRY_PROJECT`. Commands in `docs/DEV_SETUP.md` §4.3. `EXPO_PUBLIC_APP_ENV` comes from `eas.json`; don't set it there.
+- [ ] EAS environments `preview` and `production`: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (the publishable key), `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY`, `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_PRIVACY_POLICY_URL` (the published policy; D1 links it); secret `SENTRY_AUTH_TOKEN` plus `SENTRY_ORG`, `SENTRY_PROJECT`. Commands in `docs/DEV_SETUP.md` §4.3. `EXPO_PUBLIC_APP_ENV` comes from `eas.json`; don't set it there.
 - [ ] Vercel Production and Preview: the five `EXPO_PUBLIC_*` values in `docs/DEV_SETUP.md` §4.4.
 - [ ] Supabase Edge Function secrets: `MAPPLS_CLIENT_ID`, `MAPPLS_CLIENT_SECRET`, `MAPPLS_REST_KEY` (`supabase secrets set …`). The service-role key is injected; never put it in EAS or Vercel.
 - [ ] Mappls keys restricted to `com.nammalorry.driver` and the console domain; native `.olf` / `.conf` files in `mappls/` on the build machine or as EAS files (see `env.example`).
