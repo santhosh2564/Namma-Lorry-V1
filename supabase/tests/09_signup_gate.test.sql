@@ -26,7 +26,7 @@ select is((select role::text from public.profiles where id = 'e9000000-0000-4000
 select tests.as_user('e9000000-0000-4000-8000-000000000001');
 select is(public.my_role(), null, 'my_role() is null for an inactive profile');
 select is(public.is_admin(), false, 'is_admin() is false');
-select throws_ok($$select public.record_consent('2026-10-01')$$,
+select throws_ok($$select public.record_consent(public.current_consent_version())$$,
   'P0002', 'PROFILE_NOT_FOUND', 'an inactive user cannot record consent');
 select is((select count(*)::int from public.trips), 0, 'an inactive user sees no trips');
 set local role postgres;
@@ -34,7 +34,7 @@ set local role postgres;
 -- ---- an operator-created driver, deactivated while holding an assigned trip
 select tests.create_user('d9000000-0000-4000-8000-000000000001', '919000000992', 'driver', 'Driver D');
 select tests.create_user('a9000000-0000-4000-8000-000000000001', '919000000993', 'admin',  'Ops Admin');
-update public.profiles set consent_version = '2026-10-01', consent_at = now()
+update public.profiles set consent_version = public.current_consent_version(), consent_at = now()
  where id = 'd9000000-0000-4000-8000-000000000001';
 insert into public.vehicles(id, registration_no, vehicle_type) values
   ('c9000000-0000-4000-8000-000000000001', 'TN 09 AA 0001', '19ft');

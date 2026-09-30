@@ -9,6 +9,7 @@ import { currentPlatform } from "@/features/auth/platform";
 import { decideRoute, routePath } from "@/features/auth/routing";
 import { useAuthStore } from "@/features/auth/store";
 import { useProfile } from "@/features/auth/useProfile";
+import { CONSENT_VERSION } from "@/features/onboarding/consent";
 import { colors, fonts, fontSize, radii, spacing } from "@/theme/tokens";
 
 /**
@@ -35,6 +36,8 @@ export default function SplashScreen() {
     profile: profileQuery.data ?? null,
     profileSettled: profileQuery.isFetched,
     activeTripId,
+    // The policy version this build was compiled with (0009).
+    requiredConsentVersion: CONSENT_VERSION,
   });
 
   // `decideRoute` returns a fresh object each render, so the decision is

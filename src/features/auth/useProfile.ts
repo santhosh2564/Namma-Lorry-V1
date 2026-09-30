@@ -32,6 +32,9 @@ export function toAuthProfile(row: ProfileRow, permissionsGranted: boolean): Aut
     isActive: row.is_active,
     fullName: row.full_name,
     permissionsGranted,
+    // The policy version the driver agreed to; the launch gate re-prompts when
+    // it is not the one this build was compiled with (0009, docs/09 §1).
+    consentVersion: row.consent_version,
   };
 }
 

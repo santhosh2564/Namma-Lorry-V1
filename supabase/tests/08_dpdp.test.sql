@@ -18,7 +18,7 @@ select tests.create_user('d8000000-0000-4000-8000-000000000001', '919000000982',
 select tests.create_user('d8000000-0000-4000-8000-000000000002', '919000000983', 'driver', 'Driver B');
 select tests.create_user('d8000000-0000-4000-8000-000000000003', '919000000984', 'driver', 'Driver C');
 select tests.create_user('d8000000-0000-4000-8000-000000000004', '919000000985', 'driver', 'Driver D');
-update public.profiles set consent_version = '2026-09-27.1', consent_at = now()
+update public.profiles set consent_version = public.current_consent_version(), consent_at = now()
  where id in ('d8000000-0000-4000-8000-000000000001', 'd8000000-0000-4000-8000-000000000003',
               'd8000000-0000-4000-8000-000000000004');
 select tests.create_vehicle('TN 08 AA 0001') as vehicle \gset

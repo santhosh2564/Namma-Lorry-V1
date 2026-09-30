@@ -32,6 +32,8 @@ export type AppConfig = {
   mapplsMapSdkKey: string;
   androidStoreUrl: string;
   iosStoreUrl: string;
+  /** Published privacy policy; empty hides the D1 link (M9, docs/09 §1). */
+  privacyPolicyUrl: string;
   sentryDsn: string;
 };
 
@@ -120,6 +122,9 @@ export function resolveConfig(
       // is published (M12c); the notice hides the store buttons while unset.
       androidStoreUrl: env.EXPO_PUBLIC_ANDROID_STORE_URL ?? "",
       iosStoreUrl: env.EXPO_PUBLIC_IOS_STORE_URL ?? "",
+      // The published privacy policy (a human item; the repo ships the draft).
+      // D1 shows the link only when it is set.
+      privacyPolicyUrl: env.EXPO_PUBLIC_PRIVACY_POLICY_URL ?? "",
       // Kept when misconfigured, so the failure can still be reported.
       sentryDsn: env.EXPO_PUBLIC_SENTRY_DSN ?? "",
     },
@@ -139,6 +144,7 @@ const resolved = resolveConfig(
     EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY: process.env.EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY,
     EXPO_PUBLIC_ANDROID_STORE_URL: process.env.EXPO_PUBLIC_ANDROID_STORE_URL,
     EXPO_PUBLIC_IOS_STORE_URL: process.env.EXPO_PUBLIC_IOS_STORE_URL,
+    EXPO_PUBLIC_PRIVACY_POLICY_URL: process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL,
     EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
   },
   __DEV__,

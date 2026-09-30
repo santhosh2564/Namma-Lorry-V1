@@ -14,13 +14,20 @@ supabase.rpc('start_trip', {
 |---|---|---|
 | `FORBIDDEN` | the caller's profile is inactive (0007, M4); `end_trip` stays open so a trip can still be finished | generic error; the launch gate already shows "Your account is not active" |
 | `TRIP_NOT_FOUND` | not yours / doesn't exist | "Trip not found" |
-| `CONSENT_REQUIRED` | driver has no recorded consent (`profiles.consent_version` is null; 0006) | "Agree to the location notice" + **Review notice** → D1 |
+| `CONSENT_REQUIRED` | driver has no recorded consent, or one for an older policy version than `public.current_consent_version()` (0006, 0009) | "Agree to the location notice" + **Review notice** → D1 |
 | `TRIP_NOT_STARTABLE` | not in `assigned` | refresh list |
 | `ANOTHER_TRIP_ACTIVE` | driver already tracking | open active trip |
 | `GPS_ACCURACY_TOO_LOW` | accuracy > 50 m | "Waiting for better GPS signal" |
 | `OUTSIDE_PICKUP:<metres>` | too far | "You are X km from pickup" |
 
 **Client order:** get a fresh fix (`getCurrentPositionAsync`, BestForNavigation) → call RPC → on success create SQLite trip state → `startLocationUpdatesAsync`. If the RPC fails, never start the task.
+
+### `record_consent`
+```ts
+supabase.rpc('record_consent', { p_version: CONSENT_VERSION })
+```
+Stores the driver's agreement (`profiles.consent_version`, `consent_at`) on their own row — the only non-admin write path to those columns. The server accepts only the version `public.current_consent_version()` returns (migration 0009), so the app's constant and the database cannot drift; the launch gate sends a driver whose stored version differs back through D1.
+Errors: `VERSION_REQUIRED` (blank version), `VERSION_NOT_CURRENT` (a different version — this build is out of date and must be updated), `VERSION_NOT_CONFIGURED` (no `app_settings` row; a deployment fault), `PROFILE_NOT_FOUND` (inactive or missing profile), `FORBIDDEN` (no session).
 
 ### `end_trip`
 ```ts

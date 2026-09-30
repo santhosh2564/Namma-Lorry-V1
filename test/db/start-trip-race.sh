@@ -55,7 +55,7 @@ SQL
 
 psql >/dev/null <<SQL
 $as_driver
-select public.record_consent('2026-10-01');
+select public.record_consent(public.current_consent_version());
 SQL
 
 READY=$(psql -c "select is_active and consent_version is not null from public.profiles where id = '$DRIVER'")

@@ -6,10 +6,12 @@
  * DEFINER RPC `record_consent(p_version)` — the only write path a non-admin
  * has to those two columns, and only on their own row.
  *
- * The version is a build-time constant recorded with each agreement. Nothing
- * re-prompts yet when it changes: the launch gate does not compare versions and
- * `start_trip` only requires a non-null `consent_version` (0006). Until such a
- * check exists, a bump reaches only drivers who have not agreed before.
+ * The version is a build-time constant recorded with each agreement, and the
+ * database keeps the version it will accept (`current_consent_version()`, 0009).
+ * The launch gate sends a driver whose stored version differs from
+ * `CONSENT_VERSION` back to D1, and `record_consent` refuses anything but the
+ * current version with `VERSION_NOT_CURRENT` — which is what an installed older
+ * build gets until the app update ships first (docs/RUNBOOK.md).
  */
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
@@ -23,7 +25,12 @@ export const CONSENT_VERSION = "2026-10-01";
 
 export type ConsentResult =
   | { ok: true }
-  | { ok: false; kind: "not_configured" | "not_signed_in" | "rpc" | "network"; message: string };
+  | {
+      ok: false;
+      /** `outdated`: this build's CONSENT_VERSION is no longer the current one. */
+      kind: "not_configured" | "not_signed_in" | "outdated" | "rpc" | "network";
+      message: string;
+    };
 
 /**
  * Record the driver's agreement. Called from D1's Continue; the screen blocks
@@ -41,6 +48,11 @@ export async function recordConsent(): Promise<ConsentResult> {
   // The RPC refuses an anonymous caller (auth.uid() is null there), which is
   // how a dropped session shows up on this screen.
   const message = error.message.toLowerCase();
+  // The server moved to a newer policy version than this build knows (0009).
+  // D1 tells the driver to update the app instead of looping silently.
+  if (message.includes("version_not_current")) {
+    return { ok: false, kind: "outdated", message: error.message };
+  }
   if (
     message.includes("permission") ||
     message.includes("forbidden") ||
