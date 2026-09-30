@@ -161,6 +161,28 @@ describe("resolveConfig (validation M2: fail closed outside development)", () =>
     });
   });
 
+  describe("privacy-policy URL (D1 link)", () => {
+    it("passes EXPO_PUBLIC_PRIVACY_POLICY_URL through", () => {
+      const url = "https://nammalorry.example/privacy";
+      const { config: c, problems } = resolveConfig(
+        {
+          EXPO_PUBLIC_APP_ENV: "production",
+          EXPO_PUBLIC_SUPABASE_URL: URL_OK,
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: KEY_OK,
+          EXPO_PUBLIC_PRIVACY_POLICY_URL: url,
+        },
+        false,
+      );
+      expect(c.privacyPolicyUrl).toBe(url);
+      expect(problems).toEqual([]);
+    });
+
+    it("is empty while unset (D1 hides the link; publishing the policy is a human item)", () => {
+      const { config: c } = resolveConfig({ EXPO_PUBLIC_APP_ENV: "development" }, true);
+      expect(c.privacyPolicyUrl).toBe("");
+    });
+  });
+
   describe("release bundle (__DEV__ false)", () => {
     it("treats a missing APP_ENV as a misconfigured production build, not development", () => {
       const { config: c, problems } = resolveConfig(

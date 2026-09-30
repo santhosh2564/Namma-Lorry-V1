@@ -1,8 +1,9 @@
 -- =====================================================================
 -- Namma Lorry — 10: start_trip contract (validation M5)
--- 0008 redefines start_trip for the concurrent-start race and 0009 makes it
--- require the CURRENT consent version. Every check the function had before must
--- survive, so each one is pinned here, with the grants, in one place:
+-- 0008 redefines start_trip for the concurrent-start race and 0009/0010 make
+-- it require the current consent version or a newer one. Every check the
+-- function had before must survive, so each one is pinned here, with the
+-- grants, in one place:
 --   TRIP_NOT_FOUND · CONSENT_REQUIRED (0006, stale or absent; 0009)
 --   FORBIDDEN for inactive (0007)
 --   TRIP_NOT_STARTABLE · ANOTHER_TRIP_ACTIVE · GPS_ACCURACY_TOO_LOW · OUTSIDE_PICKUP
@@ -12,7 +13,7 @@ begin;
 
 \ir _helpers.psql
 
-select plan(23);
+select plan(27);
 
 -- ---- fixtures --------------------------------------------------------
 select tests.create_user('da000000-0000-4000-8000-000000000001', '919000001001', 'driver', 'Driver A');
@@ -20,12 +21,17 @@ select tests.create_user('da000000-0000-4000-8000-000000000002', '919000001002',
 select tests.create_user('da000000-0000-4000-8000-000000000003', '919000001003', 'driver', 'No Consent');
 select tests.create_user('da000000-0000-4000-8000-000000000004', '919000001004', 'driver', 'Inactive');
 select tests.create_user('da000000-0000-4000-8000-000000000005', '919000001005', 'driver', 'Stale Consent');
+select tests.create_user('da000000-0000-4000-8000-000000000006', '919000001006', 'driver', 'Newer Consent');
 update public.profiles set consent_version = public.current_consent_version(), consent_at = now()
  where id in ('da000000-0000-4000-8000-000000000001', 'da000000-0000-4000-8000-000000000002',
               'da000000-0000-4000-8000-000000000004');
 -- An agreement to an older policy counts as none until they re-consent (0009).
 update public.profiles set consent_version = '2025-01-01', consent_at = now()
  where id = 'da000000-0000-4000-8000-000000000005';
+-- An agreement to a NEWER policy version is accepted (0010): the app update
+-- ships before the migration that makes its version current.
+update public.profiles set consent_version = '2026-12-01', consent_at = now()
+ where id = 'da000000-0000-4000-8000-000000000006';
 update public.profiles set is_active = false where id = 'da000000-0000-4000-8000-000000000004';
 
 insert into public.vehicles(id, registration_no, vehicle_type) values
@@ -35,7 +41,7 @@ insert into public.loads(id, pickup_address, pickup_lat, pickup_lng, drop_addres
                          pickup_radius_m, drop_radius_m, planned_distance_m)
 select ('ba000000-0000-4000-8000-00000000000' || g)::uuid, 'Pickup', 12.9563, 79.9422,
        'Drop', 12.9165, 79.1325, 500, 500, 88000
-  from generate_series(1, 6) g;
+  from generate_series(1, 7) g;
 
 insert into public.trips(id, load_id, driver_id, vehicle_id) values
   -- Driver A: two assigned trips
@@ -54,7 +60,10 @@ insert into public.trips(id, load_id, driver_id, vehicle_id) values
    'da000000-0000-4000-8000-000000000004', 'ca000000-0000-4000-8000-000000000001'),
   -- Stale-consent driver (0009)
   ('fa000000-0000-4000-8000-000000000006', 'ba000000-0000-4000-8000-000000000006',
-   'da000000-0000-4000-8000-000000000005', 'ca000000-0000-4000-8000-000000000001');
+   'da000000-0000-4000-8000-000000000005', 'ca000000-0000-4000-8000-000000000001'),
+  -- Newer-consent driver (0010)
+  ('fa000000-0000-4000-8000-000000000007', 'ba000000-0000-4000-8000-000000000007',
+   'da000000-0000-4000-8000-000000000006', 'ca000000-0000-4000-8000-000000000001');
 
 -- =================== grants ==========================================
 select ok(has_function_privilege('authenticated',
@@ -105,6 +114,15 @@ select lives_ok(
   'recording the current version lets that driver start');
 set local role postgres;
 
+-- =================== a newer version is accepted (0010) ===============
+-- The driver agreed to a version newer than the database's current one: the
+-- app update landed first, so this must start rather than loop on D1.
+select tests.as_user('da000000-0000-4000-8000-000000000006');
+select lives_ok(
+  $$select public.start_trip('fa000000-0000-4000-8000-000000000007'::uuid, 12.9563, 79.9422, 10::real)$$,
+  'a consent version newer than the current one starts (0010)');
+set local role postgres;
+
 -- =================== Driver A: the rest in order =====================
 set local role postgres;
 select tests.as_user('da000000-0000-4000-8000-000000000001');
@@ -120,6 +138,18 @@ select throws_ok(
 select throws_ok(
   $$select public.start_trip('fa000000-0000-4000-8000-000000000001'::uuid, 12.9563, 79.9422, null::real)$$,
   'P0001', 'GPS_ACCURACY_TOO_LOW', 'a fix with no accuracy is refused');
+-- A fix with no POSITION is the 0011 case. st_makepoint(NULL, NULL)::geography
+-- is NULL, st_distance(NULL, geog) is NULL, and `NULL > x` is not true, so the
+-- geofence comparison used to pass and the trip started anywhere with no start
+-- position recorded. The app never sends these (lat/lng are non-nullable
+-- numbers on StartTripRpcArgs), but the RPC is the boundary a client with a JWT
+-- talks to, so it refuses them itself.
+select throws_ok(
+  $$select public.start_trip('fa000000-0000-4000-8000-000000000001'::uuid, null, 79.9422, 10::real)$$,
+  'P0001', 'GPS_ACCURACY_TOO_LOW', 'a fix with no latitude is refused');
+select throws_ok(
+  $$select public.start_trip('fa000000-0000-4000-8000-000000000001'::uuid, 12.9563, null, 10::real)$$,
+  'P0001', 'GPS_ACCURACY_TOO_LOW', 'a fix with no longitude is refused');
 select throws_ok(
   format($$select public.start_trip('%s'::uuid, %s, %s, 10::real)$$,
          'fa000000-0000-4000-8000-000000000001', 12.9290, 79.9422),
@@ -128,6 +158,9 @@ select throws_ok(
     extensions.st_setsrid(extensions.st_makepoint(79.9422, 12.9290), 4326)::extensions.geography,
     (select pickup_geog from public.loads where id = 'ba000000-0000-4000-8000-000000000001'))),
   'a fix 3 km from the pickup is refused with the distance');
+select is((select (start_lat is null and start_lng is null and status = 'assigned')::int
+             from public.trips where id = 'fa000000-0000-4000-8000-000000000001'), 1,
+  'a position-less start attempt writes no start position and leaves the trip assigned');
 select lives_ok(
   $$select public.start_trip('fa000000-0000-4000-8000-000000000001'::uuid, 12.9563, 79.9422, 10::real)$$,
   'Driver A starts trip 1 inside the pickup radius');
@@ -147,8 +180,8 @@ select is((select array_agg(status::text order by id) from public.trips
                          'fa000000-0000-4000-8000-000000000005')),
   array['assigned', 'assigned', 'assigned'], 'every refused trip is still assigned');
 select is((select count(*)::int from public.trip_events
-            where trip_id::text like 'fa000000-%' and type = 'started'), 2,
-  'each successful start logged exactly one started event (Driver A and the re-consented driver)');
+            where trip_id::text like 'fa000000-%' and type = 'started'), 3,
+  'each successful start logged exactly one started event (Driver A, the re-consented and the newer-consented driver)');
 select is((select count(*)::int from public.trips
             where driver_id = 'da000000-0000-4000-8000-000000000001' and status = 'in_progress'), 1,
   'Driver A has exactly one trip in progress');

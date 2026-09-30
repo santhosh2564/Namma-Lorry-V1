@@ -17,10 +17,12 @@ supabase.rpc('start_trip', {
 | `CONSENT_REQUIRED` | driver has no recorded consent, or one for an older policy version than `public.current_consent_version()` (0006, 0009) | "Agree to the location notice" + **Review notice** → D1 |
 | `TRIP_NOT_STARTABLE` | not in `assigned` | refresh list |
 | `ANOTHER_TRIP_ACTIVE` | driver already tracking | open active trip |
-| `GPS_ACCURACY_TOO_LOW` | accuracy > 50 m | "Waiting for better GPS signal" |
+| `GPS_ACCURACY_TOO_LOW` | the fix has no position (`p_lat` / `p_lng` null) or accuracy > 50 m | "Waiting for better GPS signal" |
 | `OUTSIDE_PICKUP:<metres>` | too far | "You are X km from pickup" |
 
 **Client order:** get a fresh fix (`getCurrentPositionAsync`, BestForNavigation) → call RPC → on success create SQLite trip state → `startLocationUpdatesAsync`. If the RPC fails, never start the task.
+
+`p_lat` / `p_lng` are refused when null (0011): the pickup geofence is computed from them, and a position-less fix would pass the distance check without ever being compared to the pickup. `p_accuracy_m` may be null (that is a real "no accuracy yet" reading) but the position may not.
 
 ### `record_consent`
 ```ts
