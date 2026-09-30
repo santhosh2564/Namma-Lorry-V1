@@ -6,17 +6,20 @@
  * DEFINER RPC `record_consent(p_version)` — the only write path a non-admin
  * has to those two columns, and only on their own row.
  *
- * The version is a build-time constant: bumping it re-prompts the disclosure
- * on the next consent check (the stored version will no longer match), which
- * is how a changed privacy policy reaches already-onboarded drivers.
+ * The version is a build-time constant recorded with each agreement. Nothing
+ * re-prompts yet when it changes: the launch gate does not compare versions and
+ * `start_trip` only requires a non-null `consent_version` (0006). Until such a
+ * check exists, a bump reaches only drivers who have not agreed before.
  */
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 /**
- * Bump when the disclosure copy or the privacy policy changes materially.
- * Kept next to the D1 copy so the two cannot drift apart silently.
+ * The privacy-policy version the D1 notice stands for: equal to the
+ * **Version:** line in docs/release/PRIVACY_POLICY.md (checked by
+ * test/config/release-docs.test.mjs). Change both when the policy or the
+ * disclosure copy changes materially.
  */
-export const CONSENT_VERSION = "2026-09-27.1";
+export const CONSENT_VERSION = "2026-10-01";
 
 export type ConsentResult =
   | { ok: true }

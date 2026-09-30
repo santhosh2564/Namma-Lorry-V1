@@ -64,7 +64,10 @@ export function runbookReferences(markdown) {
   const scripts = new Set(
     [...markdown.matchAll(/\b(?:bun|npm) run ([a-z][\w:-]*)/g)].map((m) => m[1]),
   );
-  const functions = new Set([...markdown.matchAll(/\bpublic\.([a-z_]+)\s*\(/g)].map((m) => m[1]));
+  // `insert into public.trip_events(…)` names a table, not a function.
+  const functions = new Set(
+    [...markdown.matchAll(/(?<!\binto\s+)\bpublic\.([a-z_]+)\s*\(/g)].map((m) => m[1]),
+  );
   const paths = new Set(
     [...markdown.matchAll(/`((?:scripts|src|app|supabase|docs|test)\/[^`\s<>*]+)`/g)].map(
       (m) => m[1],
@@ -200,7 +203,8 @@ test("negative control: the reference check catches made-up names", () => {
   ]);
   // …and passes real ones.
   const real = runbookReferences(
-    "bun run update:production · public.verify_trip(id) · `scripts/eas-update.mjs`",
+    "bun run update:production · public.verify_trip(id) · `scripts/eas-update.mjs` · " +
+      "insert into public.trip_events(trip_id)",
   );
   assert.deepEqual(missingReferences(real, repo()), []);
 });

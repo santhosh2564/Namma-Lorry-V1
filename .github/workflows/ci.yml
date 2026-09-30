@@ -35,8 +35,9 @@ jobs:
         run: bun run test
 
       # Mod-level app.config checks: the merged Android manifest and iOS
-      # Info.plist via `expo config --type introspect` (validation M3, M11).
-      - name: App config (introspect)
+      # Info.plist via `expo config --type introspect` (validation M3, M11), plus
+      # vercel.json (B5d) and the release docs checked against the code (B5e).
+      - name: App config (introspect, vercel.json, release docs)
         run: bun run test:config
 
       # Operator scripts (B5c): eas-update, provision-user, check-release-assets.
