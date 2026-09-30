@@ -17,6 +17,7 @@
     "test:watch": "jest --watch",
     "test:config": "node --test \"test/config/*.test.mjs\"",
     "test:scripts": "node --test \"scripts/__tests__/*.test.mjs\"",
+    "check:web-csp": "node scripts/check-web-csp.mjs",
     "release:assets": "node scripts/check-release-assets.mjs",
     "update:preview": "node scripts/eas-update.mjs preview",
     "update:production": "node scripts/eas-update.mjs production",

@@ -66,6 +66,14 @@ jobs:
           grep -rqF "https://ci-probe.supabase.co" dist || { echo "::error::SUPABASE_URL not inlined"; exit 1; }
           grep -rqF "ci-probe-anon-key" dist || { echo "::error::SUPABASE_ANON_KEY not inlined"; exit 1; }
 
+      # The export above, served with vercel.json's headers and rewrites, must
+      # load the console sign-in page with zero CSP violations (B5d).
+      - name: Install Chromium
+        run: bunx playwright install --with-deps chromium
+
+      - name: Web console CSP (headless Chromium)
+        run: bun run check:web-csp
+
       # The Supabase Edge Functions have their own Deno test suite, including a
       # wire-format suite that starts a loopback HTTP server (`--allow-net`).
       # It needs no secrets, so it belongs here: two real `mappls-proxy` bugs
