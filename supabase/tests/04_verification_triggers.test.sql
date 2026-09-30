@@ -239,10 +239,10 @@ select is((select verified_trips from public.driver_stats
 -- D. record_consent (0002, docs/09 §1)
 -- =====================================================================
 select tests.as_user('d4000000-0000-4000-8000-000000000003');
-select public.record_consent('2026-01-v1') as ignored \gset
+select public.record_consent('2026-10-01') as ignored \gset
 set local role postgres;
 select is((select consent_version from public.profiles
-            where id = 'd4000000-0000-4000-8000-000000000003'), '2026-01-v1',
+            where id = 'd4000000-0000-4000-8000-000000000003'), '2026-10-01',
   'record_consent stores the version the driver agreed to');
 select ok((select consent_at is not null from public.profiles
             where id = 'd4000000-0000-4000-8000-000000000003'),
@@ -259,17 +259,20 @@ select throws_ok($$select public.record_consent(null)$$, 'P0001', 'VERSION_REQUI
 set local role postgres;
 
 select tests.as_anon();
-select throws_ok($$select public.record_consent('2026-01-v1')$$,
+select throws_ok($$select public.record_consent('2026-10-01')$$,
   '42501', 'permission denied for function record_consent',
   'an anonymous client cannot record consent');
 set local role postgres;
 
 -- Re-consenting after the notice text changes must overwrite, not stack.
+-- (Only the current version is accepted since 0009: suite 11.)
+update public.profiles set consent_version = '2026-09-27.1'
+ where id = 'd4000000-0000-4000-8000-000000000003';
 select tests.as_user('d4000000-0000-4000-8000-000000000003');
-select public.record_consent(' 2026-06-v2 ') as ignored \gset
+select public.record_consent(' 2026-10-01 ') as ignored \gset
 set local role postgres;
 select is((select consent_version from public.profiles
-            where id = 'd4000000-0000-4000-8000-000000000003'), '2026-06-v2',
+            where id = 'd4000000-0000-4000-8000-000000000003'), '2026-10-01',
   'recording consent again replaces the previous version, trimmed');
 
 select * from finish();

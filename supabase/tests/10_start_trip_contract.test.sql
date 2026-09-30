@@ -3,7 +3,8 @@
 -- 0008 redefines start_trip for the concurrent-start race. Every check the
 -- function had before must survive it, so each one is pinned here, with the
 -- grants, in one place:
---   TRIP_NOT_FOUND · CONSENT_REQUIRED (0006) · FORBIDDEN for inactive (0007)
+--   TRIP_NOT_FOUND · CONSENT_REQUIRED (0006; a stale version too, 0009)
+--   FORBIDDEN for inactive (0007)
 --   TRIP_NOT_STARTABLE · ANOTHER_TRIP_ACTIVE · GPS_ACCURACY_TOO_LOW · OUTSIDE_PICKUP
 -- The race itself needs two sessions: test/db/start-trip-race.sh (CI database job).
 -- =====================================================================
@@ -11,17 +12,21 @@ begin;
 
 \ir _helpers.psql
 
-select plan(20);
+select plan(21);
 
 -- ---- fixtures --------------------------------------------------------
 select tests.create_user('da000000-0000-4000-8000-000000000001', '919000001001', 'driver', 'Driver A');
 select tests.create_user('da000000-0000-4000-8000-000000000002', '919000001002', 'driver', 'Driver B');
 select tests.create_user('da000000-0000-4000-8000-000000000003', '919000001003', 'driver', 'No Consent');
 select tests.create_user('da000000-0000-4000-8000-000000000004', '919000001004', 'driver', 'Inactive');
+select tests.create_user('da000000-0000-4000-8000-000000000005', '919000001005', 'driver', 'Stale Consent');
 update public.profiles set consent_version = '2026-10-01', consent_at = now()
  where id in ('da000000-0000-4000-8000-000000000001', 'da000000-0000-4000-8000-000000000002',
               'da000000-0000-4000-8000-000000000004');
 update public.profiles set is_active = false where id = 'da000000-0000-4000-8000-000000000004';
+-- agreed to an earlier policy version (0009: that no longer counts)
+update public.profiles set consent_version = '2026-09-27.1', consent_at = now() - interval '5 days'
+ where id = 'da000000-0000-4000-8000-000000000005';
 
 insert into public.vehicles(id, registration_no, vehicle_type) values
   ('ca000000-0000-4000-8000-000000000001', 'TN 10 AA 0001', '19ft');
@@ -30,7 +35,7 @@ insert into public.loads(id, pickup_address, pickup_lat, pickup_lng, drop_addres
                          pickup_radius_m, drop_radius_m, planned_distance_m)
 select ('ba000000-0000-4000-8000-00000000000' || g)::uuid, 'Pickup', 12.9563, 79.9422,
        'Drop', 12.9165, 79.1325, 500, 500, 88000
-  from generate_series(1, 5) g;
+  from generate_series(1, 6) g;
 
 insert into public.trips(id, load_id, driver_id, vehicle_id) values
   -- Driver A: two assigned trips
@@ -46,7 +51,10 @@ insert into public.trips(id, load_id, driver_id, vehicle_id) values
    'da000000-0000-4000-8000-000000000003', 'ca000000-0000-4000-8000-000000000001'),
   -- Inactive driver
   ('fa000000-0000-4000-8000-000000000005', 'ba000000-0000-4000-8000-000000000005',
-   'da000000-0000-4000-8000-000000000004', 'ca000000-0000-4000-8000-000000000001');
+   'da000000-0000-4000-8000-000000000004', 'ca000000-0000-4000-8000-000000000001'),
+  -- Stale-consent driver
+  ('fa000000-0000-4000-8000-000000000006', 'ba000000-0000-4000-8000-000000000006',
+   'da000000-0000-4000-8000-000000000005', 'ca000000-0000-4000-8000-000000000001');
 
 -- =================== grants ==========================================
 select ok(has_function_privilege('authenticated',
@@ -82,6 +90,12 @@ select throws_ok(
 select throws_ok(
   $$select public.start_trip('fa000000-0000-4000-8000-000000000003'::uuid, 12.9563, 79.9422, 10::real)$$,
   'P0002', 'TRIP_NOT_FOUND', 'ownership comes before consent: a stranger''s trip reads TRIP_NOT_FOUND');
+
+set local role postgres;
+select tests.as_user('da000000-0000-4000-8000-000000000005');
+select throws_ok(
+  $$select public.start_trip('fa000000-0000-4000-8000-000000000006'::uuid, 12.9563, 79.9422, 10::real)$$,
+  'P0001', 'CONSENT_REQUIRED', 'a consent to an earlier policy version does not count (0009)');
 
 -- =================== Driver A: the rest in order =====================
 set local role postgres;
@@ -122,8 +136,8 @@ select is((select status::text from public.trips where id = 'fa000000-0000-4000-
   'trip 1 is in progress');
 select is((select array_agg(status::text order by id) from public.trips
             where id in ('fa000000-0000-4000-8000-000000000002', 'fa000000-0000-4000-8000-000000000004',
-                         'fa000000-0000-4000-8000-000000000005')),
-  array['assigned', 'assigned', 'assigned'], 'every refused trip is still assigned');
+                         'fa000000-0000-4000-8000-000000000005', 'fa000000-0000-4000-8000-000000000006')),
+  array['assigned', 'assigned', 'assigned', 'assigned'], 'every refused trip is still assigned');
 select is((select count(*)::int from public.trip_events
             where trip_id::text like 'fa000000-%' and type = 'started'), 1,
   'only the one successful start logged a started event');

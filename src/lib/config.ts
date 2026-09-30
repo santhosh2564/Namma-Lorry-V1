@@ -33,6 +33,7 @@ export type AppConfig = {
   androidStoreUrl: string;
   iosStoreUrl: string;
   sentryDsn: string;
+  privacyPolicyUrl: string;
 };
 
 type RawEnv = Record<string, string | undefined>;
@@ -122,6 +123,7 @@ export function resolveConfig(
       iosStoreUrl: env.EXPO_PUBLIC_IOS_STORE_URL ?? "",
       // Kept when misconfigured, so the failure can still be reported.
       sentryDsn: env.EXPO_PUBLIC_SENTRY_DSN ?? "",
+      privacyPolicyUrl: "",
     },
     problems,
   };

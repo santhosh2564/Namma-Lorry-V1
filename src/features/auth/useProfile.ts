@@ -32,6 +32,7 @@ export function toAuthProfile(row: ProfileRow, permissionsGranted: boolean): Aut
     isActive: row.is_active,
     fullName: row.full_name,
     permissionsGranted,
+    consentVersion: row.consent_version,
   };
 }
 

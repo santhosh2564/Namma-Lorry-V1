@@ -23,7 +23,11 @@ export const CONSENT_VERSION = "2026-10-01";
 
 export type ConsentResult =
   | { ok: true }
-  | { ok: false; kind: "not_configured" | "not_signed_in" | "rpc" | "network"; message: string };
+  | {
+      ok: false;
+      kind: "not_configured" | "not_signed_in" | "outdated" | "rpc" | "network";
+      message: string;
+    };
 
 /**
  * Record the driver's agreement. Called from D1's Continue; the screen blocks

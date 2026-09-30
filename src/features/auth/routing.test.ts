@@ -19,6 +19,8 @@ import type { UserRole } from "@/lib/database.types";
 
 const ALL_ROLES: UserRole[] = ["driver", "owner", "shipper", "admin"];
 const ALL_PLATFORMS: AppPlatform[] = ["ios", "android", "web"];
+/** The policy version this build asks for (CONSENT_VERSION in the app). */
+const CURRENT = "2026-10-01";
 
 function profile(overrides: Partial<AuthProfile> = {}): AuthProfile {
   return {
@@ -27,6 +29,7 @@ function profile(overrides: Partial<AuthProfile> = {}): AuthProfile {
     isActive: true,
     fullName: "Murugan S",
     permissionsGranted: true,
+    consentVersion: CURRENT,
     ...overrides,
   };
 }
@@ -38,6 +41,7 @@ function input(overrides: Partial<RouteInput> = {}): RouteInput {
     profile: profile(),
     profileSettled: true,
     activeTripId: null,
+    consentVersion: CURRENT,
     ...overrides,
   };
 }
@@ -153,6 +157,69 @@ describe("decideRoute — account state", () => {
     expect(
       decideRoute(input({ platform: "web", profile: profile({ permissionsGranted: false }) })),
     ).toEqual({ destination: "access_notice", variant: "driver_on_web" });
+  });
+});
+
+describe("decideRoute — re-consent (docs/09 §1)", () => {
+  it("sends a native driver who agreed to an earlier policy version back to D1", () => {
+    for (const platform of ["ios", "android"] as const) {
+      expect(
+        decideRoute(input({ platform, profile: profile({ consentVersion: "2026-09-27.1" }) })),
+      ).toEqual({ destination: "onboarding" });
+    }
+  });
+
+  it("sends a native driver who never agreed to D1", () => {
+    expect(decideRoute(input({ profile: profile({ consentVersion: null }) }))).toEqual({
+      destination: "onboarding",
+    });
+  });
+
+  it("lets a driver with the current version through to trips", () => {
+    expect(decideRoute(input({ profile: profile({ consentVersion: CURRENT }) }))).toEqual({
+      destination: "driver_home",
+    });
+  });
+
+  it("compares against the build's version, not a fixed one", () => {
+    expect(
+      decideRoute(
+        input({ consentVersion: "2027-01-01", profile: profile({ consentVersion: CURRENT }) }),
+      ),
+    ).toEqual({ destination: "onboarding" });
+  });
+
+  it("resumes an active trip first, whatever the consent, so it can be ended", () => {
+    expect(
+      decideRoute(
+        input({ activeTripId: "trip-1", profile: profile({ consentVersion: "2026-09-27.1" }) }),
+      ),
+    ).toEqual({ destination: "active_trip", tripId: "trip-1" });
+  });
+
+  it("does not gate admins, owners or shippers on the driver notice", () => {
+    for (const platform of ALL_PLATFORMS) {
+      expect(
+        decideRoute(input({ platform, profile: profile({ role: "admin", consentVersion: null }) })),
+      ).toEqual({ destination: "console" });
+      for (const role of ["owner", "shipper"] as const) {
+        expect(
+          decideRoute(input({ platform, profile: profile({ role, consentVersion: null }) })),
+        ).toEqual({ destination: "access_notice", variant: "coming_soon" });
+      }
+    }
+  });
+
+  it("still tells a driver on web to use the app rather than sending them to D1", () => {
+    expect(
+      decideRoute(input({ platform: "web", profile: profile({ consentVersion: null }) })),
+    ).toEqual({ destination: "access_notice", variant: "driver_on_web" });
+  });
+
+  it("refuses a deactivated driver before looking at consent", () => {
+    expect(
+      decideRoute(input({ profile: profile({ isActive: false, consentVersion: null }) })),
+    ).toEqual({ destination: "access_notice", variant: "deactivated" });
   });
 });
 

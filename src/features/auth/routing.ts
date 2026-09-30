@@ -65,6 +65,8 @@ export type AuthProfile = {
    * onboarding branch is already wired and testable.
    */
   permissionsGranted: boolean;
+  /** The policy version the driver last agreed to on D1, or null (docs/09 §1). */
+  consentVersion: string | null;
 };
 
 export type RouteInput = {
@@ -76,6 +78,8 @@ export type RouteInput = {
   profileSettled: boolean;
   /** Trip the phone was recording when the app was closed, or null. */
   activeTripId: string | null;
+  /** The policy version this build's D1 notice stands for (CONSENT_VERSION). */
+  consentVersion: string;
 };
 
 export type RouteDecision =
