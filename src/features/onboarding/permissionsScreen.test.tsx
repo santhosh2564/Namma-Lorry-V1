@@ -15,10 +15,17 @@ import PermissionsScreen from "../../../app/(onboarding)/permissions";
 import { recordConsent } from "@/features/onboarding/consent";
 
 const mockReplace = jest.fn();
+const mockInvalidateQueries = jest.fn();
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: mockReplace, push: jest.fn() }),
   Stack: { Screen: () => null },
+}));
+
+// The profile query key lives in its own module so this screen (and its test)
+// do not pull in the Supabase client.
+jest.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ invalidateQueries: mockInvalidateQueries }),
 }));
 
 jest.mock("expo-linking", () => ({ openSettings: jest.fn() }));
@@ -44,6 +51,7 @@ async function renderWithGrants(): Promise<void> {
 
 beforeEach(() => {
   mockReplace.mockClear();
+  mockInvalidateQueries.mockClear();
   mockRecordConsent.mockReset();
 });
 
@@ -67,5 +75,25 @@ describe("D1 Continue", () => {
 
     expect(mockReplace).toHaveBeenCalledWith("/(onboarding)/battery");
     expect(screen.queryByTestId("onboarding-consent-error")).toBeNull();
+  });
+
+  it("refreshes the cached profile after a successful consent, so the gate cannot send the driver back here", async () => {
+    mockRecordConsent.mockResolvedValue({ ok: true });
+    await renderWithGrants();
+
+    await fireEvent.press(screen.getByTestId("onboarding-continue"));
+
+    // The gate routes on the cached profile's consent_version; without this the
+    // next pass reads the old version and bounces the driver back to D1.
+    expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["auth", "profile"] });
+  });
+
+  it("does not refresh the profile when the consent write failed", async () => {
+    mockRecordConsent.mockResolvedValue({ ok: false, kind: "network", message: "Failed to fetch" });
+    await renderWithGrants();
+
+    await fireEvent.press(screen.getByTestId("onboarding-continue"));
+
+    expect(mockInvalidateQueries).not.toHaveBeenCalled();
   });
 });
