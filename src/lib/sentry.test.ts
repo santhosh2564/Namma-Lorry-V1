@@ -55,6 +55,12 @@ function initOptions(): InitOptions {
   return mockInit.mock.calls[0][0] as InitOptions;
 }
 
+// Each test loads a fresh copy; the first load compiles the module graph, which
+// on a cold transform cache belongs here, under its own limit, not in a test.
+beforeAll(() => {
+  loadSentry({ sentryDsn: "" });
+}, 60_000);
+
 beforeEach(() => {
   mockInit.mockClear();
   mockCaptureException.mockClear();
