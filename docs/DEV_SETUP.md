@@ -136,6 +136,20 @@ provider exists; GoTrue never contacts Twilio for a `[auth.sms.test_otp]`
 number, and any other number fails to send. That is deliberate: it means an
 accidental real number can never cost you an SMS.
 
+**Sign-ups are off** (`[auth] enable_signup = false`, validation M4): an unknown
+number gets "This number isn't registered" and no account is created. Every new
+profile also starts **inactive** (migration 0007), so a user that appears some
+other way can't do anything until an operator activates it. To add a local test
+user:
+
+1. Pin its OTP in `supabase/config.toml` under `[auth.sms.test_otp]` (for
+   example `919000000021 = "123456"`), then `supabase stop && supabase start`.
+2. Create it, active, with the local service-role key from `supabase status`:
+   ```bash
+   SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_SERVICE_ROLE_KEY=<local service_role key> \
+     bun run provision-user --phone 919000000021 --name "Test Driver"
+   ```
+
 ### 3.2 Hosted — there is no `123456`
 
 `[auth.sms.test_otp]` is a **Supabase CLI configuration option**. It applies to
@@ -152,11 +166,16 @@ provider:
 2. Add Twilio credentials (or another supported provider)
 3. Set your real test numbers in the app
 
-Until that is done, hosted sign-in has no working path for phone OTP. Until the
-driver-registration decision (ND-5 / ND-12) is made, the practical alternative
-for a demo is to create the users by hand in **Dashboard → Authentication →
-Users → Add user** with a phone number, which then signs in through OTP once
-SMS is enabled.
+Until that is done, hosted sign-in has no working path for phone OTP. Users are
+created by operators only (ND-12): use `provision-user` (§5.1). A user added by
+hand in **Dashboard → Authentication → Users → Add user** gets an **inactive**
+profile (0007) and sees "Your account is not active" until you run
+`provision-user --phone <number> --activate`.
+
+Each hosted project also needs sign-ups turned off in the dashboard (a human
+step; `config.toml` covers only the local stack): **Authentication → Sign In /
+Providers → "Allow new users to sign up" off**, keeping the Phone provider
+enabled.
 
 ---
 
@@ -351,7 +370,8 @@ SUPABASE_SERVICE_ROLE_KEY=<secret key> \
 
 Flags: `--phone` (required, `91` + 10 digits), `--name`, `--role
 driver|admin|owner|shipper`, `--language en|ta|kn|hi`, `--activate` or
-`--deactivate`. A new user defaults to driver, `en`, active. For an existing
+`--deactivate`. A new user defaults to driver, `en`, active (the script writes
+`is_active = true` after the trigger has created the profile inactive). For an existing
 user **only the flags you pass change**: `--name` alone never touches the role
 or reactivates a deactivated driver. The URL must be `https://`; `http://` is
 accepted only for `localhost` / `127.0.0.1` (checked on the hostname). Keep the

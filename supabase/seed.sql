@@ -32,7 +32,9 @@ from auth.users u
 where u.id in ('a0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001',
                'd0000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000003');
 
-update public.profiles p set role = s.role::public.user_role, full_name = s.full_name, preferred_language = s.lang
+-- handle_new_user creates profiles inactive (0007, M4); these are operator-created users.
+update public.profiles p set role = s.role::public.user_role, full_name = s.full_name, preferred_language = s.lang,
+                             is_active = true
 from (values
   ('a0000000-0000-4000-8000-000000000001'::uuid, 'admin',  'Namma Lorry Ops', 'en'),
   ('d0000000-0000-4000-8000-000000000001'::uuid, 'driver', 'Murugan S',       'ta'),

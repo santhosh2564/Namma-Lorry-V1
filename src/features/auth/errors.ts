@@ -43,9 +43,10 @@ export class AuthError extends Error {
 type SupabaseError = { message?: string | null; status?: number | null } | null | undefined;
 
 const messageRules: readonly [RegExp, AuthErrorCode][] = [
-  // `shouldCreateUser: false` turns an unknown number into this error, which is
-  // exactly the ND-12 registration gate.
-  [/signups not allowed for otp/i, "unregistered"],
+  // `shouldCreateUser: false` turns an unknown number into the first error,
+  // which is exactly the ND-12 registration gate. The second is GoTrue's global
+  // sign-up switch (off since M4) for a request that asks to create a user.
+  [/signups not allowed for (otp|this instance)/i, "unregistered"],
   [/otp.*(expired|invalid)|token has expired|token_expired|otp_expired/i, "expired_code"],
   [/invalid login credentials|invalid otp|token not found/i, "wrong_code"],
   [/too many|rate limit|requests should be limited/i, "rate_limited"],

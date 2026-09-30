@@ -48,6 +48,10 @@ supabase functions deploy mappls-proxy --project-ref <ref>
 supabase functions deploy admin-create-driver --project-ref <ref>
 ```
 
+### Accounts
+
+Nobody signs up: operators create every user (`bun run provision-user`, or Drivers → Add in the console, which calls `admin-create-driver`), and both activate the profile. Any other new auth user gets an **inactive** profile (migration 0007) and sees "Your account is not active". Sign-ups must stay **off** in each hosted project's dashboard (Authentication → Sign In / Providers → "Allow new users to sign up"). After any change to a project's auth settings, request an OTP for an unregistered number: it must fail and create no user. To activate someone added another way: `bun run provision-user --phone <number> --activate`.
+
 ### Web console (Vercel)
 
 Merging to `main` deploys Production; PR branches get Preview deployments against staging. `vercel.json` is the whole build config. After a deploy, sign in and check the browser console for CSP errors. Changing an `EXPO_PUBLIC_*` value needs a **redeploy**, because Metro inlines them at build time.
