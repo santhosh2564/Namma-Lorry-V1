@@ -273,6 +273,44 @@ Before a store build, `bun run release:assets --strict` must pass. Without
 `--strict` (as CI runs it) it only reports the missing icons, until the brand
 assets exist (docs/release/ASSETS.md).
 
+### 4.4 Web console on Vercel
+
+`vercel.json` builds the console as a static export (`bun install
+--frozen-lockfile`, `bun run export:web`, output `dist/`), rewrites app routes
+to `/index.html`, and sends the security headers and the Content Security
+Policy on every response. Import the GitHub repo in Vercel with **Framework
+preset: Other** and leave the build settings to `vercel.json`.
+
+Set these in **Project → Settings → Environment Variables**. They are read at
+**build** time (Metro inlines them into the bundle), so **redeploy after
+changing any of them**:
+
+| Variable | Production | Preview |
+|---|---|---|
+| `EXPO_PUBLIC_APP_ENV` | `production` | `staging` |
+| `EXPO_PUBLIC_SUPABASE_URL` | `https://<production-ref>.supabase.co` | `https://qykqflshvsldzvdpwtni.supabase.co` |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | production publishable key | staging publishable key |
+| `EXPO_PUBLIC_SENTRY_DSN` | Sentry DSN | Sentry DSN |
+| `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY` | Mappls web SDK key, restricted to the console domain | same, restricted to the preview domain |
+
+A missing or invalid Supabase value makes the console show the blocking "not
+set up correctly" screen (validation M2), and an unset `EXPO_PUBLIC_APP_ENV` in
+this release bundle counts as a misconfigured production build. Never add
+`SUPABASE_SERVICE_ROLE_KEY` or any Mappls REST secret here: every
+`EXPO_PUBLIC_*` value ends up in the public bundle.
+
+The CSP allows only `'self'`, Supabase (`https://*.supabase.co`,
+`wss://*.supabase.co`), Sentry ingest, and the Mappls web SDK hosts
+(`sdk.mappls.com`, `*.mappls.com`, `*.mapmyindia.com`). If a new third-party
+host is needed, add it to `vercel.json`, `test/config/vercel.test.mjs` and check
+it with:
+
+```bash
+EXPO_PUBLIC_APP_ENV=production EXPO_PUBLIC_SUPABASE_URL=https://ci-probe.supabase.co \
+  EXPO_PUBLIC_SUPABASE_ANON_KEY=ci-probe-anon-key npx expo export -p web --clear
+bun run check:web-csp      # serves dist/ with vercel.json headers, loads sign-in in Chromium
+```
+
 ---
 
 ## 5. Hosted project
