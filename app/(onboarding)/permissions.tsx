@@ -18,6 +18,7 @@ import {
   type PermissionRowState,
   type PermissionSnapshot,
 } from "@/features/onboarding/permissions";
+import { config } from "@/lib/config";
 import { colors, fonts, fontSize, spacing } from "@/theme/tokens";
 
 /**
@@ -38,6 +39,11 @@ import { colors, fonts, fontSize, spacing } from "@/theme/tokens";
  * Permissions are re-read on every foreground (docs/12 D1: "permission later
  * revoked"); the launch gate sends a driver whose background grant vanished
  * back here before D3 renders.
+ *
+ * The card also states the retention period and, when the policy has been
+ * published, links to it (`EXPO_PUBLIC_PRIVACY_POLICY_URL`); the gate sends a
+ * driver whose recorded consent version is stale back through this notice
+ * (0009, docs/09 §1).
  */
 const ROWS: PermissionRowName[] = ["foreground", "background", "notifications"];
 
@@ -68,7 +74,7 @@ export default function PermissionsScreen() {
   const [snapshot, setSnapshot] = useState<PermissionSnapshot | null>(null);
   const [busyRow, setBusyRow] = useState<PermissionRowName | null>(null);
   const [continuing, setContinuing] = useState(false);
-  const [consentError, setConsentError] = useState(false);
+  const [consentError, setConsentError] = useState<null | "generic" | "outdated">(null);
 
   const refresh = useCallback(() => {
     void readPermissionSnapshot().then((next) => {
@@ -108,19 +114,21 @@ export default function PermissionsScreen() {
 
   const continueTapped = useCallback(async () => {
     setContinuing(true);
-    setConsentError(false);
+    setConsentError(null);
     try {
       // Record who agreed to what, when (docs/09 §1). Failure blocks the flow:
       // an unrecorded consent must not let a driver sail into tracking.
       // recordConsent reports failure by returning { ok: false }, not throwing.
       const result = await recordConsent();
       if (!result.ok) {
-        setConsentError(true);
+        // An outdated build (VERSION_NOT_CURRENT, 0009) gets its own message:
+        // the driver has to update the app, not just retry.
+        setConsentError(result.kind === "outdated" ? "outdated" : "generic");
         return;
       }
       router.replace("/(onboarding)/battery");
     } catch {
-      setConsentError(true);
+      setConsentError("generic");
     } finally {
       setContinuing(false);
     }
@@ -150,6 +158,19 @@ export default function PermissionsScreen() {
               </Text>
             </View>
           ))}
+          <View style={styles.disclosureRow}>
+            <Icon name="schedule" size={20} color={colors.primary} />
+            <Text style={styles.disclosureText}>{t("onboarding.permissions.retention")}</Text>
+          </View>
+          {config.privacyPolicyUrl !== "" ? (
+            <Button
+              label={t("onboarding.permissions.privacyPolicy")}
+              onPress={() => void Linking.openURL(config.privacyPolicyUrl)}
+              size="sm"
+              testID="onboarding-privacy-link"
+              variant="text"
+            />
+          ) : null}
         </Card>
 
         <View style={styles.rows}>
@@ -165,10 +186,14 @@ export default function PermissionsScreen() {
           ))}
         </View>
 
-        {consentError ? (
+        {consentError !== null ? (
           <Banner
-            message={t("onboarding.permissions.consentFailed")}
-            onDismiss={() => setConsentError(false)}
+            message={t(
+              consentError === "outdated"
+                ? "onboarding.permissions.consentOutdated"
+                : "onboarding.permissions.consentFailed",
+            )}
+            onDismiss={() => setConsentError(null)}
             testID="onboarding-consent-error"
             variant="error"
           />

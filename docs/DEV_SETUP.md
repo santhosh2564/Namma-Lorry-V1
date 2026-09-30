@@ -83,15 +83,15 @@ supabase test db
 ```
 
 This runs the pgTAP suite in `supabase/tests/` through `pg_prove`. The current
-suite is 10 files / 249 cases; the main ones:
+suite is 10 files / 253 cases; the main ones:
 
 | File | Covers |
 |---|---|
 | `01_rls_policies.test.sql` | Every RLS policy, blocked **and** allowed, for anon / driver A / driver B / owner / shipper / admin |
 | `02_rpc_errors.test.sql` | Every error code in docs/06 §1, produced by a real call |
 | `03_verification_reasons.test.sql` | All 10 reason codes from docs/08 §3, each raised in isolation |
-| `04_verification_triggers.test.sql` | The point-upload trigger, the pg_cron sweeper, admin review crediting stats exactly once, and `record_consent` |
-| `10_start_trip_contract.test.sql` | Every `start_trip` check (`FORBIDDEN` for inactive, `CONSENT_REQUIRED`, …) and its grants |
+| `04_verification_triggers.test.sql` | The point-upload trigger, the pg_cron sweeper, admin review crediting stats exactly once, and `record_consent` (including a stale version) |
+| `10_start_trip_contract.test.sql` | Every `start_trip` check (`FORBIDDEN` for inactive, `CONSENT_REQUIRED` for missing **and stale** consent, …) and its grants |
 
 Helpers live in `supabase/tests/_helpers.psql` (the `.psql` extension keeps
 `pg_prove` from trying to run it as a test).
@@ -209,6 +209,7 @@ bundles.
 | `EXPO_PUBLIC_APP_ENV` | `development` \| `staging` \| `production` |
 | `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY` | Mappls console (web SDK only — see the M3 notes) |
 | `EXPO_PUBLIC_SENTRY_DSN` | Sentry (M12a) |
+| `EXPO_PUBLIC_PRIVACY_POLICY_URL` | The published privacy policy (a human item; empty hides D1's link) |
 
 Copy the template to your env file — the repo ships it as `env.example` (no
 leading dot, so it is committed) and you save it as `.env`:
@@ -322,6 +323,7 @@ changing any of them**:
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | production publishable key | staging publishable key |
 | `EXPO_PUBLIC_SENTRY_DSN` | Sentry DSN | Sentry DSN |
 | `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY` | Mappls web SDK key, restricted to the console domain | same, restricted to the preview domain |
+| `EXPO_PUBLIC_PRIVACY_POLICY_URL` | the published policy URL | the same |
 
 A missing or invalid Supabase value makes the console show the blocking "not
 set up correctly" screen (validation M2), and an unset `EXPO_PUBLIC_APP_ENV` in

@@ -19,7 +19,7 @@ select tests.create_user('d2000000-0000-4000-8000-000000000001', '919000000912',
 select tests.create_user('d2000000-0000-4000-8000-000000000002', '919000000913', 'driver', 'Driver B');
 select tests.create_user('d2000000-0000-4000-8000-000000000003', '919000000914', 'driver', 'Driver C');
 -- start_trip requires a recorded consent (0006, docs/09 §1)
-update public.profiles set consent_version = '2026-09-27.1', consent_at = now() where id::text like 'd2000000-%';
+update public.profiles set consent_version = public.current_consent_version(), consent_at = now() where id::text like 'd2000000-%';
 
 insert into public.vehicles(id, registration_no, vehicle_type) values
   ('c2000000-0000-4000-8000-000000000001', 'TN 02 AA 0001', '19ft');

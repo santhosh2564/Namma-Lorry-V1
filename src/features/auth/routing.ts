@@ -10,9 +10,15 @@
  *   active trip in local DB? -> restart the location task, go to Active Trip
  *   else session?             -> no: Sign in
  *   else profile.role         -> driver + web: "use the mobile app"
- *                               driver + native: permissions? onboarding : trips
+ *                               driver + native: consent current? (permissions?
+ *                               onboarding : trips) : onboarding (D1 re-consent)
  *                               admin: console
  *                               owner/shipper: "coming soon"
+ *
+ * Re-consent (0009): a driver whose recorded `consent_version` is not the one
+ * this build was compiled with (CONSENT_VERSION) goes back to D1 to agree again.
+ * A trip already being recorded still resumes first, so an old agreement can
+ * never trap a driver mid-trip, and admins are never gated.
  *
  * Two states the flowchart does not draw, because they are real in the database
  * (`profiles.is_active`, and a session with no profile row) and doc 12 S4 lists
@@ -65,6 +71,12 @@ export type AuthProfile = {
    * onboarding branch is already wired and testable.
    */
   permissionsGranted: boolean;
+  /**
+   * The policy version the driver last agreed to (`profiles.consent_version`),
+   * or null if they never have. The gate compares it with the version this
+   * build was compiled with (0009, docs/09 §1).
+   */
+  consentVersion: string | null;
 };
 
 export type RouteInput = {
@@ -76,6 +88,12 @@ export type RouteInput = {
   profileSettled: boolean;
   /** Trip the phone was recording when the app was closed, or null. */
   activeTripId: string | null;
+  /**
+   * The policy version this build was compiled with (`CONSENT_VERSION`). A
+   * driver whose stored version differs is sent to D1 to agree again (0009).
+   * Passed in, not imported, so this module stays pure and testable.
+   */
+  requiredConsentVersion: string;
 };
 
 export type RouteDecision =
@@ -91,7 +109,8 @@ export type RouteDecision =
  * Decide where the app goes from here. Pure: same input, same output, no I/O.
  */
 export function decideRoute(input: RouteInput): RouteDecision {
-  const { session, platform, profile, profileSettled, activeTripId } = input;
+  const { session, platform, profile, profileSettled, activeTripId, requiredConsentVersion } =
+    input;
 
   // Still finding out who the user is — stay on the splash.
   if (session === "initialising") {
@@ -126,6 +145,12 @@ export function decideRoute(input: RouteInput): RouteDecision {
     case "driver":
       if (platform === "web") {
         return { destination: "access_notice", variant: "driver_on_web" };
+      }
+      // Re-consent (0009): an agreement to an older (or no) policy sends the
+      // driver back through D1 before anything else. Active Trip was already
+      // returned above, so this never interrupts a trip being recorded.
+      if (profile.consentVersion !== requiredConsentVersion) {
+        return { destination: "onboarding" };
       }
       return profile.permissionsGranted
         ? { destination: "driver_home" }

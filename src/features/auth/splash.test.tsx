@@ -18,6 +18,7 @@ import "@/i18n";
 
 import SplashScreen from "../../../app/index";
 import { useAuthStore } from "@/features/auth/store";
+import { CONSENT_VERSION } from "@/features/onboarding/consent";
 
 // `jest.mock` factories are hoisted, so every out-of-scope name they touch has
 // to be prefixed with `mock` (Jest's own rule).
@@ -59,6 +60,7 @@ const driver = {
   isActive: true,
   fullName: "Murugan S",
   permissionsGranted: true,
+  consentVersion: CONSENT_VERSION,
 };
 
 describe("S1 Splash", () => {
@@ -84,6 +86,14 @@ describe("S1 Splash", () => {
   it("sends a driver without permissions into onboarding", async () => {
     setState({});
     mockProfileQuery.data = { ...driver, permissionsGranted: false };
+    await render(<SplashScreen />);
+
+    expect(mockReplace).toHaveBeenCalledWith("/(onboarding)/permissions");
+  });
+
+  it("sends a driver whose recorded consent is stale back to onboarding", async () => {
+    setState({});
+    mockProfileQuery.data = { ...driver, consentVersion: "2025-01-01" };
     await render(<SplashScreen />);
 
     expect(mockReplace).toHaveBeenCalledWith("/(onboarding)/permissions");

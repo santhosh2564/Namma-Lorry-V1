@@ -394,6 +394,9 @@
       "continue": "TODO: TODO: Continue",
       "pendingHint": "TODO: TODO: Allow each item above to continue.",
       "consentFailed": "TODO: TODO: Couldn't save your agreement. Check your connection and try again.",
+      "consentOutdated": "TODO: TODO: This app is out of date. Update Namma Lorry, then agree to the notice again.",
+      "retention": "TODO: TODO: We keep your full GPS route for 12 months after a trip is finished, then a simplified route and the trip result.",
+      "privacyPolicy": "TODO: TODO: Read the privacy policy",
       "webNote": "TODO: TODO: Trips run on the Namma Lorry mobile app. This web page is for the operations team."
     },
     "battery": {

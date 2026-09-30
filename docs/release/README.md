@@ -18,8 +18,8 @@ Do each step on **staging** (EAS `preview`, the staging Supabase project, Vercel
 
 ### 1. Environment variables
 
-- [ ] EAS environments `preview` and `production`: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (the publishable key), `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY`, `EXPO_PUBLIC_SENTRY_DSN`; secret `SENTRY_AUTH_TOKEN` plus `SENTRY_ORG`, `SENTRY_PROJECT`. Commands in `docs/DEV_SETUP.md` §4.3. `EXPO_PUBLIC_APP_ENV` comes from `eas.json`; don't set it there.
-- [ ] Vercel Production and Preview: the five `EXPO_PUBLIC_*` values in `docs/DEV_SETUP.md` §4.4.
+- [ ] EAS environments `preview` and `production`: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` (the publishable key), `EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY`, `EXPO_PUBLIC_SENTRY_DSN`, `EXPO_PUBLIC_PRIVACY_POLICY_URL`; secret `SENTRY_AUTH_TOKEN` plus `SENTRY_ORG`, `SENTRY_PROJECT`. Commands in `docs/DEV_SETUP.md` §4.3. `EXPO_PUBLIC_APP_ENV` comes from `eas.json`; don't set it there.
+- [ ] Vercel Production and Preview: the six `EXPO_PUBLIC_*` values in `docs/DEV_SETUP.md` §4.4.
 - [ ] Supabase Edge Function secrets: `MAPPLS_CLIENT_ID`, `MAPPLS_CLIENT_SECRET`, `MAPPLS_REST_KEY` (`supabase secrets set …`). The service-role key is injected; never put it in EAS or Vercel.
 - [ ] Mappls keys restricted to `com.nammalorry.driver` and the console domain; native `.olf` / `.conf` files in `mappls/` on the build machine or as EAS files (see `env.example`).
 
@@ -47,7 +47,7 @@ A missing or invalid value makes the app and console show the "not set up correc
 
 ### 5. Submit
 
-- [ ] Privacy policy reviewed by counsel and published at a public URL; `CONSENT_VERSION` unchanged, or bumped together with the policy.
+- [ ] Privacy policy reviewed by counsel and published at a public URL; `CONSENT_VERSION` unchanged, or bumped together with the policy. Set the published URL as `EXPO_PUBLIC_PRIVACY_POLICY_URL` so D1 shows its link. If the version changed, the app update carrying it must ship **before** the migration that updates `current_consent_version()` (docs/RUNBOOK.md §Changing the policy version).
 - [ ] Demo account and review load ready ([APP_REVIEW_NOTES.md](APP_REVIEW_NOTES.md)).
 - [ ] Play: Data safety ([DATA_SAFETY.md](DATA_SAFETY.md)), location and foreground-service declarations with the video ([BACKGROUND_LOCATION.md](BACKGROUND_LOCATION.md)).
 - [ ] Apple: App Privacy ([APP_PRIVACY.md](APP_PRIVACY.md)) and review notes.

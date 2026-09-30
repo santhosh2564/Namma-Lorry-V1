@@ -15,6 +15,7 @@ import {
   routePath,
   signOutBlockReason,
 } from "@/features/auth/routing";
+import { CONSENT_VERSION } from "@/features/onboarding/consent";
 import type { UserRole } from "@/lib/database.types";
 
 const ALL_ROLES: UserRole[] = ["driver", "owner", "shipper", "admin"];
@@ -27,6 +28,7 @@ function profile(overrides: Partial<AuthProfile> = {}): AuthProfile {
     isActive: true,
     fullName: "Murugan S",
     permissionsGranted: true,
+    consentVersion: CONSENT_VERSION,
     ...overrides,
   };
 }
@@ -38,6 +40,7 @@ function input(overrides: Partial<RouteInput> = {}): RouteInput {
     profile: profile(),
     profileSettled: true,
     activeTripId: null,
+    requiredConsentVersion: CONSENT_VERSION,
     ...overrides,
   };
 }
@@ -130,6 +133,40 @@ describe("decideRoute — every role × platform", () => {
   });
 });
 
+describe("decideRoute — re-consent (0009)", () => {
+  it("sends a driver whose recorded consent is stale back to D1", () => {
+    expect(decideRoute(input({ profile: profile({ consentVersion: "2025-01-01" }) }))).toEqual({
+      destination: "onboarding",
+    });
+  });
+
+  it("sends a driver who has never consented back to D1", () => {
+    expect(decideRoute(input({ profile: profile({ consentVersion: null }) }))).toEqual({
+      destination: "onboarding",
+    });
+  });
+
+  it("lets a driver who already agreed to this build's version straight through", () => {
+    expect(decideRoute(input({ profile: profile({ consentVersion: CONSENT_VERSION }) }))).toEqual({
+      destination: "driver_home",
+    });
+  });
+
+  it("does not gate admins", () => {
+    for (const platform of ALL_PLATFORMS) {
+      expect(
+        decideRoute(input({ platform, profile: profile({ role: "admin", consentVersion: null }) })),
+      ).toEqual({ destination: "console" });
+    }
+  });
+
+  it("does not gate a driver on web, who is told to use the app instead", () => {
+    expect(
+      decideRoute(input({ platform: "web", profile: profile({ consentVersion: null }) })),
+    ).toEqual({ destination: "access_notice", variant: "driver_on_web" });
+  });
+});
+
 describe("decideRoute — account state", () => {
   it("refuses a deactivated account before reading the role", () => {
     for (const role of ALL_ROLES) {
@@ -182,6 +219,12 @@ describe("decideRoute — active trip outranks everything", () => {
           activeTripId: "trip-1",
         }),
       ),
+    ).toEqual({ destination: "active_trip", tripId: "trip-1" });
+  });
+
+  it("resumes the trip ahead of a stale consent, so it can still be ended", () => {
+    expect(
+      decideRoute(input({ activeTripId: "trip-1", profile: profile({ consentVersion: null }) })),
     ).toEqual({ destination: "active_trip", tripId: "trip-1" });
   });
 });
