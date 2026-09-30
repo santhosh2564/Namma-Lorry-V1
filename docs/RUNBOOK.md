@@ -75,12 +75,12 @@ bun run update:production "What changed"
 
 ## Changing the policy version
 
-`CONSENT_VERSION` is compiled into every app build; the version the server accepts is the database's `public.current_consent_version()` (0009). `test/config/consent.test.mjs` pins the two together, so both change in the same release. **The order is not optional: ship the app first, then the migration.**
+`CONSENT_VERSION` is compiled into every app build; the database holds `public.current_consent_version()` (0009) and counts a consent to that version **or a newer one** (0010; versions are `YYYY-MM-DD`). `test/config/consent.test.mjs` pins the two together, so both change in the same release. **The order is not optional: ship the app first, then the migration.** App first works because the database accepts the newer version the new build records: its drivers re-consent on D1 and start trips as usual, while drivers on the old build carry on until the migration.
 
 1. **App and policy.** Bump `CONSENT_VERSION` in `src/features/onboarding/consent.ts` and the **Version:** line in `docs/release/PRIVACY_POLICY.md` together, publish the policy, and set its URL as `EXPO_PUBLIC_PRIVACY_POLICY_URL`. Publish the update (`bun run update:production`) or build, and wait for adoption (`npx eas-cli@latest update:list --branch production`) — an update reaches a driver on their next cold start.
 2. **Database.** Add a migration that updates `app_settings.value_text` for the `consent_version` row to the new version (copy the `insert … on conflict` pattern from 0009 or write a small `update`). Deploy it (§Database). Never edit 0009 — fix forward.
 
-Reversed, an installed older build records its old version on D1, `record_consent` returns `VERSION_NOT_CURRENT`, and `start_trip` returns `CONSENT_REQUIRED`: the driver loops on D1 until they update the app. If that has already happened, ship the app update immediately — rolling the server back would only re-open trips started under the old agreement.
+Reversed, `start_trip` refuses every driver still on the old build (`CONSENT_REQUIRED`); D1 records their old version, `record_consent` returns `VERSION_NOT_CURRENT`, and D1 tells them to update the app. Nobody on the old build can start a trip until they update. If that has already happened, ship the app update immediately — rolling the server back would only re-open trips started under the old agreement.
 
 Bumping `CONSENT_VERSION` re-prompts every active driver on their next launch, because the launch gate sends a stale version back through D1; a trip already being recorded still resumes first, so nobody is stranded mid-trip.
 

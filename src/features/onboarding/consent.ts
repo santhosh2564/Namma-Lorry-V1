@@ -9,9 +9,10 @@
  * The version is a build-time constant recorded with each agreement, and the
  * database keeps the version it will accept (`current_consent_version()`, 0009).
  * The launch gate sends a driver whose stored version differs from
- * `CONSENT_VERSION` back to D1, and `record_consent` refuses anything but the
- * current version with `VERSION_NOT_CURRENT` — which is what an installed older
- * build gets until the app update ships first (docs/RUNBOOK.md).
+ * `CONSENT_VERSION` back to D1. `record_consent` accepts the current version or
+ * a newer one (0010: the app update ships before the migration) and refuses an
+ * older one with `VERSION_NOT_CURRENT`, which is what an out-of-date build gets
+ * once the database has moved on (docs/RUNBOOK.md).
  */
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
