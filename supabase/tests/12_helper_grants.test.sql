@@ -9,15 +9,23 @@
 -- driver still reads their own data, which only works if the policy
 -- predicates still resolve.
 --
--- The privilege assertions run as the test runner, not as anon: resolving a
--- function name in the cron schema needs USAGE on that schema, which anon
--- does not have — the very thing that keeps it out of reach today.
+-- The pg_cron cases are written against pg_proc, not against a list of
+-- signatures. pg_cron's argument lists differ between versions — unschedule
+-- takes a bigint in some and a jobname domain in others — so a hard-coded
+-- signature is a test that fails on the wrong server. The first of them
+-- asserts the functions were found at all, so an empty result cannot pass as
+-- a clean bill of health.
+--
+-- The privilege assertions run as the test runner: they ask what *other*
+-- roles hold, and the runner is the role that can ask about all of them. The
+-- pg_cron cases pass oids rather than names, so the check does not depend on
+-- the session being able to name anything in that schema.
 -- =====================================================================
 begin;
 
 \ir _helpers.psql
 
-select plan(30);
+select plan(29);
 
 -- ---- fixtures --------------------------------------------------------
 select tests.create_user('cf000000-0000-4000-8000-000000000001', '919000009001', 'driver', 'Helper Driver');
@@ -87,21 +95,29 @@ select is((select has_function_privilege('anon', 'public.handle_new_user()', 'ex
 select is((select has_function_privilege('anon', 'public.on_trip_point_insert()', 'execute')), false,
   'anon holds no EXECUTE on on_trip_point_insert()');
 
--- pg_cron: EXECUTE came from PUBLIC, and it means "run this SQL on this
--- database". Unreachable today only because the schema grant is absent too;
--- a client-held EXECUTE is not a privilege this app's clients should carry.
-select is((select has_function_privilege('authenticated', 'cron.schedule(text,text,text)', 'execute')), false,
-  'authenticated holds no EXECUTE on cron.schedule (schedule arbitrary SQL)');
-select is((select has_function_privilege('authenticated', 'cron.schedule(text,text)', 'execute')), false,
-  'authenticated holds no EXECUTE on the 2-argument cron.schedule');
-select is((select has_function_privilege('anon', 'cron.schedule(text,text,text)', 'execute')), false,
-  'anon holds no EXECUTE on cron.schedule');
-select is((select has_function_privilege('authenticated', 'cron.unschedule(name)', 'execute')), false,
-  'authenticated holds no EXECUTE on cron.unschedule');
-select is((select has_function_privilege('authenticated', 'cron.unschedule(bigint)', 'execute')), false,
-  'authenticated holds no EXECUTE on cron.unschedule(bigint)');
-select is((select has_function_privilege('authenticated', 'cron.alter_job(bigint,text,text,text,text,boolean)', 'execute')), false,
-  'authenticated holds no EXECUTE on cron.alter_job');
+-- pg_cron. EXECUTE on cron.schedule means "run this SQL on this database".
+-- Unreachable today only because the schema grant is absent too, so both
+-- halves are checked: no client role can name anything in the schema, and no
+-- client role holds EXECUTE on the scheduling functions if it ever could.
+select ok((select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'cron' and p.proname in ('schedule', 'unschedule', 'alter_job')) > 0,
+  'pg_cron scheduling functions are present, so the EXECUTE checks are not vacuous');
+
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'cron' and p.proname in ('schedule', 'unschedule', 'alter_job')
+              and has_function_privilege('anon', p.oid, 'execute')), 0,
+  'anon holds no EXECUTE on any pg_cron scheduling function');
+
+select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'cron' and p.proname in ('schedule', 'unschedule', 'alter_job')
+              and has_function_privilege('authenticated', p.oid, 'execute')), 0,
+  'authenticated holds no EXECUTE on any pg_cron scheduling function');
+
+select is((select has_schema_privilege('anon', 'cron', 'usage')), false,
+  'anon holds no USAGE on schema cron (nothing in it is nameable)');
+
+select is((select has_schema_privilege('authenticated', 'cron', 'usage')), false,
+  'authenticated holds no USAGE on schema cron (nothing in it is nameable)');
 
 -- How many rows app_settings has, read by the runner. Compared rather than
 -- hard-coded so adding a threshold (0006, 0009 both did) does not fail this.
