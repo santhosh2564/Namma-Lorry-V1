@@ -83,15 +83,16 @@ supabase test db
 ```
 
 This runs the pgTAP suite in `supabase/tests/` through `pg_prove`. The current
-suite is 10 files / 253 cases; the main ones:
+suite is 12 files / 302 cases; the main ones:
 
 | File | Covers |
 |---|---|
 | `01_rls_policies.test.sql` | Every RLS policy, blocked **and** allowed, for anon / driver A / driver B / owner / shipper / admin |
 | `02_rpc_errors.test.sql` | Every error code in docs/06 §1, produced by a real call |
-| `03_verification_reasons.test.sql` | All 10 reason codes from docs/08 §3, each raised in isolation |
+| `03_verification_reasons.test.sql` | All 10 reason codes from docs/08 §3, each raised in isolation (including a **missing** start position) |
 | `04_verification_triggers.test.sql` | The point-upload trigger, the pg_cron sweeper, admin review crediting stats exactly once, and `record_consent` (including a stale version) |
-| `10_start_trip_contract.test.sql` | Every `start_trip` check (`FORBIDDEN` for inactive, `CONSENT_REQUIRED` for missing **and stale** consent, …) and its grants |
+| `10_start_trip_contract.test.sql` | Every `start_trip` check (`FORBIDDEN` for inactive, `CONSENT_REQUIRED` for missing **and stale** consent, a fix with no position, …) and its grants |
+| `12_helper_grants.test.sql` | The EXECUTE boundary: `anon` locked out of the RLS helper functions and of `pg_cron`, and a signed-in driver still reading their own data |
 
 Helpers live in `supabase/tests/_helpers.psql` (the `.psql` extension keeps
 `pg_prove` from trying to run it as a test).

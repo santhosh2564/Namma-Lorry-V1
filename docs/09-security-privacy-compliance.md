@@ -44,7 +44,7 @@ Location + phone number + trip history are personal data. Build these in from Ph
 ## 5. Threat model (anti-fraud)
 | Threat | Phase 1 control | Phase 2 control |
 |---|---|---|
-| Fake GPS app | `is_mocked` flag → review | Play Integrity / App Attest |
+| Fake GPS app | `is_mocked` flag → review. **The flag is read from the device by the app and sent up, so a modified client can clear it** (security audit, 30 Sep): the server does all the verification maths, but it cannot attest the hardware. Points must also survive `TRACKING_GAP`, `LOW_COVERAGE`, `SPEED_IMPLAUSIBLE`, `GPS_JUMPS` and the 0.8–1.6× planned-distance band to verify, so a fabricated track still has to be plausible. | Play Integrity / App Attest — the only real fix |
 | Replaying an old trip's points | Points must fall inside `started_at…ended_at` and ≤ now + 2 min; unique `(trip_id, seq)` | Signed point batches |
 | Starting away from pickup | Server geofence in `start_trip` | — |
 | Editing km/experience | No write path; stats only via `verify_trip` / review | — |
