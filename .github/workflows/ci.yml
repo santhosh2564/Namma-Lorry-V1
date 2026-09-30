@@ -107,3 +107,8 @@ jobs:
 
       - name: pgTAP
         run: supabase test db
+
+      # Two sessions start two trips for one driver at once (scenario 10, M5).
+      # pgTAP runs in one transaction, so it can't reach this race.
+      - name: Concurrent start_trip
+        run: bash test/db/start-trip-race.sh
