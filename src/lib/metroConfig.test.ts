@@ -11,13 +11,20 @@ import path from "node:path";
 describe("metro.config.js", () => {
   const root = path.resolve(__dirname, "../..");
 
+  // Loading the config loads Metro and Expo's Metro config, which is genuinely
+  // slow (up to 11 s on a cold transform cache), so it happens once, here, under
+  // its own limit instead of inside a test's 5 s timeout.
+  let config: { resolver: { assetExts: string[]; sourceExts: string[] } };
+  beforeAll(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    config = require(path.join(root, "metro.config.js"));
+  }, 60_000);
+
   it("exists at the project root", () => {
     expect(fs.existsSync(path.join(root, "metro.config.js"))).toBe(true);
   });
 
   it("treats .wasm as an asset so expo-sqlite's web worker bundles", () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const config = require(path.join(root, "metro.config.js"));
     expect(config.resolver.assetExts).toContain("wasm");
     // The file the worker imports really is a .wasm asset (guards against the
     // dependency renaming it and this test passing for the wrong reason).
@@ -29,8 +36,6 @@ describe("metro.config.js", () => {
   });
 
   it("keeps Expo's default source extensions", () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const config = require(path.join(root, "metro.config.js"));
     expect(config.resolver.sourceExts).toEqual(expect.arrayContaining(["ts", "tsx", "js"]));
     expect(config.resolver.sourceExts).not.toContain("wasm");
   });

@@ -62,18 +62,27 @@ jest.mock("expo-router", () => {
   return { Stack };
 });
 
+const MISCONFIGURED: ConfigProblem[] = [
+  { key: "EXPO_PUBLIC_SUPABASE_URL", reason: "insecure" },
+  { key: "EXPO_PUBLIC_SUPABASE_ANON_KEY", reason: "missing" },
+];
+
 /**
- * Loaded once, on first use, after the first test has set its problems: the
- * module-scope startup report runs then. (`jest.isolateModules` would load a
- * second React and break the hooks.) The gate itself reads `configProblems`
- * at render time through the getter above.
+ * Loaded once, with the misconfigured problems already set: the module-scope
+ * startup report runs at load. (`jest.isolateModules` would load a second React
+ * and break the hooks.) The gate itself reads `configProblems` at render time
+ * through the getter above.
+ *
+ * Loading the root layout pulls in the whole app shell, which on a cold
+ * transform cache takes longer than a test's 5 s timeout. `beforeAll` has its
+ * own, larger limit, so the load is not counted against a test.
  */
-let cachedLayout: ComponentType | undefined;
-function loadLayout(): ComponentType {
+let Layout: ComponentType;
+beforeAll(() => {
+  mockProblems = MISCONFIGURED;
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- deferred on purpose, see above
-  cachedLayout ??= require("../../app/_layout").default as ComponentType;
-  return cachedLayout;
-}
+  Layout = require("../../app/_layout").default as ComponentType;
+}, 60_000);
 
 beforeEach(() => {
   mockBootstrap.mockClear();
@@ -81,11 +90,7 @@ beforeEach(() => {
 
 describe("root layout config gate", () => {
   it("misconfigured → blocking screen with key names, no bootstrap, no routes", async () => {
-    mockProblems = [
-      { key: "EXPO_PUBLIC_SUPABASE_URL", reason: "insecure" },
-      { key: "EXPO_PUBLIC_SUPABASE_ANON_KEY", reason: "missing" },
-    ];
-    const Layout = loadLayout();
+    mockProblems = MISCONFIGURED;
     const screen = await render(<Layout />);
 
     expect(screen.getByText(en.common.misconfigured.title)).toBeTruthy();
@@ -103,7 +108,6 @@ describe("root layout config gate", () => {
   it("valid config → the navigator renders and nothing more is reported", async () => {
     mockProblems = [];
     mockReportMisconfigured.mockClear();
-    const Layout = loadLayout();
     const screen = await render(<Layout />);
 
     expect(screen.getByTestId("app-stack")).toBeTruthy();
