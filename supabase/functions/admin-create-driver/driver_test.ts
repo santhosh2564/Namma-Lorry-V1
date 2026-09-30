@@ -18,7 +18,13 @@ import {
 const ADMIN = "admin-jwt";
 const DRIVER_JWT = "driver-jwt";
 
-type PatchedProfile = { id: string; full_name: string; role: string; phone: string };
+type PatchedProfile = {
+  id: string;
+  full_name: string;
+  role: string;
+  phone: string;
+  is_active?: boolean;
+};
 
 function serviceRoleFake(overrides: Partial<ServiceRoleApi> = {}): ServiceRoleApi & {
   created: string[];
@@ -159,8 +165,21 @@ Deno.test("an admin creates the auth user and a driver profile", async () => {
   // what `signInWithOtp` will later be given as +91xxxxxxxxxx.
   expectEquals(serviceRole.created, [national]);
   expectEquals(serviceRole.patched, [
-    { id: "new-user-id", full_name: "Murugan S", role: "driver", phone: e164 },
+    { id: "new-user-id", full_name: "Murugan S", role: "driver", phone: e164, is_active: true },
   ]);
+});
+
+// M4: handle_new_user creates every new profile inactive (no self-registration),
+// so the function that creates drivers on purpose must activate them.
+Deno.test("the new driver's profile is activated", async () => {
+  const serviceRole = serviceRoleFake();
+  const response = await handleCreateDriver(
+    post({ fullName: "Ravi Kumar", phone: "9000000013" }),
+    deps({ serviceRole }),
+  );
+
+  expectStatus(response, 201);
+  expectEquals(serviceRole.patched[0]?.is_active, true);
 });
 
 Deno.test("the profile is always a driver, whatever the request says", async () => {

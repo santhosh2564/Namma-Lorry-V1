@@ -172,7 +172,11 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
-enable_signup = true
+# Off (validation M4, ND-12): an OTP request for an unknown number must not
+# create an account. Operators create users through the admin API
+# (scripts/provision-user.mjs, admin-create-driver), which this does not block.
+# The hosted projects need the same dashboard setting (docs/release/README.md).
+enable_signup = false
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
@@ -256,7 +260,8 @@ otp_expiry = 3600
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
 # Must be true locally: the CLI uses this flag to enable the phone provider at all.
-# Seeded users are the only intended logins (see docs/DEV_SETUP.md; ND-12).
+# Sign-ups themselves are off through [auth] enable_signup above (M4), so the
+# seeded and provisioned users are the only logins (docs/DEV_SETUP.md; ND-12).
 enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false

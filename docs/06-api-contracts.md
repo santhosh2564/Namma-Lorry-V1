@@ -12,6 +12,7 @@ supabase.rpc('start_trip', {
 ```
 | Error | Meaning | App shows |
 |---|---|---|
+| `FORBIDDEN` | the caller's profile is inactive (0007, M4); `end_trip` stays open so a trip can still be finished | generic error; the launch gate already shows "Your account is not active" |
 | `TRIP_NOT_FOUND` | not yours / doesn't exist | "Trip not found" |
 | `CONSENT_REQUIRED` | driver has no recorded consent (`profiles.consent_version` is null; 0006) | "Agree to the location notice" + **Review notice** → D1 |
 | `TRIP_NOT_STARTABLE` | not in `assigned` | refresh list |

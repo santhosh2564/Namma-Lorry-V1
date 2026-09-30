@@ -69,7 +69,12 @@ const deps: CreateDriverDeps = {
     updateProfile: async (userId, patch) => {
       const { error } = await serviceClient
         .from("profiles")
-        .update({ full_name: patch.full_name, role: patch.role, phone: patch.phone })
+        .update({
+          full_name: patch.full_name,
+          role: patch.role,
+          phone: patch.phone,
+          is_active: patch.is_active,
+        })
         .eq("id", userId);
       return { error: error === null ? null : { message: error.message } };
     },

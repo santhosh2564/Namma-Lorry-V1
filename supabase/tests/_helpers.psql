@@ -36,13 +36,15 @@ end $$;
 -- RLS is off for that role, which is what fixture setup needs.
 
 -- auth user + profile (profile row comes from the handle_new_user trigger).
+-- Stands for an operator-created user, so it is activated like provision-user
+-- does (new profiles start inactive since 0007).
 create function tests.create_user(p_id uuid, p_phone text, p_role public.user_role, p_name text)
 returns uuid language plpgsql as $$
 begin
   insert into auth.users (instance_id, id, aud, role, phone, phone_confirmed_at, created_at, updated_at)
   values ('00000000-0000-0000-0000-000000000000', p_id, 'authenticated', 'authenticated',
           p_phone, now(), now(), now());
-  update public.profiles set role = p_role, full_name = p_name where id = p_id;
+  update public.profiles set role = p_role, full_name = p_name, is_active = true where id = p_id;
   return p_id;
 end $$;
 

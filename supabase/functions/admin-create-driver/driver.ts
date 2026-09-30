@@ -31,12 +31,13 @@ export type ServiceRoleApi = {
   >;
   /**
    * Mirrors a service-role `profiles` update. The `handle_new_user` trigger
-   * already inserts a profile with the default role, so this only fills in the
-   * name (and is the single place a role could ever be set).
+   * already inserts an inactive profile with the default role (0007: no
+   * self-registration), so this fills in the name and activates it, and is the
+   * single place a role could ever be set.
    */
   updateProfile: (
     userId: string,
-    patch: { full_name: string; role: "driver"; phone: string },
+    patch: { full_name: string; role: "driver"; phone: string; is_active: true },
   ) => Promise<{ error: { message: string } | null }>;
 };
 
@@ -168,6 +169,7 @@ export async function handleCreateDriver(req: Request, deps: CreateDriverDeps): 
     full_name: fullName,
     role: "driver",
     phone: `+91${phone}`,
+    is_active: true,
   });
   if (updated.error !== null) {
     return fail("PROFILE_FAILED", "Account created but the driver profile could not be saved.", 500);

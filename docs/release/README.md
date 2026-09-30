@@ -30,7 +30,8 @@ A missing or invalid value makes the app and console show the "not set up correc
 - [ ] `supabase link --project-ref <ref>` → `supabase db push --dry-run` → `supabase db push` (every file in `supabase/migrations/`, never the seed).
 - [ ] pg_cron enabled; both jobs present: `select jobname, schedule from cron.job;` shows `sweep-unverified-trips` and `downsample-old-points`.
 - [ ] `supabase functions deploy mappls-proxy` and `supabase functions deploy admin-create-driver`.
-- [ ] Auth: phone provider and SMS (DLT) configured; **sign-ups disabled**; the admin account created with `bun run provision-user … --role admin` (`docs/DEV_SETUP.md` §5.1).
+- [ ] Auth: phone provider and SMS (DLT) configured; the admin account created with `bun run provision-user … --role admin` (`docs/DEV_SETUP.md` §5.1).
+- [ ] **Sign-ups off** in the dashboard, on staging and production (a human step; `supabase/config.toml` covers only the local stack): Authentication → Sign In / Providers → "Allow new users to sign up" off, Phone provider left on. Check: an OTP request for an unregistered number returns `signup_disabled` / `otp_disabled` and creates no user. New profiles also start inactive (migration 0007), so a missed setting can't produce a working account, but it still creates junk auth users.
 - [ ] The 12-month retention (`raw_point_retention_days` = 365) signed off by the client, or changed in `app_settings` and in the policy together.
 
 ### 3. Assets
