@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import * as Linking from "expo-linking";
 import { Stack, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -6,6 +7,7 @@ import { AppState, Platform, ScrollView, StyleSheet, Text, View } from "react-na
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Banner, Button, Card, Icon } from "@/components/ui";
+import { PROFILE_QUERY_KEY } from "@/features/auth/queryKeys";
 import { useAuthStore } from "@/features/auth/store";
 import { recordConsent } from "@/features/onboarding/consent";
 import {
@@ -70,6 +72,7 @@ const DISCLOSURE: [string, string][] = [
 
 export default function PermissionsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
   const [snapshot, setSnapshot] = useState<PermissionSnapshot | null>(null);
   const [busyRow, setBusyRow] = useState<PermissionRowName | null>(null);
@@ -126,13 +129,17 @@ export default function PermissionsScreen() {
         setConsentError(result.kind === "outdated" ? "outdated" : "generic");
         return;
       }
+      // The cached profile still holds the previous consent version; without
+      // this the next pass through the launch gate reads it and sends the
+      // driver straight back here.
+      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY });
       router.replace("/(onboarding)/battery");
     } catch {
       setConsentError("generic");
     } finally {
       setContinuing(false);
     }
-  }, [router]);
+  }, [queryClient, router]);
 
   if (Platform.OS === "web") {
     return <WebNote />;
