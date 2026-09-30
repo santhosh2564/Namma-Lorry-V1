@@ -165,7 +165,12 @@ SMS is enabled.
 ### 4.1 App (safe to ship in the bundle)
 
 Only these ever reach the app. They are `EXPO_PUBLIC_*`, validated at startup by
-`src/lib/config.ts`, which **throws in development** if any is malformed.
+`src/lib/config.ts`. Development **throws** on an unknown `EXPO_PUBLIC_APP_ENV`
+and tolerates a missing backend. Staging and production **fail closed**: a
+missing Supabase URL or key, or an `http://` URL, shows the blocking
+"not set up correctly" screen (validation M2). Reference each variable as
+`process.env.EXPO_PUBLIC_X` literally, or Metro leaves it out of release
+bundles.
 
 | Variable | Where it comes from |
 |---|---|
@@ -196,6 +201,78 @@ committing them.
 The service role key **bypasses RLS**. It must never be bundled, logged, or
 committed. The app's client only ever holds the anon key.
 
+### 4.3 EAS builds and updates
+
+The EAS project is **@santhoshkrwork/namma-lorry**
+(`2a3edc84-9fe4-4593-b278-ef919ec1b82c`, linked in `app.config.ts`). Each
+`eas.json` profile has one update channel, one EAS environment and one
+`EXPO_PUBLIC_APP_ENV`:
+
+| Profile | Channel | EAS environment | `EXPO_PUBLIC_APP_ENV` | Output |
+|---|---|---|---|---|
+| `development` | `development` | `development` | `development` | dev client, internal |
+| `preview` | `preview` | `preview` | `staging` | internal (store format) |
+| `preview_apk` | `preview` | `preview` | `staging` | installable APK |
+| `production` | `production` | `production` | `production` | store build, build number auto-increments |
+
+`eas.json` holds only `EXPO_PUBLIC_APP_ENV`. The backend values come from the
+EAS environment, so they are never committed. **Until they are set, preview and
+production builds open on the "not set up correctly" screen** (that is the M2
+fail-closed behaviour, not a bug). Set them once per environment
+(`EXPO_PUBLIC_*` values are bundled into the app anyway, so they are
+`plaintext`; the Sentry auth token is a build-time `secret`):
+
+```bash
+# preview (staging Supabase project)
+npx eas-cli@latest env:create --environment preview --visibility plaintext \
+  --name EXPO_PUBLIC_SUPABASE_URL --value https://qykqflshvsldzvdpwtni.supabase.co
+npx eas-cli@latest env:create --environment preview --visibility plaintext \
+  --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <staging publishable key>
+npx eas-cli@latest env:create --environment preview --visibility plaintext \
+  --name EXPO_PUBLIC_SENTRY_DSN --value <Sentry DSN>
+npx eas-cli@latest env:create --environment preview --visibility plaintext \
+  --name EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY --value <Mappls map SDK key>
+
+# production (production Supabase project)
+npx eas-cli@latest env:create --environment production --visibility plaintext \
+  --name EXPO_PUBLIC_SUPABASE_URL --value https://<production-ref>.supabase.co
+npx eas-cli@latest env:create --environment production --visibility plaintext \
+  --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <production publishable key>
+npx eas-cli@latest env:create --environment production --visibility plaintext \
+  --name EXPO_PUBLIC_SENTRY_DSN --value <Sentry DSN>
+npx eas-cli@latest env:create --environment production --visibility plaintext \
+  --name EXPO_PUBLIC_MAPPLS_MAP_SDK_KEY --value <Mappls map SDK key>
+
+# Sentry source-map upload (B4), both environments
+npx eas-cli@latest env:create --environment preview --environment production \
+  --visibility secret --name SENTRY_AUTH_TOKEN --value <token>
+npx eas-cli@latest env:create --environment preview --environment production \
+  --visibility plaintext --name SENTRY_ORG --value <org slug>
+npx eas-cli@latest env:create --environment preview --environment production \
+  --visibility plaintext --name SENTRY_PROJECT --value <project slug>
+
+npx eas-cli@latest env:list --environment preview    # check
+```
+
+Build and publish:
+
+```bash
+npx eas-cli@latest build --profile preview_apk --platform android   # sideload on a test phone
+bun run update:preview "Fix trip list refresh"        # OTA to the preview channel
+bun run update:production "Fix trip list refresh"
+```
+
+`scripts/eas-update.mjs` refuses a dirty working tree, puts the commit SHA in
+the update message, and sets `EXPO_PUBLIC_APP_ENV` to match the channel
+(`eas update` does not read `eas.json`'s `env`). `runtimeVersion` follows the
+app `version`, so **any native change (a new native module, a config plugin,
+`app.config.ts` permissions) needs a `version` bump and a new build**; an update
+only reaches builds with the same `version`.
+
+Before a store build, `bun run release:assets --strict` must pass. Without
+`--strict` (as CI runs it) it only reports the missing icons, until the brand
+assets exist (docs/release/ASSETS.md).
+
 ---
 
 ## 5. Hosted project
@@ -222,6 +299,25 @@ supabase test db                 # runs against the LOCAL database, not the link
 Note the split: `db push` goes to the linked project, but `test db` always runs
 against your local stack. That is deliberate — the pgTAP suite writes fixtures
 and rolls them back, and you do not want it near shared data.
+
+### 5.1 Creating users on a hosted project
+
+Drivers do not sign themselves up (ND-12). Create or update the admin, pilot
+drivers and the App Review demo account from an operator machine:
+
+```bash
+SUPABASE_URL=https://qykqflshvsldzvdpwtni.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=<secret key> \
+  bun run provision-user --phone 919876543210 --name "Murugan S" --role driver
+```
+
+Flags: `--phone` (required, `91` + 10 digits), `--name`, `--role
+driver|admin|owner|shipper`, `--language en|ta|kn|hi`, `--activate` or
+`--deactivate`. A new user defaults to driver, `en`, active. For an existing
+user **only the flags you pass change**: `--name` alone never touches the role
+or reactivates a deactivated driver. The URL must be `https://`; `http://` is
+accepted only for `localhost` / `127.0.0.1` (checked on the hostname). Keep the
+service role key out of shell history and CI logs.
 
 ---
 

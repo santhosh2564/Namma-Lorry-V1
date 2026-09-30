@@ -106,4 +106,18 @@ describe("app.config", () => {
       project: "p",
     });
   });
+
+  it("links the EAS project and EAS Update (B5c)", () => {
+    const id = "2a3edc84-9fe4-4593-b278-ef919ec1b82c";
+    expect(prod.owner).toBe("santhoshkrwork");
+    expect(prod.extra?.eas).toEqual({ projectId: id });
+    // `appVersion`, not `fingerprint`: a fingerprint computed on Windows can
+    // differ from the Linux build worker and silently block updates.
+    expect(prod.runtimeVersion).toEqual({ policy: "appVersion" });
+    expect(prod.updates).toEqual({
+      url: `https://u.expo.dev/${id}`,
+      fallbackToCacheTimeout: 0,
+      checkAutomatically: "ON_LOAD",
+    });
+  });
 });
