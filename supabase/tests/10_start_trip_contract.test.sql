@@ -3,7 +3,8 @@
 -- 0008 redefines start_trip for the concurrent-start race and 0009 makes it
 -- require the CURRENT consent version. Every check the function had before must
 -- survive, so each one is pinned here, with the grants, in one place:
---   TRIP_NOT_FOUND · CONSENT_REQUIRED (0006, stale or absent; 0009)
+--   TRIP_NOT_FOUND · CONSENT_REQUIRED (0006, older or absent; 0009/0010)
+--   a newer consent version counts (0010: the app ships before the migration)
 --   FORBIDDEN for inactive (0007)
 --   TRIP_NOT_STARTABLE · ANOTHER_TRIP_ACTIVE · GPS_ACCURACY_TOO_LOW · OUTSIDE_PICKUP
 -- The race itself needs two sessions: test/db/start-trip-race.sh (CI database job).
@@ -12,7 +13,7 @@ begin;
 
 \ir _helpers.psql
 
-select plan(23);
+select plan(24);
 
 -- ---- fixtures --------------------------------------------------------
 select tests.create_user('da000000-0000-4000-8000-000000000001', '919000001001', 'driver', 'Driver A');
@@ -20,6 +21,7 @@ select tests.create_user('da000000-0000-4000-8000-000000000002', '919000001002',
 select tests.create_user('da000000-0000-4000-8000-000000000003', '919000001003', 'driver', 'No Consent');
 select tests.create_user('da000000-0000-4000-8000-000000000004', '919000001004', 'driver', 'Inactive');
 select tests.create_user('da000000-0000-4000-8000-000000000005', '919000001005', 'driver', 'Stale Consent');
+select tests.create_user('da000000-0000-4000-8000-000000000006', '919000001006', 'driver', 'Newer Consent');
 update public.profiles set consent_version = public.current_consent_version(), consent_at = now()
  where id in ('da000000-0000-4000-8000-000000000001', 'da000000-0000-4000-8000-000000000002',
               'da000000-0000-4000-8000-000000000004');
@@ -27,6 +29,9 @@ update public.profiles set consent_version = public.current_consent_version(), c
 update public.profiles set consent_version = '2025-01-01', consent_at = now()
  where id = 'da000000-0000-4000-8000-000000000005';
 update public.profiles set is_active = false where id = 'da000000-0000-4000-8000-000000000004';
+-- Agreed on a new build before the migration made its version current (0010).
+update public.profiles set consent_version = '2026-12-01', consent_at = now()
+ where id = 'da000000-0000-4000-8000-000000000006';
 
 insert into public.vehicles(id, registration_no, vehicle_type) values
   ('ca000000-0000-4000-8000-000000000001', 'TN 10 AA 0001', '19ft');
@@ -35,7 +40,7 @@ insert into public.loads(id, pickup_address, pickup_lat, pickup_lng, drop_addres
                          pickup_radius_m, drop_radius_m, planned_distance_m)
 select ('ba000000-0000-4000-8000-00000000000' || g)::uuid, 'Pickup', 12.9563, 79.9422,
        'Drop', 12.9165, 79.1325, 500, 500, 88000
-  from generate_series(1, 6) g;
+  from generate_series(1, 7) g;
 
 insert into public.trips(id, load_id, driver_id, vehicle_id) values
   -- Driver A: two assigned trips
@@ -54,7 +59,10 @@ insert into public.trips(id, load_id, driver_id, vehicle_id) values
    'da000000-0000-4000-8000-000000000004', 'ca000000-0000-4000-8000-000000000001'),
   -- Stale-consent driver (0009)
   ('fa000000-0000-4000-8000-000000000006', 'ba000000-0000-4000-8000-000000000006',
-   'da000000-0000-4000-8000-000000000005', 'ca000000-0000-4000-8000-000000000001');
+   'da000000-0000-4000-8000-000000000005', 'ca000000-0000-4000-8000-000000000001'),
+  -- Newer-consent driver (0010)
+  ('fa000000-0000-4000-8000-000000000007', 'ba000000-0000-4000-8000-000000000007',
+   'da000000-0000-4000-8000-000000000006', 'ca000000-0000-4000-8000-000000000001');
 
 -- =================== grants ==========================================
 select ok(has_function_privilege('authenticated',
@@ -104,6 +112,11 @@ select lives_ok(
   $$select public.start_trip('fa000000-0000-4000-8000-000000000006'::uuid, 12.9563, 79.9422, 10::real)$$,
   'recording the current version lets that driver start');
 set local role postgres;
+select tests.as_user('da000000-0000-4000-8000-000000000006');
+select lives_ok(
+  $$select public.start_trip('fa000000-0000-4000-8000-000000000007'::uuid, 12.9563, 79.9422, 10::real)$$,
+  'a consent to a newer version counts (0010: the app shipped before the migration)');
+set local role postgres;
 
 -- =================== Driver A: the rest in order =====================
 set local role postgres;
@@ -147,8 +160,8 @@ select is((select array_agg(status::text order by id) from public.trips
                          'fa000000-0000-4000-8000-000000000005')),
   array['assigned', 'assigned', 'assigned'], 'every refused trip is still assigned');
 select is((select count(*)::int from public.trip_events
-            where trip_id::text like 'fa000000-%' and type = 'started'), 2,
-  'each successful start logged exactly one started event (Driver A and the re-consented driver)');
+            where trip_id::text like 'fa000000-%' and type = 'started'), 3,
+  'each successful start logged exactly one started event (Driver A, the re-consented and the newer-consent driver)');
 select is((select count(*)::int from public.trips
             where driver_id = 'da000000-0000-4000-8000-000000000001' and status = 'in_progress'), 1,
   'Driver A has exactly one trip in progress');

@@ -27,7 +27,7 @@ supabase.rpc('start_trip', {
 supabase.rpc('record_consent', { p_version: CONSENT_VERSION })
 ```
 Stores the driver's agreement (`profiles.consent_version`, `consent_at`) on their own row — the only non-admin write path to those columns. The server accepts only the version `public.current_consent_version()` returns (migration 0009), so the app's constant and the database cannot drift; the launch gate sends a driver whose stored version differs back through D1.
-Errors: `VERSION_REQUIRED` (blank version), `VERSION_NOT_CURRENT` (a different version — this build is out of date and must be updated), `VERSION_NOT_CONFIGURED` (no `app_settings` row; a deployment fault), `PROFILE_NOT_FOUND` (inactive or missing profile), `FORBIDDEN` (no session).
+Errors: `VERSION_REQUIRED` (blank version), `VERSION_NOT_CURRENT` (older than `current_consent_version()`: this build is out of date and must be updated; the current version or a newer one is accepted, 0010), `VERSION_INVALID` (not `YYYY-MM-DD`, 0010), `VERSION_NOT_CONFIGURED` (no `app_settings` row; a deployment fault), `PROFILE_NOT_FOUND` (inactive or missing profile), `FORBIDDEN` (no session).
 
 ### `end_trip`
 ```ts
