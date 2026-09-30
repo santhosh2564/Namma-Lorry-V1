@@ -115,8 +115,24 @@ export async function findViolations(baseUrl, paths) {
       });
       await page.goto(baseUrl + path, { waitUntil: "load" });
       await page.getByText("Sign in with your mobile number").waitFor({ timeout: 30_000 });
-      // Let lazy work (fonts, the sqlite worker, the auth bootstrap) settle.
+      // Let lazy work (fonts, the auth bootstrap) settle.
       await page.waitForTimeout(2_000);
+      if (path === "/sign-in") {
+        // Exercise connect-src for real: Send OTP calls Supabase auth. The
+        // probe host does not resolve, but CSP is checked before the network.
+        const request = page.waitForRequest(/\.supabase\.co\/auth\//, { timeout: 15_000 });
+        await page
+          .getByTestId("sign-in-phone")
+          .locator("input")
+          .or(page.getByTestId("sign-in-phone"))
+          .first()
+          .fill("9876543210");
+        await page.getByTestId("sign-in-submit").click();
+        await request.catch(() =>
+          violations.push(`${path}: Send OTP made no Supabase auth request`),
+        );
+        await page.waitForTimeout(1_000);
+      }
       const events = await page.evaluate(() => window.__cspViolations);
       violations.push(...events.map((v) => `${path}: ${v}`));
       await page.close();
