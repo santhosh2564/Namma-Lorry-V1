@@ -10,6 +10,8 @@ import { type AuthErrorCode, AuthError, authErrorMessageKey, mapAuthError } from
 const cases: [string, AuthErrorCode][] = [
   // ND-12: `shouldCreateUser: false` turns an unknown number into this.
   ["Signups not allowed for otp", "unregistered"],
+  // GoTrue's global sign-up switch (M4), for a request that asks to create a user.
+  ["Signups not allowed for this instance", "unregistered"],
   ["Invalid login credentials", "wrong_code"],
   ["Token has expired or is invalid", "expired_code"],
   ["otp_expired", "expired_code"],
