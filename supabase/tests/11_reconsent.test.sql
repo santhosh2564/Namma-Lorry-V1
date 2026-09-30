@@ -4,14 +4,17 @@
 -- public.current_consent_version(). test/config/consent-version.test.mjs keeps
 -- it equal to CONSENT_VERSION in src/features/onboarding/consent.ts.
 --   A. current_consent_version(): value and grants
---   B. record_consent accepts only the current version (CONSENT_VERSION_OUTDATED)
+--   B. record_consent refuses a version older than the current one
+--      (CONSENT_VERSION_OUTDATED) and accepts the current one or a newer one:
+--      the app ships a new version before the migration that makes it current
+--      (docs/RUNBOOK.md §Changing the policy version). Versions are YYYY-MM-DD.
 -- start_trip's stale-version refusal is in suite 10 with its other checks.
 -- =====================================================================
 begin;
 
 \ir _helpers.psql
 
-select plan(12);
+select plan(14);
 
 select tests.create_user('db000000-0000-4000-8000-000000000001', '919000001101', 'driver', 'Driver A');
 update public.profiles set consent_version = '2026-09-27.1', consent_at = '2026-09-27 10:00+05:30'
@@ -33,8 +36,8 @@ select ok(not exists (
 select tests.as_user('db000000-0000-4000-8000-000000000001');
 select throws_ok($$select public.record_consent('2026-09-27.1')$$,
   'P0001', 'CONSENT_VERSION_OUTDATED', 'an earlier version is refused (an old app build)');
-select throws_ok($$select public.record_consent('2027-01-01')$$,
-  'P0001', 'CONSENT_VERSION_OUTDATED', 'a version the server does not know is refused too');
+select throws_ok($$select public.record_consent('v2')$$,
+  'P0001', 'VERSION_INVALID', 'a version that is not YYYY-MM-DD is refused');
 select throws_ok($$select public.record_consent('  ')$$,
   'P0001', 'VERSION_REQUIRED', 'a blank version is still VERSION_REQUIRED');
 
@@ -53,6 +56,15 @@ select is((select consent_version from public.profiles where id = 'db000000-0000
 select ok((select consent_at > '2026-09-27 10:00+05:30'::timestamptz from public.profiles
             where id = 'db000000-0000-4000-8000-000000000001'),
   '...with a new timestamp');
+
+-- The app update ships first, so a newer version must be accepted before the
+-- migration that makes it current.
+select tests.as_user('db000000-0000-4000-8000-000000000001');
+select lives_ok($$select public.record_consent('2026-12-01')$$,
+  'a newer version is accepted (app shipped before the migration)');
+set local role postgres;
+select is((select consent_version from public.profiles where id = 'db000000-0000-4000-8000-000000000001'),
+  '2026-12-01', 'the newer version is stored');
 
 select * from finish();
 rollback;
