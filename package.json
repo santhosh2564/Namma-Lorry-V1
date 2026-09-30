@@ -15,6 +15,7 @@
     "format:check": "prettier --check .",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:cold": "jest --no-cache",
     "test:config": "node --test \"test/config/*.test.mjs\"",
     "test:scripts": "node --test \"scripts/__tests__/*.test.mjs\"",
     "check:web-csp": "node scripts/check-web-csp.mjs",
