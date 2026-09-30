@@ -83,7 +83,7 @@ supabase test db
 ```
 
 This runs the pgTAP suite in `supabase/tests/` through `pg_prove`. The current
-suite is 4 files / 135 cases:
+suite is 10 files / 249 cases; the main ones:
 
 | File | Covers |
 |---|---|
@@ -91,6 +91,7 @@ suite is 4 files / 135 cases:
 | `02_rpc_errors.test.sql` | Every error code in docs/06 §1, produced by a real call |
 | `03_verification_reasons.test.sql` | All 10 reason codes from docs/08 §3, each raised in isolation |
 | `04_verification_triggers.test.sql` | The point-upload trigger, the pg_cron sweeper, admin review crediting stats exactly once, and `record_consent` |
+| `10_start_trip_contract.test.sql` | Every `start_trip` check (`FORBIDDEN` for inactive, `CONSENT_REQUIRED`, …) and its grants |
 
 Helpers live in `supabase/tests/_helpers.psql` (the `.psql` extension keeps
 `pg_prove` from trying to run it as a test).
@@ -98,6 +99,16 @@ Helpers live in `supabase/tests/_helpers.psql` (the `.psql` extension keeps
 > The suite needs `pgTAP`, `PostGIS` and `pg_cron` in the database. `supabase
 > start` provides all three. It also needs the `anon`, `authenticated` and
 > `service_role` roles, which the local stack creates for you.
+
+pgTAP runs each file in one session and one transaction, so it can't test a
+race. `test/db/start-trip-race.sh` starts two trips for one driver from two
+sessions at once (docs/10 scenario 10) and expects the second to get
+`ANOTHER_TRIP_ACTIVE`. It needs Docker and the local stack, and cleans up its
+fixtures. CI runs it after pgTAP:
+
+```bash
+bash test/db/start-trip-race.sh
+```
 
 ---
 
