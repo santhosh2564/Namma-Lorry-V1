@@ -44,6 +44,7 @@ src/features/            auth, console, driver, drivers, loads, onboarding, sett
 src/tracking/            task.ts (TaskManager.defineTask), db.ts (sqlite), queue.ts, uploader.ts,
                          stateMachine.ts, service.ts, config.ts, permissions.ts, errors.ts
 src/lib/                 supabase.ts, config.ts, mappls.ts, geo.ts, screens.ts, database.types.ts
+src/server/              server-only code, never imported by the app: email/ (Resend)
 src/theme/               tokens.ts, fonts.ts, status.ts
 src/i18n/                en/ta/kn/hi JSON + index.ts
 plugins/                 Expo config plugins (withMappls.ts)

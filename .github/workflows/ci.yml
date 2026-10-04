@@ -67,6 +67,14 @@ jobs:
           grep -rqF "https://ci-probe.supabase.co" dist || { echo "::error::SUPABASE_URL not inlined"; exit 1; }
           grep -rqF "ci-probe-anon-key" dist || { echo "::error::SUPABASE_ANON_KEY not inlined"; exit 1; }
 
+      # src/server/ holds secrets (RESEND_API_KEY, DATABASE_URL, CLERK_SECRET_KEY,
+      # R2_SECRET_ACCESS_KEY) and must never be bundled into the app.
+      - name: Web export carries no server-only code or secret names
+        run: |
+          if grep -rqE "api\.resend\.com|RESEND_API_KEY|email_send_failed|CLERK_SECRET_KEY|DATABASE_URL|R2_SECRET_ACCESS_KEY|r2\.cloudflarestorage\.com|@clerk/backend|@neondatabase|aws4fetch" dist; then
+            echo "::error::server-only code or a secret name is in the web bundle"; exit 1
+          fi
+
       # The export above, served with vercel.json's headers and rewrites, must
       # load the console sign-in page with zero CSP violations (B5d).
       - name: Install Chromium

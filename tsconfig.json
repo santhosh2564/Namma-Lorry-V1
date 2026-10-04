@@ -21,6 +21,7 @@
     "src/**/*.tsx",
     "plugins/**/*.ts",
     "e2e/**/*.ts",
+    "functions/**/*.ts",
     "app.config.ts",
     "app.config.test.ts",
     ".eslintrc.js",
