@@ -35,6 +35,14 @@ export type AppConfig = {
   /** Published privacy policy; empty hides the D1 link (M9, docs/09 §1). */
   privacyPolicyUrl: string;
   sentryDsn: string;
+  /**
+   * Clerk's publishable key — genuinely public (Clerk's own client SDK ships
+   * with it), unlike the Supabase values above which are only safe to bundle
+   * because RLS protects them. Not read by anything yet: driver auth is still
+   * Supabase phone OTP, so this is never required and never fails the build
+   * when empty (docs/PHASE1_TASKS.md 2026-10-04).
+   */
+  clerkPublishableKey: string;
 };
 
 type RawEnv = Record<string, string | undefined>;
@@ -127,6 +135,7 @@ export function resolveConfig(
       privacyPolicyUrl: env.EXPO_PUBLIC_PRIVACY_POLICY_URL ?? "",
       // Kept when misconfigured, so the failure can still be reported.
       sentryDsn: env.EXPO_PUBLIC_SENTRY_DSN ?? "",
+      clerkPublishableKey: env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "",
     },
     problems,
   };
@@ -146,6 +155,7 @@ const resolved = resolveConfig(
     EXPO_PUBLIC_IOS_STORE_URL: process.env.EXPO_PUBLIC_IOS_STORE_URL,
     EXPO_PUBLIC_PRIVACY_POLICY_URL: process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL,
     EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
+    EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY,
   },
   __DEV__,
 );

@@ -1,0 +1,14 @@
+name = "namma-lorry"
+compatibility_date = "2025-09-01"
+pages_build_output_dir = "dist"
+
+# Local testing only (`wrangler pages dev dist`): secrets for DATABASE_URL,
+# CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY, RESEND_API_KEY, EMAIL_FROM and the
+# R2_* keys below are set in the Cloudflare Pages dashboard (Settings →
+# Environment Variables), never here — see docs/ENVIRONMENT.md. This file
+# holds no secret values, so it is safe to commit.
+
+[[r2_buckets]]
+binding = "POD_EVIDENCE"
+bucket_name = "namma-lorry-pod-evidence"
+# preview_bucket_name = "namma-lorry-pod-evidence-preview"

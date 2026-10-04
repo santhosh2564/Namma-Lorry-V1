@@ -48,6 +48,26 @@ export default defineConfig([
     },
   },
   {
+    // `src/server/` holds code that uses server secrets (RESEND_API_KEY). The
+    // app must never import it, or the secret-using code ships in the bundle.
+    files: ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
+    ignores: ["src/server/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [{ name: "resend", message: "Email is sent server-side only (src/server/)." }],
+          patterns: [
+            {
+              group: ["@/server", "@/server/*", "**/server/email", "**/server/email/*"],
+              message: "src/server/ is server-only and must not be imported by the app.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     ignores: [
       "node_modules/**",
       ".expo/**",
